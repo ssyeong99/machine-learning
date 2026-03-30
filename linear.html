@@ -1,0 +1,1404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>선형회귀(Linear Regression) - 능동고등학교 인공지능기초</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: "Pretendard Variable", Pretendard, "Malgun Gothic", sans-serif;
+            background-color: #f0f4ff;
+        }
+
+        .hero-gradient {
+            background: linear-gradient(135deg, #1e40af 0%, #0ea5e9 50%, #06b6d4 100%);
+        }
+
+        .sticky-nav {
+            position: sticky; top: 0; z-index: 100;
+            backdrop-filter: blur(12px);
+            background-color: rgba(255,255,255,0.93);
+            border-bottom: 1px solid rgba(226,232,240,0.8);
+            box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08);
+        }
+
+        .section-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 2rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+            border: 1px solid #e8eeff;
+        }
+
+        .math-box {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #eff6ff, #e0f2fe);
+            border: 2px solid #93c5fd;
+            border-radius: 12px;
+            padding: 18px 24px;
+            font-size: 1.3em;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+
+        /* 오차 시각화 */
+        .error-bar {
+            display: inline-block;
+            background: #ef4444;
+            height: 8px;
+            border-radius: 4px;
+            transition: width 0.4s;
+        }
+
+        /* 경사하강법 그래프 */
+        #gdCanvas {
+            border-radius: 12px;
+            border: 2px solid #e2e8f0;
+            background: #f8fafc;
+        }
+
+        /* 토글 퀴즈 */
+        .quiz-answer {
+            display: none;
+            animation: fadeIn 0.3s ease;
+        }
+        .quiz-answer.open { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-6px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Chart.js 선택 */
+        .chart-tab {
+            cursor: pointer;
+            padding: 8px 18px;
+            border-radius: 999px;
+            font-weight: 700;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            font-size: 0.9rem;
+        }
+        .chart-tab.active {
+            background: #3b82f6;
+            color: white;
+            border-color: #3b82f6;
+        }
+        .chart-tab:not(.active) {
+            background: #f1f5f9;
+            color: #64748b;
+        }
+
+        /* 스크롤바 */
+        ::-webkit-scrollbar { width: 7px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .step-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .step-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+
+        /* 오차 테이블 */
+        .err-table th { background: #dbeafe; }
+        .err-table td { text-align: center; padding: 8px; border: 1px solid #e2e8f0; }
+        .err-table tr:hover td { background: #f0f9ff; }
+
+        /* GD 시뮬레이터 */
+        #btnGDTrain { transition: all 0.2s ease; }
+        #btnGDTrain.complete { background-color: #10b981 !important; }
+
+        .quiz-card {
+            background: white;
+            border-radius: 1.25rem;
+            padding: 1.5rem;
+            border: 1px solid #e2e8f0;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            margin-bottom: 1rem;
+        }
+        .quiz-toggle {
+            display: flex; align-items: center; gap: 8px;
+            cursor: pointer;
+            color: #3b82f6; font-weight: 700; font-size: 0.9rem;
+            margin-top: 10px;
+            width: fit-content;
+            border: 2px solid #bfdbfe;
+            border-radius: 999px;
+            padding: 4px 16px;
+            transition: all 0.2s;
+        }
+        .quiz-toggle:hover { background: #eff6ff; }
+
+        .gradient-ball {
+            width: 18px; height: 18px;
+            border-radius: 50%;
+            background: #ef4444;
+            position: absolute;
+            transition: left 0.3s, top 0.3s;
+            box-shadow: 0 0 10px rgba(239,68,68,0.5);
+        }
+    </style>
+</head>
+<body class="text-slate-800">
+
+<!-- ==================== HERO ==================== -->
+<header id="top" class="hero-gradient text-white py-16 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+        <a href="index.html" class="inline-flex items-center gap-2 px-4 py-1.5 bg-white/20 rounded-full font-bold mb-6 text-sm hover:bg-white/30 transition">
+            ← 목록으로 돌아가기
+        </a>
+        <div class="block px-4 py-1.5 bg-white/20 rounded-full font-bold mb-5 text-sm w-fit mx-auto">능동고등학교 인공지능기초 | made by 정보교사 송세영</div>
+        <h1 class="text-4xl md:text-6xl font-black mb-5 leading-tight">데이터 속 패턴을 찾다,<br><span class="text-cyan-200">Linear Regression</span></h1>
+        <p class="text-lg md:text-xl opacity-90 font-medium max-w-2xl mx-auto leading-relaxed">
+            데이터를 가장 잘 설명하는 단 하나의 '직선'은 무엇일까요?<br>오차를 줄여가며 최적의 선을 찾는 선형회귀의 원리를 시각적으로 체험해봅시다.
+        </p>
+        <div class="flex flex-wrap justify-center gap-3 mt-8 text-sm font-bold">
+            <span class="bg-white/20 backdrop-blur px-4 py-2 rounded-full">📈 직선의 방정식</span>
+            <span class="bg-white/20 backdrop-blur px-4 py-2 rounded-full">📉 오차(MSE)</span>
+            <span class="bg-white/20 backdrop-blur px-4 py-2 rounded-full">⛰️ 경사하강법</span>
+            <span class="bg-white/20 backdrop-blur px-4 py-2 rounded-full">🧩 퀴즈</span>
+        </div>
+    </div>
+</header>
+
+<!-- ==================== NAV ==================== -->
+<nav class="sticky-nav px-6 py-3">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white text-sm">
+                📈
+            </div>
+            <span class="font-black text-xl tracking-tight text-slate-800">선형회귀</span>
+        </div>
+        <div class="hidden md:flex gap-6 font-bold text-slate-500 text-base">
+            <a href="#concept"    class="hover:text-blue-600 transition">📚 개념</a>
+            <a href="#equation"   class="hover:text-blue-600 transition">📐 방정식</a>
+            <a href="#simulator"  class="hover:text-blue-600 transition">🧪 시뮬레이터</a>
+            <a href="#error"      class="hover:text-blue-600 transition">📉 오차</a>
+            <a href="#gradient"   class="hover:text-blue-600 transition">⛰️ 경사하강법</a>
+            <a href="#chart-demo" class="hover:text-blue-600 transition">📊 데이터 실습</a>
+            <a href="#quiz"       class="hover:text-blue-600 transition">🧩 퀴즈</a>
+        </div>
+        <a href="index.html" class="hidden md:block px-4 py-2 bg-blue-600 text-white rounded-xl font-bold text-sm hover:bg-blue-700 transition">← 목록</a>
+    </div>
+</nav>
+
+<main class="max-w-6xl mx-auto px-4 py-16 space-y-20">
+
+<!-- ==================== SECTION 1: CONCEPT STEPS ==================== -->
+<section id="concept" class="scroll-mt-24">
+    <div class="text-center mb-12">
+        <span class="text-blue-600 font-bold tracking-widest uppercase text-sm">Core Mechanism</span>
+        <h2 class="text-3xl md:text-4xl font-black text-slate-900 mt-2">선형회귀는 어떻게 최적의 선을 찾을까요?</h2>
+        <p class="text-slate-500 text-lg mt-3">선형회귀는 데이터와 직선 사이의 '오차'를 최소화하는 방향으로 선을 조금씩 수정합니다.</p>
+    </div>
+
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <div class="step-card">
+            <div class="w-14 h-14 bg-slate-100 text-slate-600 rounded-2xl flex items-center justify-center mb-4 text-2xl">
+                ⬛
+            </div>
+            <span class="px-3 py-1 bg-slate-100 text-slate-600 font-bold rounded-full text-sm mb-3">Step 1</span>
+            <h3 class="text-lg font-black mb-2 text-slate-800">데이터 표시</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">수집한 데이터들을 2차원 그래프 위에 점으로 찍어 분포와 패턴을 확인합니다.</p>
+        </div>
+        <div class="step-card">
+            <div class="w-14 h-14 bg-blue-100 text-blue-600 rounded-2xl flex items-center justify-center mb-4 text-2xl">
+                📏
+            </div>
+            <span class="px-3 py-1 bg-blue-50 text-blue-600 font-bold rounded-full text-sm mb-3">Step 2</span>
+            <h3 class="text-lg font-black mb-2 text-slate-800">초기 직선 생성</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">데이터의 경향을 추측하여 임의의 위치와 기울기를 가진 선을 무작위로 하나 긋습니다.</p>
+        </div>
+        <div class="step-card">
+            <div class="w-14 h-14 bg-rose-100 text-rose-600 rounded-2xl flex items-center justify-center mb-4 text-2xl">
+                ≠
+            </div>
+            <span class="px-3 py-1 bg-rose-50 text-rose-600 font-bold rounded-full text-sm mb-3">Step 3</span>
+            <h3 class="text-lg font-black mb-2 text-slate-800">오차 계산</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">현재 직선과 실제 데이터 점들 사이의 수직 거리(오차)를 모두 계산하여 합칩니다.</p>
+        </div>
+        <div class="step-card">
+            <div class="w-14 h-14 bg-emerald-100 text-emerald-600 rounded-2xl flex items-center justify-center mb-4 text-2xl">
+                📉
+            </div>
+            <span class="px-3 py-1 bg-emerald-50 text-emerald-600 font-bold rounded-full text-sm mb-3">Step 4</span>
+            <h3 class="text-lg font-black mb-2 text-slate-800">직선 수정 (학습)</h3>
+            <p class="text-slate-500 text-sm leading-relaxed">계산된 오차를 줄이는 방향으로 직선의 기울기와 높이를 조금씩 이동시킵니다.</p>
+        </div>
+    </div>
+
+    <div class="bg-blue-50 border border-blue-100 rounded-2xl p-6 mt-8 grid md:grid-cols-2 gap-6">
+        <div>
+            <h4 class="font-bold text-blue-800 mb-2">💡 핵심 정리</h4>
+            <ul class="list-disc list-inside text-blue-900 space-y-1 text-sm">
+                <li>선형회귀는 데이터를 가장 잘 설명하는 <strong>직선</strong>을 찾는 방법입니다.</li>
+                <li>기계가 '학습'한다는 것은 <strong>오차를 줄이도록 직선을 계속 수정하는 과정</strong>입니다.</li>
+                <li>선형회귀는 <strong>지도학습</strong>의 한 종류로, 입력(x)과 정답(y)이 모두 주어집니다.</li>
+            </ul>
+        </div>
+        <div>
+            <h4 class="font-bold text-rose-800 mb-2">⚠️ 주의할 점 (오개념 방지)</h4>
+            <ul class="list-disc list-inside text-rose-900 space-y-1 text-sm">
+                <li>선형회귀가 <strong>항상 완벽하게 모든 점을 지나는 선</strong>을 찾는 것은 아닙니다.</li>
+                <li>현실의 데이터는 직선 관계가 아닐 수도 있습니다 (곡선 형태 등).</li>
+                <li>데이터가 너무 적으면 학습 결과가 부정확할 수 있습니다.</li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== SECTION 2: EQUATION ==================== -->
+<section id="equation" class="scroll-mt-24 section-card">
+    <div class="text-center mb-8">
+        <span class="text-blue-600 font-bold tracking-widest uppercase text-sm">Mathematical Formula</span>
+        <h2 class="text-3xl md:text-4xl font-black text-slate-900 mt-2">📐 직선의 방정식</h2>
+        <p class="text-slate-500 text-lg mt-3">선형회귀는 아래 방정식으로 표현되는 직선을 찾습니다.</p>
+    </div>
+
+    <div class="max-w-lg mx-auto mb-8">
+        <div class="math-box text-2xl font-black text-blue-800">
+            y = <span class="text-red-500">a</span> × x + <span class="text-emerald-600">b</span>
+        </div>
+    </div>
+
+    <div class="grid md:grid-cols-3 gap-6">
+        <div class="bg-slate-50 rounded-2xl p-5 text-center border border-slate-200">
+            <div class="text-4xl mb-3">📌</div>
+            <div class="font-black text-2xl text-slate-800 mb-1">y</div>
+            <div class="font-bold text-slate-500 text-sm">예측값 (종속변수)</div>
+            <p class="text-slate-600 text-sm mt-3 leading-relaxed">우리가 예측하고 싶은 값입니다.<br>예: 몸무게, 판매량, 성적</p>
+        </div>
+        <div class="bg-red-50 rounded-2xl p-5 text-center border border-red-200">
+            <div class="text-4xl mb-3">📈</div>
+            <div class="font-black text-2xl text-red-500 mb-1">a (기울기)</div>
+            <div class="font-bold text-slate-500 text-sm">Slope / Weight</div>
+            <p class="text-slate-600 text-sm mt-3 leading-relaxed">x가 1 증가할 때 y가 얼마나 변하는지를 나타냅니다. 기울기가 클수록 가파른 선입니다.</p>
+        </div>
+        <div class="bg-emerald-50 rounded-2xl p-5 text-center border border-emerald-200">
+            <div class="text-4xl mb-3">🎯</div>
+            <div class="font-black text-2xl text-emerald-600 mb-1">b (절편)</div>
+            <div class="font-bold text-slate-500 text-sm">Intercept / Bias</div>
+            <p class="text-slate-600 text-sm mt-3 leading-relaxed">x = 0일 때 y의 값입니다. 직선이 y축과 만나는 지점입니다.</p>
+        </div>
+    </div>
+
+    <div class="mt-8 bg-yellow-50 border border-yellow-200 rounded-2xl p-6">
+        <h4 class="font-bold text-yellow-800 mb-3">💡 구체적인 예시: 키와 몸무게</h4>
+        <div class="grid md:grid-cols-2 gap-4 text-sm">
+            <div>
+                <p class="text-slate-600 leading-relaxed">키(x)로 몸무게(y)를 예측하는 식:</p>
+                <div class="bg-white rounded-xl p-3 font-mono text-base font-bold text-blue-700 mt-2 border border-yellow-200">
+                    y = 0.75 × x − 65
+                </div>
+                <p class="text-slate-500 mt-2">• 키가 170cm이면: y = 0.75 × 170 − 65 = <strong class="text-blue-600">62.5kg</strong></p>
+                <p class="text-slate-500">• 키가 1cm 증가할 때마다 몸무게 약 0.75kg 증가</p>
+            </div>
+            <div>
+                <p class="text-slate-600 leading-relaxed">폭염일수(x)로 이온음료 판매량(y) 예측:</p>
+                <div class="bg-white rounded-xl p-3 font-mono text-base font-bold text-orange-600 mt-2 border border-yellow-200">
+                    y = 17.5 × x + 42
+                </div>
+                <p class="text-slate-500 mt-2">• 폭염일수 10일이면: y = 17.5 × 10 + 42 = <strong class="text-orange-600">217천 개</strong></p>
+                <p class="text-slate-500">• 폭염일이 1일 늘 때마다 판매량 약 17,500개 증가</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== SECTION 3: ERROR ==================== -->
+<section id="simulator" class="scroll-mt-24 section-card">
+    <div class="mb-8">
+        <span class="text-blue-600 font-bold tracking-widest uppercase text-sm">Interactive Simulator</span>
+        <h2 class="text-3xl md:text-4xl font-black text-slate-800 mt-2">🧪 선형회귀 학습 시뮬레이터</h2>
+        <p class="text-slate-500 text-lg mt-2">데이터를 클릭하여 추가하거나 예제를 불러온 뒤 '학습 시작'을 눌러보세요. 경사하강법으로 직선이 수렴하는 과정을 관찰하세요!</p>
+    </div>
+
+    <div class="flex flex-col lg:flex-row gap-6">
+        <!-- 캔버스 영역 -->
+        <div class="w-full lg:w-[60%] flex flex-col gap-4">
+            <div class="relative w-full bg-slate-50 rounded-2xl overflow-hidden border-2 border-slate-200 shadow-inner" style="aspect-ratio: 4/3;">
+                <canvas id="regressionCanvas" class="absolute top-0 left-0 w-full h-full cursor-crosshair"></canvas>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm flex flex-col md:flex-row gap-4">
+                <div class="flex-1 flex flex-col gap-2">
+                    <label class="font-bold text-slate-600 text-sm">좌표 직접 입력</label>
+                    <div class="flex gap-2">
+                        <input type="number" id="inputX" placeholder="x" class="w-full px-3 py-2 border rounded-lg bg-slate-50 outline-none focus:border-blue-400 text-sm">
+                        <input type="number" id="inputY" placeholder="y" class="w-full px-3 py-2 border rounded-lg bg-slate-50 outline-none focus:border-blue-400 text-sm">
+                        <button id="btnAddCoord" class="px-4 py-2 bg-blue-600 text-white rounded-lg font-bold hover:bg-blue-700 whitespace-nowrap text-sm">추가</button>
+                    </div>
+                </div>
+                <div class="flex-1 flex flex-col gap-2">
+                    <label class="font-bold text-slate-600 text-sm">일괄 데이터 입력 (x,y)</label>
+                    <div class="flex gap-2 h-full">
+                        <textarea id="bulkInput" placeholder="예: 1,2&#10;2,3" class="w-full h-[42px] px-3 py-1 border rounded-lg bg-slate-50 outline-none focus:border-blue-400 text-sm resize-none"></textarea>
+                        <button id="btnBulkAdd" class="px-4 py-2 bg-slate-700 text-white rounded-lg font-bold hover:bg-slate-800 whitespace-nowrap text-sm">일괄 추가</button>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border-2 border-slate-200 shadow-sm">
+                <div class="flex flex-wrap gap-2">
+                    <button class="flex-1 min-w-[120px] px-3 py-2 text-sm bg-slate-50 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-blue-50" onclick="uiController.loadExample(1)">
+                        ☕ 밤샘 공부 → 시험 점수
+                    </button>
+                    <button class="flex-1 min-w-[120px] px-3 py-2 text-sm bg-slate-50 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-blue-50" onclick="uiController.loadExample(2)">
+                        🌡️ 기온 → 아이스크림
+                    </button>
+                    <button class="flex-1 min-w-[120px] px-3 py-2 text-sm bg-slate-50 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-blue-50" onclick="uiController.loadExample(3)">
+                        🎮 게임 연습 → 점수
+                    </button>
+                    <button class="flex-1 min-w-[120px] px-3 py-2 text-sm bg-slate-50 text-slate-700 rounded-lg font-bold border border-slate-200 hover:bg-blue-50" onclick="uiController.loadExample(4)">
+                        📶 거리 → WiFi 속도
+                    </button>
+                </div>
+                <p id="exampleDesc" class="mt-3 text-sm text-blue-600 font-medium h-5 text-center"></p>
+            </div>
+            <div class="flex gap-3">
+                <button id="btnRandomData" class="flex-1 px-4 py-3 text-sm bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-xl border border-blue-200">랜덤 데이터</button>
+                <button id="btnClearData"  class="flex-1 px-4 py-3 text-sm bg-white hover:bg-rose-50 text-rose-600 font-bold rounded-xl border border-slate-200">모두 지우기</button>
+            </div>
+        </div>
+
+        <!-- 모델 정보 -->
+        <div class="w-full lg:w-[40%] flex flex-col gap-5">
+            <div class="bg-slate-800 p-5 rounded-2xl border-2 border-slate-700 shadow-lg text-white">
+                <p class="font-black text-slate-300 text-sm flex items-center uppercase tracking-widest mb-3">
+                    🧮 Model Info
+                </p>
+                <div class="bg-slate-900 rounded-xl p-4 text-center border border-slate-600 shadow-inner mb-4">
+                    <span id="equationDisplay" class="font-mono text-xl font-black text-cyan-300">y = ax + b</span>
+                </div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button id="btnGDTrain" class="col-span-3 py-3 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl transition-all flex justify-center items-center text-sm">
+                        ▶ 학습 시작
+                    </button>
+                    <button id="btnPause" class="py-2 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl transition-all flex justify-center items-center text-sm">
+                        ⏸ 일시정지
+                    </button>
+                    <button id="btnReset" class="col-span-2 py-2 bg-slate-600 hover:bg-slate-500 text-white font-bold rounded-xl transition-all flex justify-center items-center text-sm">
+                        🔄 초기화
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-blue-50/50 p-5 rounded-2xl border border-blue-100 flex-1 flex flex-col justify-center gap-3">
+                <div class="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                    <span class="font-bold text-slate-500 text-sm">기울기 (a)</span>
+                    <span id="valSlope" class="font-black text-slate-800 font-mono">0.000</span>
+                </div>
+                <div class="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                    <span class="font-bold text-slate-500 text-sm">절편 (b)</span>
+                    <span id="valIntercept" class="font-black text-slate-800 font-mono">0.000</span>
+                </div>
+                <div class="bg-white px-4 py-3 rounded-xl border border-rose-200 shadow-sm flex justify-between items-center">
+                    <span class="font-bold text-rose-500 text-sm">MSE (오차)</span>
+                    <span id="valMSE" class="font-black text-rose-600 font-mono">0.000</span>
+                </div>
+                <div class="bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex justify-between items-center">
+                    <span class="font-bold text-slate-500 text-sm">Epoch (반복 횟수)</span>
+                    <span id="valEpoch" class="font-black text-slate-800 font-mono">0</span>
+                </div>
+                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200 text-xs text-emerald-700">
+                    <strong>💡 관찰 포인트:</strong> 학습이 진행될수록 MSE가 작아지고, 빨간 점선(오차)이 짧아지며, 직선이 데이터에 가까워집니다.
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== SECTION 6: CHART.JS DEMO ==================== -->
+<section id="error" class="scroll-mt-24">
+    <div class="text-center mb-12">
+        <span class="text-rose-500 font-bold tracking-widest uppercase text-sm">Error & Loss</span>
+        <h2 class="text-3xl md:text-4xl font-black text-slate-900 mt-2">📉 오차(Error)란 무엇인가?</h2>
+        <p class="text-slate-500 text-lg mt-3">선형회귀에서 오차는 실제 값과 예측 값의 차이입니다. 오차가 작을수록 좋은 모델입니다.</p>
+    </div>
+
+    <!-- 오차 개념 시각화 -->
+    <div class="section-card mb-8">
+        <h3 class="text-xl font-black text-slate-800 mb-6">🔴 오차 = 실제값 − 예측값</h3>
+        <div class="grid md:grid-cols-2 gap-8">
+            <!-- 오차 그림 -->
+            <div>
+                <div class="bg-slate-50 rounded-2xl p-4 border border-slate-200 relative" style="height: 260px;">
+                    <canvas id="errorVisCanvas" class="w-full h-full"></canvas>
+                </div>
+                <p class="text-center text-slate-500 text-sm mt-2">점선: 오차 (실제값과 예측값 사이의 거리)</p>
+            </div>
+            <!-- 오차 설명 -->
+            <div class="flex flex-col justify-center gap-4">
+                <div class="bg-blue-50 rounded-xl p-4 border border-blue-200">
+                    <div class="font-bold text-blue-800 mb-1">✅ 오차가 0에 가까울 때</div>
+                    <p class="text-blue-700 text-sm">직선이 데이터를 잘 설명함. 좋은 모델!</p>
+                </div>
+                <div class="bg-rose-50 rounded-xl p-4 border border-rose-200">
+                    <div class="font-bold text-rose-800 mb-1">❌ 오차가 클 때</div>
+                    <p class="text-rose-700 text-sm">직선이 데이터와 동떨어짐. 개선 필요!</p>
+                </div>
+                <div class="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                    <div class="font-bold text-yellow-800 mb-1">⚠️ 오차의 부호 문제</div>
+                    <p class="text-yellow-700 text-sm">오차가 +이면 실제값이 예측값보다 크고, −이면 실제값이 예측값보다 작습니다. 단순히 더하면 서로 상쇄됩니다!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MSE 설명 -->
+    <div class="section-card mb-8">
+        <h3 class="text-xl font-black text-slate-800 mb-2">📏 오차를 어떻게 측정할까? — MSE</h3>
+        <p class="text-slate-500 mb-6 text-sm">오차의 양수·음수 문제를 해결하기 위해 <strong>오차를 제곱</strong>하여 평균을 냅니다.</p>
+
+        <div class="bg-rose-50 border border-rose-200 rounded-2xl p-5 mb-6 text-center">
+            <p class="text-rose-600 font-bold text-sm mb-2">MSE (평균 제곱 오차, Mean Squared Error)</p>
+            <div class="font-mono text-xl font-black text-rose-700 bg-white rounded-xl p-4 inline-block border border-rose-300">
+                MSE = (1/n) × Σ(실제값 − 예측값)²
+            </div>
+        </div>
+
+        <!-- 오차 계산 예시 테이블 (폭염일수/이온음료) -->
+        <h4 class="font-bold text-slate-700 mb-3">🌡️ 예시 계산: 폭염일수 → 이온음료 판매량</h4>
+        <p class="text-slate-500 text-sm mb-4">예측식: <span class="font-mono font-bold text-orange-600">y = 17.5 × x + 42</span></p>
+        <div class="overflow-x-auto rounded-xl border border-slate-200">
+            <table class="w-full text-sm err-table" id="errorTable">
+                <thead>
+                    <tr class="text-slate-700 font-bold text-center">
+                        <th class="p-3 border border-slate-200">폭염일수 (x)</th>
+                        <th class="p-3 border border-slate-200">실제 판매량 (y, 천개)</th>
+                        <th class="p-3 border border-slate-200">예측값 ŷ = 17.5x + 42</th>
+                        <th class="p-3 border border-slate-200 text-orange-600">오차 (y − ŷ)</th>
+                        <th class="p-3 border border-slate-200 text-rose-600">오차² </th>
+                    </tr>
+                </thead>
+                <tbody id="errorTbody">
+                </tbody>
+                <tfoot>
+                    <tr class="bg-rose-50 font-black">
+                        <td colspan="4" class="p-3 border border-slate-200 text-right text-rose-700">MSE =</td>
+                        <td class="p-3 border border-slate-200 text-rose-700 text-center" id="mseResult">-</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+        <p class="text-slate-500 text-sm mt-3">※ MSE = 오차² 합계 ÷ 데이터 개수</p>
+    </div>
+
+    <!-- 오차 종류 비교 -->
+    <div class="section-card">
+        <h3 class="text-xl font-black text-slate-800 mb-6">📊 오차 측정 방법 비교</h3>
+        <div class="grid md:grid-cols-3 gap-5">
+            <div class="bg-orange-50 rounded-2xl p-5 border border-orange-200">
+                <div class="font-black text-orange-700 text-lg mb-2">MAE</div>
+                <div class="font-bold text-orange-600 text-sm mb-3">평균 절대 오차</div>
+                <div class="font-mono text-sm bg-white rounded-lg p-2 border border-orange-200 text-center mb-3">
+                    (1/n) × Σ|y − ŷ|
+                </div>
+                <p class="text-orange-800 text-xs leading-relaxed">오차의 절댓값 평균. 이상치(극단값)에 덜 민감하지만, 작은 오차와 큰 오차를 동등하게 취급합니다.</p>
+            </div>
+            <div class="bg-rose-50 rounded-2xl p-5 border border-rose-300">
+                <div class="font-black text-rose-700 text-lg mb-2">MSE ⭐</div>
+                <div class="font-bold text-rose-600 text-sm mb-3">평균 제곱 오차 (주로 사용)</div>
+                <div class="font-mono text-sm bg-white rounded-lg p-2 border border-rose-200 text-center mb-3">
+                    (1/n) × Σ(y − ŷ)²
+                </div>
+                <p class="text-rose-800 text-xs leading-relaxed">오차를 제곱하여 평균. 큰 오차에 더 큰 벌점을 줍니다. 경사하강법 계산에 가장 많이 사용됩니다.</p>
+            </div>
+            <div class="bg-purple-50 rounded-2xl p-5 border border-purple-200">
+                <div class="font-black text-purple-700 text-lg mb-2">RMSE</div>
+                <div class="font-bold text-purple-600 text-sm mb-3">평균 제곱근 오차</div>
+                <div class="font-mono text-sm bg-white rounded-lg p-2 border border-purple-200 text-center mb-3">
+                    √MSE
+                </div>
+                <p class="text-purple-800 text-xs leading-relaxed">MSE의 제곱근. 오차의 단위가 원래 데이터와 같아서 해석이 직관적입니다.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== SECTION 4: GRADIENT DESCENT ==================== -->
+<section id="gradient" class="scroll-mt-24">
+    <div class="text-center mb-12">
+        <span class="text-emerald-600 font-bold tracking-widest uppercase text-sm">Optimization</span>
+        <h2 class="text-3xl md:text-4xl font-black text-slate-900 mt-2">⛰️ 경사하강법(Gradient Descent)</h2>
+        <p class="text-slate-500 text-lg mt-3">오차(MSE)를 가장 빠르게 줄이는 방향으로 조금씩 이동하는 최적화 방법입니다.</p>
+    </div>
+
+    <!-- 비유 설명 -->
+    <div class="section-card mb-8">
+        <h3 class="text-xl font-black text-slate-800 mb-6">🏔️ 산에서 내려오는 것과 같아요!</h3>
+        <div class="grid md:grid-cols-2 gap-8 items-center">
+            <div>
+                <!-- 경사하강법 비유 SVG -->
+                <div class="bg-gradient-to-b from-sky-100 to-green-100 rounded-2xl p-6 border border-sky-200">
+                    <svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg" class="w-full">
+                        <!-- 산 모양 -->
+                        <path d="M 20 220 Q 80 80 140 60 Q 200 40 260 100 Q 320 160 380 220 Z" fill="#86efac" stroke="#4ade80" stroke-width="2"/>
+                        <!-- 오차 곡선 (포물선) -->
+                        <path d="M 30 210 Q 100 50 200 30 Q 300 50 370 210" fill="none" stroke="#0ea5e9" stroke-width="3" stroke-dasharray="none"/>
+                        <!-- 최솟값 표시 -->
+                        <circle cx="200" cy="30" r="8" fill="#f59e0b" stroke="#d97706" stroke-width="2"/>
+                        <text x="200" y="20" text-anchor="middle" font-size="11" fill="#d97706" font-weight="bold">최솟값 (오차 0에 수렴)</text>
+                        <!-- 경사하강 화살표들 -->
+                        <circle cx="340" cy="170" r="10" fill="#ef4444"/>
+                        <text x="340" y="155" text-anchor="middle" font-size="10" fill="#dc2626" font-weight="bold">시작점</text>
+                        <path d="M 330 168 L 295 115" fill="none" stroke="#ef4444" stroke-width="2" marker-end="url(#arr)"/>
+                        <circle cx="290" cy="112" r="8" fill="#f97316"/>
+                        <path d="M 280 110 L 248 72" fill="none" stroke="#f97316" stroke-width="2" marker-end="url(#arr)"/>
+                        <circle cx="242" cy="70" r="8" fill="#eab308"/>
+                        <path d="M 233 68 L 214 42" fill="none" stroke="#eab308" stroke-width="2" marker-end="url(#arr)"/>
+                        <circle cx="208" cy="38" r="8" fill="#22c55e"/>
+                        <defs>
+                            <marker id="arr" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto">
+                                <path d="M0,0 L8,4 L0,8 Z" fill="#64748b"/>
+                            </marker>
+                        </defs>
+                        <!-- 레이블 -->
+                        <text x="200" y="235" text-anchor="middle" font-size="12" fill="#475569" font-weight="bold">기울기(a) 또는 절편(b) 값</text>
+                        <text x="15" y="30" font-size="11" fill="#475569" font-weight="bold">MSE↑</text>
+                    </svg>
+                </div>
+                <p class="text-center text-slate-500 text-sm mt-2">오차(MSE)의 최솟값을 향해 조금씩 이동</p>
+            </div>
+            <div class="space-y-4">
+                <div class="flex gap-3 items-start">
+                    <div class="w-8 h-8 bg-red-100 rounded-xl flex items-center justify-center font-black text-red-600 flex-shrink-0 mt-1">1</div>
+                    <div>
+                        <p class="font-bold text-slate-800">현재 위치(기울기·절편) 확인</p>
+                        <p class="text-slate-500 text-sm">아무 값으로 a, b를 초기화합니다.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 items-start">
+                    <div class="w-8 h-8 bg-orange-100 rounded-xl flex items-center justify-center font-black text-orange-600 flex-shrink-0 mt-1">2</div>
+                    <div>
+                        <p class="font-bold text-slate-800">기울기(경사) 계산</p>
+                        <p class="text-slate-500 text-sm">현재 지점에서 오차가 증가하는 방향을 계산합니다.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 items-start">
+                    <div class="w-8 h-8 bg-yellow-100 rounded-xl flex items-center justify-center font-black text-yellow-600 flex-shrink-0 mt-1">3</div>
+                    <div>
+                        <p class="font-bold text-slate-800">반대 방향으로 조금 이동</p>
+                        <p class="text-slate-500 text-sm">오차가 줄어드는 방향으로 a, b를 업데이트합니다.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3 items-start">
+                    <div class="w-8 h-8 bg-emerald-100 rounded-xl flex items-center justify-center font-black text-emerald-600 flex-shrink-0 mt-1">4</div>
+                    <div>
+                        <p class="font-bold text-slate-800">반복! (수렴할 때까지)</p>
+                        <p class="text-slate-500 text-sm">오차가 더 이상 줄지 않으면 최적값 도달!</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 학습률 설명 -->
+    <div class="section-card mb-8">
+        <h3 class="text-xl font-black text-slate-800 mb-6">📐 학습률(Learning Rate)이란?</h3>
+        <p class="text-slate-500 mb-6">한 번에 얼마나 크게 이동할지를 결정하는 값입니다. <strong>너무 크거나 너무 작으면</strong> 문제가 생깁니다!</p>
+        <div class="grid md:grid-cols-3 gap-5">
+            <div class="bg-red-50 rounded-2xl p-5 border border-red-200 text-center">
+                <div class="text-3xl mb-3">🏃‍♀️💨</div>
+                <div class="font-black text-red-700 mb-2">학습률이 너무 클 때</div>
+                <div class="text-red-600 text-sm leading-relaxed">최솟값을 뛰어넘어 버려서<br>오차가 오히려 커집니다. (발산)</div>
+                <div class="mt-3 bg-white rounded-xl p-2 border border-red-200">
+                    <svg viewBox="0 0 160 80" class="w-full h-16">
+                        <path d="M20 70 Q 80 10 140 70" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                        <circle cx="30" cy="62" r="5" fill="#ef4444"/>
+                        <path d="M30 62 L130 52" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="3"/>
+                        <circle cx="130" cy="55" r="5" fill="#ef4444"/>
+                        <path d="M130 55 L40 30" stroke="#ef4444" stroke-width="1.5" stroke-dasharray="3"/>
+                        <text x="80" y="78" text-anchor="middle" font-size="9" fill="#ef4444">발산!</text>
+                    </svg>
+                </div>
+            </div>
+            <div class="bg-emerald-50 rounded-2xl p-5 border border-emerald-300 text-center ring-2 ring-emerald-400">
+                <div class="text-3xl mb-3">🚶‍♀️</div>
+                <div class="font-black text-emerald-700 mb-2">학습률이 적절할 때 ✅</div>
+                <div class="text-emerald-600 text-sm leading-relaxed">안정적으로 최솟값을 향해<br>수렴합니다. 이상적!</div>
+                <div class="mt-3 bg-white rounded-xl p-2 border border-emerald-200">
+                    <svg viewBox="0 0 160 80" class="w-full h-16">
+                        <path d="M20 70 Q 80 10 140 70" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                        <circle cx="120" cy="52" r="4" fill="#10b981"/>
+                        <circle cx="100" cy="35" r="4" fill="#10b981"/>
+                        <circle cx="85" cy="20" r="4" fill="#10b981"/>
+                        <circle cx="80" cy="12" r="4" fill="#f59e0b"/>
+                        <text x="80" y="78" text-anchor="middle" font-size="9" fill="#10b981">수렴 성공!</text>
+                    </svg>
+                </div>
+            </div>
+            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 text-center">
+                <div class="text-3xl mb-3">🐢</div>
+                <div class="font-black text-slate-700 mb-2">학습률이 너무 작을 때</div>
+                <div class="text-slate-600 text-sm leading-relaxed">수렴하긴 하지만 너무 오래<br>걸립니다. (비효율)</div>
+                <div class="mt-3 bg-white rounded-xl p-2 border border-slate-200">
+                    <svg viewBox="0 0 160 80" class="w-full h-16">
+                        <path d="M20 70 Q 80 10 140 70" fill="none" stroke="#94a3b8" stroke-width="2"/>
+                        <circle cx="130" cy="62" r="3" fill="#64748b"/>
+                        <circle cx="126" cy="58" r="3" fill="#64748b"/>
+                        <circle cx="122" cy="54" r="3" fill="#64748b"/>
+                        <circle cx="118" cy="50" r="3" fill="#64748b"/>
+                        <text x="80" y="78" text-anchor="middle" font-size="9" fill="#64748b">느린 수렴...</text>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- 업데이트 공식 -->
+        <div class="mt-6 bg-slate-800 rounded-2xl p-5 text-white">
+            <h4 class="font-bold text-slate-300 mb-4 text-sm uppercase tracking-wider">📐 경사하강법 업데이트 공식</h4>
+            <div class="grid md:grid-cols-2 gap-4 font-mono text-sm">
+                <div class="bg-slate-700 rounded-xl p-4">
+                    <span class="text-cyan-300 font-bold">a (기울기) 업데이트:</span><br>
+                    <span class="text-white">a = a − α × ∂MSE/∂a</span>
+                </div>
+                <div class="bg-slate-700 rounded-xl p-4">
+                    <span class="text-cyan-300 font-bold">b (절편) 업데이트:</span><br>
+                    <span class="text-white">b = b − α × ∂MSE/∂b</span>
+                </div>
+            </div>
+            <p class="text-slate-400 text-xs mt-3">α (알파): 학습률 (Learning Rate) | ∂MSE/∂a, ∂MSE/∂b: 각 방향의 기울기(Gradient)</p>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== SECTION 5: GRADIENT DESCENT SIMULATOR ==================== -->
+<section id="chart-demo" class="scroll-mt-24 section-card">
+    <div class="mb-8">
+        <span class="text-purple-600 font-bold tracking-widest uppercase text-sm">Data Visualization</span>
+        <h2 class="text-3xl font-black text-slate-800 mt-2">📊 데이터별 선형회귀 실습</h2>
+        <p class="text-slate-500 mt-2">다양한 데이터 세트를 선택하여 회귀선이 어떻게 달라지는지 확인해보세요.</p>
+    </div>
+
+    <!-- 탭 선택 -->
+    <div class="flex flex-wrap gap-2 mb-6">
+        <button class="chart-tab active" data-scenario="simple" onclick="switchScenario('simple', this)">📏 키 → 몸무게</button>
+        <button class="chart-tab" data-scenario="heatwave" onclick="switchScenario('heatwave', this)">🌡️ 폭염일수 → 이온음료</button>
+        <button class="chart-tab" data-scenario="noisy" onclick="switchScenario('noisy', this)">📚 공부시간 → 성적</button>
+        <button class="chart-tab" data-scenario="overfit" onclick="switchScenario('overfit', this)">🎲 불규칙 데이터</button>
+    </div>
+
+    <div class="grid md:grid-cols-5 gap-6">
+        <!-- 설정 패널 -->
+        <div class="md:col-span-2 bg-slate-50 rounded-2xl p-5 border border-slate-200">
+            <h3 class="font-black text-slate-700 mb-4">⚙️ 설정</h3>
+            <div id="scenarioDesc2" class="text-sm text-slate-500 mb-5 bg-blue-50 p-3 rounded-xl border border-blue-100"></div>
+
+            <div class="mb-4">
+                <label class="flex items-center gap-3 cursor-pointer">
+                    <input type="checkbox" id="fitIntercept2" checked class="w-5 h-5 accent-blue-600">
+                    <span class="font-bold text-slate-700 text-sm">절편 맞추기 (Fit Intercept)</span>
+                </label>
+                <p class="text-xs text-slate-400 mt-1 ml-8" id="interceptDesc2">✅ y축 어디서든 시작 가능</p>
+            </div>
+
+            <div class="mb-4">
+                <label class="font-bold text-slate-700 text-sm block mb-2">🎯 정규화 유형</label>
+                <div class="space-y-2">
+                    <label class="flex items-center gap-2 p-2 bg-white rounded-lg cursor-pointer border border-slate-200 hover:border-blue-300"><input type="radio" name="regType2" value="none" checked class="accent-blue-600"> <span class="text-sm">정규화 없음</span></label>
+                    <label class="flex items-center gap-2 p-2 bg-white rounded-lg cursor-pointer border border-slate-200 hover:border-blue-300"><input type="radio" name="regType2" value="ridge" class="accent-blue-600"> <span class="text-sm">Ridge (L2)</span></label>
+                    <label class="flex items-center gap-2 p-2 bg-white rounded-lg cursor-pointer border border-slate-200 hover:border-blue-300"><input type="radio" name="regType2" value="lasso" class="accent-blue-600"> <span class="text-sm">Lasso (L1)</span></label>
+                </div>
+            </div>
+
+            <div id="alphaGroup2" class="hidden mb-4">
+                <label class="font-bold text-slate-700 text-sm block mb-2">Alpha: <span id="alphaValue2">0.10</span></label>
+                <input type="range" id="alpha2" min="0" max="1" step="0.05" value="0.1" class="w-full accent-blue-600">
+                <p class="text-xs text-slate-400 mt-1" id="alphaDesc2">약한 정규화</p>
+            </div>
+
+            <!-- 현재 방정식 -->
+            <div class="bg-blue-50 rounded-xl p-4 border border-blue-200 mt-4">
+                <p class="text-xs font-bold text-blue-600 mb-1">📐 현재 예측식</p>
+                <div id="formula2" class="font-mono text-base font-black text-blue-800">y = 0.00x + 0.00</div>
+                <p class="text-xs text-slate-500 mt-2">• 기울기: <strong id="slopeVal2">0.00</strong></p>
+                <p class="text-xs text-slate-500">• 절편: <strong id="interceptVal2">0.00</strong></p>
+                <p class="text-xs text-rose-500 mt-1">• MSE: <strong id="mseVal2">0.00</strong></p>
+            </div>
+        </div>
+
+        <!-- 차트 + 데이터 테이블 -->
+        <div class="md:col-span-3 flex flex-col gap-4">
+            <canvas id="chart2" height="280"></canvas>
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <h4 class="font-bold text-slate-600 text-sm mb-3">📋 데이터 테이블 <span class="text-slate-400 font-normal">(총 <span id="dataCount2">-</span>개)</span></h4>
+                <div class="max-h-48 overflow-y-auto">
+                    <table class="w-full text-sm border-collapse">
+                        <thead>
+                            <tr>
+                                <th class="bg-indigo-100 border border-slate-200 p-2 text-center text-xs">번호</th>
+                                <th class="bg-indigo-100 border border-slate-200 p-2 text-center text-xs" id="xHeader2">X</th>
+                                <th class="bg-indigo-100 border border-slate-200 p-2 text-center text-xs" id="yHeader2">Y</th>
+                                <th class="bg-indigo-100 border border-slate-200 p-2 text-center text-xs text-rose-600">오차(y−ŷ)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataBody2" class="text-center"></tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="bg-yellow-50 rounded-xl p-4 border border-yellow-200">
+                <p class="font-bold text-yellow-800 text-sm mb-2">💡 관찰해보세요!</p>
+                <ul class="text-yellow-700 text-xs space-y-1">
+                    <li>• 정규화를 강하게 하면 회귀선의 기울기가 어떻게 변하나요?</li>
+                    <li>• 폭염일수와 이온음료 판매량의 관계가 선형에 가깝나요?</li>
+                    <li>• 절편을 끄면 선이 어디를 지나가나요?</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ==================== SECTION 7: QUIZ ==================== -->
+<section id="quiz" class="scroll-mt-24">
+    <div class="text-center mb-12">
+        <span class="text-violet-600 font-bold tracking-widest uppercase text-sm">Self Check</span>
+        <h2 class="text-3xl md:text-4xl font-black text-slate-900 mt-2">🧩 선형회귀 퀴즈</h2>
+        <p class="text-slate-500 text-lg mt-3">학습한 내용을 확인해봅시다! 정답을 확인하려면 토글 버튼을 클릭하세요.</p>
+    </div>
+
+    <!-- 개념 퀴즈 -->
+    <div class="mb-8">
+        <h3 class="text-xl font-black text-slate-700 mb-4 flex items-center gap-2"><span class="text-2xl">📚</span> 개념 이해 문제</h3>
+        
+        <div class="quiz-card">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">1</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">선형회귀(Linear Regression)란 무엇인가요? 아래 보기 중 가장 옳은 것을 고르세요.</p>
+                    <div class="mt-3 space-y-2 text-sm text-slate-600">
+                        <p>① 데이터를 여러 그룹으로 분류하는 알고리즘</p>
+                        <p>② 데이터를 가장 잘 설명하는 직선을 찾아 연속적인 값을 예측하는 알고리즘</p>
+                        <p>③ 데이터 사이의 거리를 계산하여 가장 가까운 이웃을 찾는 알고리즘</p>
+                        <p>④ 데이터의 확률을 0과 1 사이로 변환하는 알고리즘</p>
+                    </div>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <p class="font-bold text-blue-700">✅ 정답: ②</p>
+                        <p class="text-blue-600 text-sm mt-1">선형회귀는 데이터를 가장 잘 설명하는 직선(y = ax + b)을 찾아, 새로운 입력값에 대한 연속적인 출력값(예: 몸무게, 판매량)을 예측합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-card">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">2</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">직선의 방정식 y = ax + b에서 <span class="text-red-500">a</span>가 나타내는 것은 무엇인가요?</p>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <p class="font-bold text-blue-700">✅ 정답: 기울기(Slope / Weight)</p>
+                        <p class="text-blue-600 text-sm mt-1">a는 직선의 기울기로, x가 1 증가할 때 y가 얼마나 변하는지를 나타냅니다. a가 클수록 직선이 가팔라집니다. b는 절편(Intercept)으로 x=0일 때의 y값입니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-card">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">3</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">선형회귀 모델이 좋은 모델인지 나쁜 모델인지를 판단하는 기준은 무엇인가요?</p>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-blue-50 border border-blue-200 rounded-xl p-4">
+                        <p class="font-bold text-blue-700">✅ 정답: 오차(Error)의 크기</p>
+                        <p class="text-blue-600 text-sm mt-1">실제값과 예측값의 차이인 오차가 작을수록 좋은 모델입니다. 오차를 수치화하는 방법으로 MSE, MAE, RMSE 등이 사용됩니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 오차 관련 퀴즈 -->
+    <div class="mb-8">
+        <h3 class="text-xl font-black text-slate-700 mb-4 flex items-center gap-2"><span class="text-2xl">📉</span> 오차(Error) 관련 문제</h3>
+
+        <div class="quiz-card border-rose-200 bg-rose-50/30">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-rose-500 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">4</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">다음 표를 보고 MSE를 계산하세요.</p>
+                    <div class="mt-3 overflow-x-auto">
+                        <table class="text-sm border-collapse w-full max-w-md">
+                            <thead><tr class="bg-rose-100">
+                                <th class="border border-slate-300 p-2 text-center">실제값 (y)</th>
+                                <th class="border border-slate-300 p-2 text-center">예측값 (ŷ)</th>
+                                <th class="border border-slate-300 p-2 text-center">오차 (y−ŷ)</th>
+                                <th class="border border-slate-300 p-2 text-center">오차²</th>
+                            </tr></thead>
+                            <tbody class="text-center">
+                                <tr><td class="border border-slate-200 p-2">10</td><td class="border border-slate-200 p-2">8</td><td class="border border-slate-200 p-2 text-orange-600">+2</td><td class="border border-slate-200 p-2">4</td></tr>
+                                <tr><td class="border border-slate-200 p-2">20</td><td class="border border-slate-200 p-2">23</td><td class="border border-slate-200 p-2 text-orange-600">−3</td><td class="border border-slate-200 p-2">9</td></tr>
+                                <tr><td class="border border-slate-200 p-2">30</td><td class="border border-slate-200 p-2">29</td><td class="border border-slate-200 p-2 text-orange-600">+1</td><td class="border border-slate-200 p-2">1</td></tr>
+                                <tr><td class="border border-slate-200 p-2">40</td><td class="border border-slate-200 p-2">44</td><td class="border border-slate-200 p-2 text-orange-600">−4</td><td class="border border-slate-200 p-2">16</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-slate-600 text-sm mt-3">MSE = ?</p>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)" style="border-color: #fecaca; color: #dc2626;">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-rose-50 border border-rose-200 rounded-xl p-4">
+                        <p class="font-bold text-rose-700">✅ 정답: MSE = 7.5</p>
+                        <p class="text-rose-600 text-sm mt-1">
+                            오차²의 합 = 4 + 9 + 1 + 16 = 30<br>
+                            데이터 개수 = 4<br>
+                            MSE = 30 ÷ 4 = <strong>7.5</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-card border-rose-200 bg-rose-50/30">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-rose-500 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">5</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">오차를 단순히 더하지 않고 <strong>제곱(²)</strong>하여 더하는 이유는 무엇인가요?</p>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)" style="border-color: #fecaca; color: #dc2626;">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-rose-50 border border-rose-200 rounded-xl p-4">
+                        <p class="font-bold text-rose-700">✅ 정답: 양수·음수 오차가 서로 상쇄되는 것을 막기 위해</p>
+                        <p class="text-rose-600 text-sm mt-1">
+                            예를 들어 오차가 +3, −3이면 합계가 0이 되어 오차가 없는 것처럼 보입니다. 
+                            오차를 제곱하면 모두 양수가 되어(9+9=18) 실제 오차의 크기를 올바르게 측정할 수 있습니다.
+                            또한, 제곱하면 큰 오차에 더 큰 벌점을 주어 이상치(outlier)의 영향을 강조할 수 있습니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-card border-rose-200 bg-rose-50/30">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-rose-500 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">6</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">MSE와 RMSE의 차이를 설명하고, RMSE가 가진 장점을 서술하세요.</p>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)" style="border-color: #fecaca; color: #dc2626;">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-rose-50 border border-rose-200 rounded-xl p-4">
+                        <p class="font-bold text-rose-700">✅ 모범 답안</p>
+                        <p class="text-rose-600 text-sm mt-1">
+                            <strong>MSE</strong>는 오차의 제곱을 평균한 값이고, <strong>RMSE</strong>는 MSE에 제곱근(√)을 취한 값입니다.<br>
+                            RMSE의 장점: 오차의 단위가 원래 데이터와 동일해집니다. 예를 들어 y의 단위가 'kg'이면, MSE의 단위는 'kg²'이지만 RMSE의 단위는 'kg'으로 해석이 직관적입니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 경사하강법 퀴즈 -->
+    <div class="mb-8">
+        <h3 class="text-xl font-black text-slate-700 mb-4 flex items-center gap-2"><span class="text-2xl">⛰️</span> 경사하강법 관련 문제</h3>
+
+        <div class="quiz-card border-emerald-200">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">7</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">경사하강법(Gradient Descent)을 쉬운 말로 설명하세요.</p>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)" style="border-color: #a7f3d0; color: #059669;">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                        <p class="font-bold text-emerald-700">✅ 모범 답안</p>
+                        <p class="text-emerald-600 text-sm mt-1">
+                            경사하강법은 오차(MSE)를 최소화하기 위해 마치 산에서 가장 경사가 가파른 방향으로 조금씩 내려가는 것처럼, 
+                            기울기(a)와 절편(b)을 오차가 줄어드는 방향으로 조금씩 업데이트하는 방법입니다. 
+                            이 과정을 반복하면 오차가 최솟값에 수렴합니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-card border-emerald-200">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-emerald-600 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">8</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">학습률(Learning Rate)이 너무 클 때와 너무 작을 때 각각 어떤 문제가 발생하나요?</p>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)" style="border-color: #a7f3d0; color: #059669;">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                        <p class="font-bold text-emerald-700">✅ 정답</p>
+                        <p class="text-emerald-600 text-sm mt-1">
+                            <strong>너무 클 때:</strong> 최솟값을 뛰어넘어 오차가 오히려 커지는 발산(Divergence) 현상이 발생합니다.<br>
+                            <strong>너무 작을 때:</strong> 수렴하긴 하지만 학습 속도가 매우 느려 많은 시간이 필요합니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 응용 퀴즈 -->
+    <div>
+        <h3 class="text-xl font-black text-slate-700 mb-4 flex items-center gap-2"><span class="text-2xl">🌡️</span> 응용 문제</h3>
+
+        <div class="quiz-card border-orange-200">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">9</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">폭염일수(x)와 이온음료 판매량(y, 천 개)의 관계식이 <span class="font-mono font-black text-orange-600">y = 17.5x + 42</span>로 구해졌습니다.<br>폭염일수가 <strong>14일</strong>이라면 예상 판매량은 얼마인가요?</p>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)" style="border-color: #fed7aa; color: #ea580c;">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-orange-50 border border-orange-200 rounded-xl p-4">
+                        <p class="font-bold text-orange-700">✅ 정답: 287천 개 (287,000개)</p>
+                        <p class="text-orange-600 text-sm mt-1">
+                            y = 17.5 × 14 + 42<br>
+                            y = 245 + 42<br>
+                            y = <strong>287 (천 개)</strong>
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="quiz-card border-orange-200">
+            <div class="flex items-start gap-3">
+                <span class="w-8 h-8 bg-orange-500 text-white rounded-full flex items-center justify-center font-black text-sm flex-shrink-0 mt-0.5">10</span>
+                <div class="flex-1">
+                    <p class="font-bold text-slate-800">선형회귀가 <strong>적합하지 않은</strong> 경우는 언제인가요? 예시를 들어 설명하세요.</p>
+                    <button class="quiz-toggle" onclick="toggleAnswer(this)" style="border-color: #fed7aa; color: #ea580c;">
+                        ▼ 정답 확인
+                    </button>
+                    <div class="quiz-answer mt-3 bg-orange-50 border border-orange-200 rounded-xl p-4">
+                        <p class="font-bold text-orange-700">✅ 모범 답안</p>
+                        <p class="text-orange-600 text-sm mt-1">
+                            데이터의 관계가 직선이 아닌 <strong>곡선(비선형)</strong>인 경우 선형회귀는 적합하지 않습니다.<br>
+                            예: 코로나 확진자 수(지수 함수적 증가), 식물 성장(S자 곡선), 계절성이 있는 판매 데이터(주기 함수) 등.<br>
+                            이런 경우에는 다항 회귀, 신경망 등 비선형 모델을 사용해야 합니다.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 최종 정리 카드 -->
+    <div class="mt-10 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-3xl p-8 text-center">
+        <div class="text-4xl mb-4">🎉</div>
+        <h3 class="text-2xl font-black mb-3">선형회귀 학습 완료!</h3>
+        <p class="text-blue-100 mb-6">선형회귀의 핵심 개념을 모두 학습했습니다.<br>직선의 방정식, 오차(MSE), 경사하강법까지 이해했다면 여러분은 머신러닝의 기초를 완성한 것입니다!</p>
+        <div class="flex flex-wrap justify-center gap-3">
+            <a href="index.html" class="bg-white text-blue-600 px-6 py-3 rounded-xl font-black hover:bg-blue-50 transition">← 목록으로</a>
+            <a href="#top" class="bg-white/20 text-white px-6 py-3 rounded-xl font-black hover:bg-white/30 transition">↑ 처음으로</a>
+        </div>
+    </div>
+</section>
+
+
+</main>
+
+<!-- Footer -->
+<footer class="bg-slate-800 text-slate-400 py-8 mt-16 text-center text-sm">
+    <p class="font-bold text-white mb-1">능동고등학교 인공지능기초 학습자료</p>
+    <p>made by 정보교사 송세영</p>
+    <p class="mt-2 text-slate-500">© 2026 All rights reserved</p>
+</footer>
+
+<script>
+// ================================================================
+// 오차 시각화 캔버스
+// ================================================================
+function drawErrorCanvas() {
+    const canvas = document.getElementById('errorVisCanvas');
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    const W = canvas.offsetWidth; const H = canvas.offsetHeight;
+    canvas.width = W; canvas.height = H;
+
+    const pts = [{x:0.1,y:0.7},{x:0.25,y:0.55},{x:0.4,y:0.42},{x:0.55,y:0.35},{x:0.7,y:0.25},{x:0.85,y:0.2}];
+    const line = (x) => 0.78 - 0.72*x;
+
+    // 축
+    ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(30,H-20); ctx.lineTo(W-10,H-20); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(30,10); ctx.lineTo(30,H-20); ctx.stroke();
+
+    // 회귀선
+    ctx.beginPath();
+    ctx.moveTo(30 + 0*(W-40), H-20 - line(0)*(H-30));
+    ctx.lineTo(30 + 1*(W-40), H-20 - line(1)*(H-30));
+    ctx.strokeStyle='#3b82f6'; ctx.lineWidth=2.5; ctx.stroke();
+
+    pts.forEach(p => {
+        const px = 30 + p.x*(W-40), py = H-20 - p.y*(H-30);
+        const ly = H-20 - line(p.x)*(H-30);
+        // 오차 선
+        ctx.beginPath(); ctx.moveTo(px,py); ctx.lineTo(px,ly);
+        ctx.strokeStyle='rgba(239,68,68,0.6)'; ctx.lineWidth=1.5;
+        ctx.setLineDash([4,3]); ctx.stroke(); ctx.setLineDash([]);
+        // 점
+        ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2);
+        ctx.fillStyle='#6366f1'; ctx.fill();
+        ctx.strokeStyle='white'; ctx.lineWidth=1.5; ctx.stroke();
+    });
+    ctx.fillStyle='#ef4444'; ctx.font='bold 11px sans-serif';
+    ctx.fillText('오차', 30 + 0.55*(W-40)+5, H-20 - (line(0.55)*(H-30) + pts[3].y*(H-30))/2);
+}
+
+// ================================================================
+// 오차 테이블 (폭염일수 데이터)
+// ================================================================
+const heatwaveData = [
+    {x:2, y:80},   {x:4,  y:110}, {x:6,  y:138},
+    {x:8, y:172},  {x:10, y:206}, {x:12, y:235},
+    {x:15,y:308},  {x:18, y:353}, {x:20, y:392},
+    {x:22,y:420}
+];
+
+function buildErrorTable() {
+    const tbody = document.getElementById('errorTbody');
+    if (!tbody) return;
+    let sumSqErr = 0;
+    heatwaveData.forEach((d,i) => {
+        const pred = 17.5*d.x + 42;
+        const err  = d.y - pred;
+        const sq   = err*err;
+        sumSqErr  += sq;
+        const tr = document.createElement('tr');
+        const color = i%2===0 ? 'bg-white' : 'bg-slate-50';
+        tr.className = color;
+        tr.innerHTML = `
+            <td class="p-2 border border-slate-200">${d.x}일</td>
+            <td class="p-2 border border-slate-200">${d.y}</td>
+            <td class="p-2 border border-slate-200">${pred.toFixed(1)}</td>
+            <td class="p-2 border border-slate-200 text-orange-600 font-mono">${err>0?'+':''}${err.toFixed(1)}</td>
+            <td class="p-2 border border-slate-200 text-rose-600 font-mono">${sq.toFixed(2)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+    const mse = sumSqErr / heatwaveData.length;
+    document.getElementById('mseResult').textContent = mse.toFixed(2);
+}
+
+// ================================================================
+// GD SIMULATOR
+// ================================================================
+class DataManager {
+    constructor() { this.points = []; }
+    addPoint(x,y) { this.points.push({x:parseFloat(x),y:parseFloat(y)}); }
+    clear() { this.points = []; }
+    setPoints(arr) { this.points = [...arr]; }
+    getBounds() {
+        if(!this.points.length) return {minX:0,maxX:10,minY:0,maxY:10};
+        let minX=Math.min(...this.points.map(p=>p.x)),maxX=Math.max(...this.points.map(p=>p.x));
+        let minY=Math.min(...this.points.map(p=>p.y)),maxY=Math.max(...this.points.map(p=>p.y));
+        if(minX===maxX){minX-=5;maxX+=5;} if(minY===maxY){minY-=5;maxY+=5;}
+        let px=(maxX-minX)*0.15,py=(maxY-minY)*0.15;
+        return {minX:minX-px,maxX:maxX+px,minY:minY-py,maxY:maxY+py};
+    }
+}
+
+class RegressionModel {
+    constructor(){this.w=0;this.b=0;this.epoch=0;this.learningRate=0.05;this.isTraining=false;this.hasStarted=false;}
+    init(){this.w=Math.random()*2-1;this.b=Math.random()*2-1;this.epoch=0;}
+    trainStep(pts){
+        if(!pts.length)return false;
+        let dw=0,db=0,N=pts.length;
+        for(let p of pts){let pred=this.w*p.x+this.b;dw+=(pred-p.y)*p.x;db+=(pred-p.y);}
+        dw=(2/N)*dw;db=(2/N)*db;
+        if(Math.abs(dw)<0.00001&&Math.abs(db)<0.00001)return true;
+        this.w-=this.learningRate*dw;this.b-=this.learningRate*db;this.epoch++;return false;
+    }
+}
+
+class CanvasRenderer {
+    constructor(id){this.canvas=document.getElementById(id);this.ctx=this.canvas.getContext('2d');this.resize();window.addEventListener('resize',()=>this.resize());}
+    resize(){const r=this.canvas.parentElement.getBoundingClientRect();this.canvas.width=r.width;this.canvas.height=r.height;}
+    pixelToData(px,py,b){return{x:b.minX+(px/this.canvas.width)*(b.maxX-b.minX),y:b.minY+((this.canvas.height-py)/this.canvas.height)*(b.maxY-b.minY)};}
+    render(dm,model){
+        const w=this.canvas.width,h=this.canvas.height,ctx=this.ctx,b=dm.getBounds();
+        ctx.clearRect(0,0,w,h);
+        const norm=(v,mn,mx)=>(v-mn)/(mx-mn);
+        // 격자
+        ctx.strokeStyle='#e2e8f0';ctx.lineWidth=1;
+        for(let i=1;i<5;i++){ctx.beginPath();ctx.moveTo(w*i/5,0);ctx.lineTo(w*i/5,h);ctx.stroke();ctx.beginPath();ctx.moveTo(0,h*i/5);ctx.lineTo(w,h*i/5);ctx.stroke();}
+        // 점
+        for(let p of dm.points){let px=norm(p.x,b.minX,b.maxX)*w,py=h-norm(p.y,b.minY,b.maxY)*h;ctx.beginPath();ctx.arc(px,py,6,0,Math.PI*2);ctx.fillStyle='#4f46e5';ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();}
+        if(dm.points.length>0&&model.hasStarted){
+            // 오차선
+            ctx.strokeStyle='rgba(225,29,72,0.4)';ctx.setLineDash([4,4]);ctx.lineWidth=1;
+            for(let p of dm.points){
+                let nx=norm(p.x,b.minX,b.maxX),ny=norm(p.y,b.minY,b.maxY),pny=model.w*nx+model.b;
+                ctx.beginPath();ctx.moveTo(nx*w,h-ny*h);ctx.lineTo(nx*w,h-pny*h);ctx.stroke();
+            }
+            ctx.setLineDash([]);
+            // 회귀선
+            ctx.beginPath();ctx.moveTo(0,h-(model.w*0+model.b)*h);ctx.lineTo(w,h-(model.w*1+model.b)*h);
+            ctx.strokeStyle='#10b981';ctx.lineWidth=4;ctx.stroke();
+        }
+    }
+}
+
+class UIController {
+    constructor(){
+        this.dm=new DataManager();this.model=new RegressionModel();this.renderer=new CanvasRenderer('regressionCanvas');
+        this.animId=null;this.lastW=window.innerWidth;
+        const gen=(type,n=50)=>{const d=[];for(let i=1;i<=n;i++){let x=i,y=0;
+            if(type===1)y=5*x+50+(Math.random()*100-50);
+            else if(type===2)y=1.5*x-300+(Math.random()*60-30);
+            else if(type===3)y=12*x+100+(Math.random()*300-50);
+            else if(type===4)y=300/x+(Math.random()*70-7.5);
+            d.push({x:+x.toFixed(2),y:+y.toFixed(2)});}return d;};
+        this.examples={
+            1:{desc:"밤샘 공부 시간이 늘어나면 시험 점수가 올라갑니다.",data:gen(1)},
+            2:{desc:"기온이 높아질수록 아이스크림 판매량이 증가합니다.",data:gen(2)},
+            3:{desc:"게임 연습 시간이 늘어날수록 게임 점수가 올라갑니다.",data:gen(3)},
+            4:{desc:"공유기에서 멀어질수록 WiFi 속도가 느려집니다.",data:gen(4)}
+        };
+        this.bindEvents();this.updateUI();
+    }
+    enableTraining(){
+        this.model.isTraining=false;this.model.hasStarted=false;cancelAnimationFrame(this.animId);
+        const btn=document.getElementById('btnGDTrain');
+        btn.disabled=false;btn.innerHTML='▶ 학습 시작';
+        btn.className='col-span-3 py-3 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl transition-all flex justify-center items-center text-sm';
+        document.getElementById('btnPause').disabled=false;
+    }
+    bindEvents(){
+        this.renderer.canvas.addEventListener('pointerdown',e=>{
+            const r=this.renderer.canvas.getBoundingClientRect();
+            const p=this.renderer.pixelToData(e.clientX-r.left,e.clientY-r.top,this.dm.getBounds());
+            this.dm.addPoint(p.x,p.y);this.enableTraining();this.updateUI();
+        });
+        document.getElementById('btnGDTrain').addEventListener('click',()=>{
+            if(this.dm.points.length<2)return alert('데이터를 2개 이상 넣어주세요.');
+            if(!this.model.hasStarted)this.model.init();
+            this.model.hasStarted=true;this.model.isTraining=true;
+            const btn=document.getElementById('btnGDTrain');
+            btn.innerHTML='⏳ 학습 중...';
+            btn.className='col-span-3 py-3 bg-blue-700 text-white font-black rounded-xl flex justify-center items-center text-sm';
+            btn.disabled=true;this.loop();
+        });
+        document.getElementById('btnPause').addEventListener('click',()=>{
+            this.model.isTraining=false;cancelAnimationFrame(this.animId);
+            const btn=document.getElementById('btnGDTrain');
+            btn.disabled=false;btn.innerHTML='▶ 학습 재개';
+            btn.className='col-span-3 py-3 bg-blue-500 hover:bg-blue-600 text-white font-black rounded-xl flex justify-center items-center text-sm';
+        });
+        document.getElementById('btnReset').addEventListener('click',()=>{this.enableTraining();this.updateUI();});
+        document.getElementById('btnClearData').addEventListener('click',()=>{this.dm.clear();document.getElementById('exampleDesc').innerText='';this.enableTraining();this.updateUI();});
+        document.getElementById('btnRandomData').addEventListener('click',()=>{
+            this.dm.clear();const noise=s=>(Math.random()+Math.random()+Math.random()-1.5)*s;
+            if(Math.random()<0.6){for(let i=0;i<100;i++){let x=Math.random()*80+10;this.dm.addPoint(+x.toFixed(2),+(0.7*x+20+noise(25)).toFixed(2));}for(let i=0;i<5;i++)this.dm.addPoint(+(Math.random()*100).toFixed(2),+(Math.random()*100).toFixed(2));}
+            else{for(let i=0;i<100;i++){let x=Math.random()*85+5;this.dm.addPoint(+x.toFixed(2),+(400/(x+5)+10+noise(8)).toFixed(2));}for(let i=0;i<5;i++)this.dm.addPoint(+(Math.random()*100).toFixed(2),+(Math.random()*20).toFixed(2));}
+            this.enableTraining();this.updateUI();document.getElementById('exampleDesc').innerText='랜덤 데이터가 생성되었습니다. 학습을 시작해보세요.';
+        });
+        document.getElementById('btnAddCoord').addEventListener('click',()=>{
+            const x=document.getElementById('inputX').value,y=document.getElementById('inputY').value;
+            if(x&&y){this.dm.addPoint(x,y);this.enableTraining();this.updateUI();document.getElementById('inputX').value='';document.getElementById('inputY').value='';}
+        });
+        document.getElementById('btnBulkAdd').addEventListener('click',()=>{
+            document.getElementById('bulkInput').value.split('\n').forEach(l=>{const p=l.split(',');if(p.length===2&&!isNaN(p[0])&&!isNaN(p[1]))this.dm.addPoint(p[0],p[1]);});
+            this.enableTraining();this.updateUI();
+        });
+        window.addEventListener('resize',()=>{if(window.innerWidth!==this.lastW){this.renderer.resize();this.lastW=window.innerWidth;}this.updateUI();});
+    }
+    loadExample(id){this.dm.setPoints(this.examples[id].data);document.getElementById('exampleDesc').innerText=this.examples[id].desc;this.enableTraining();this.updateUI();}
+    loop(){
+        if(!this.model.isTraining)return;
+        const b=this.dm.getBounds();
+        const nd=this.dm.points.map(p=>({x:(p.x-b.minX)/(b.maxX-b.minX),y:(p.y-b.minY)/(b.maxY-b.minY)}));
+        let conv=false;for(let i=0;i<5;i++){if(this.model.trainStep(nd)){conv=true;break;}}
+        this.updateUI();
+        if(conv){this.model.isTraining=false;const btn=document.getElementById('btnGDTrain');btn.innerHTML='✅ 학습 완료 (수렴)';btn.className='col-span-3 py-3 bg-emerald-500 text-white font-black rounded-xl flex justify-center items-center text-sm complete';btn.disabled=true;document.getElementById('btnPause').disabled=true;}
+        else this.animId=requestAnimationFrame(()=>this.loop());
+    }
+    updateUI(){
+        this.renderer.render(this.dm,this.model);
+        const eq=document.getElementById('equationDisplay'),s=document.getElementById('valSlope'),ic=document.getElementById('valIntercept'),m=document.getElementById('valMSE'),e=document.getElementById('valEpoch');
+        if(!this.dm.points.length||!this.model.hasStarted){eq.innerText='y = ax + b';s.innerText=ic.innerText=m.innerText='0.000';e.innerText='0';}
+        else{
+            const b=this.dm.getBounds(),rX=b.maxX-b.minX,rY=b.maxY-b.minY;
+            const rw=this.model.w*(rY/rX),rb=(-this.model.w*b.minX/rX+this.model.b)*rY+b.minY;
+            eq.innerText=`y = ${rw.toFixed(2)}x ${rb>=0?'+':'-'} ${Math.abs(rb).toFixed(2)}`;
+            s.innerText=rw.toFixed(3);ic.innerText=rb.toFixed(3);
+            let mse=0;this.dm.points.forEach(p=>mse+=Math.pow((rw*p.x+rb)-p.y,2));
+            m.innerText=(mse/this.dm.points.length).toFixed(3);e.innerText=this.model.epoch;
+        }
+    }
+}
+
+// ================================================================
+// CHART.JS DEMO (데이터별 시각화)
+// ================================================================
+const scenarios2 = {
+    simple: {
+        name:'키 → 몸무게', xLabel:'키 (cm)', yLabel:'몸무게 (kg)',
+        description:'키가 클수록 몸무게가 증가하는 관계입니다. 전형적인 양의 선형 상관관계입니다.',
+        data:[{x:140,y:35},{x:145,y:38},{x:150,y:42},{x:155,y:45},{x:160,y:50},{x:165,y:55},{x:170,y:60},{x:175,y:65},{x:180,y:70},{x:185,y:75}]
+    },
+    heatwave: {
+        name:'폭염일수 → 이온음료', xLabel:'폭염일수 (일)', yLabel:'판매량 (천 개)',
+        description:'폭염일수가 많을수록 이온음료 판매량이 증가합니다. 여름철 날씨와 음료 소비의 관계입니다.',
+        data:[{x:2,y:80},{x:4,y:110},{x:6,y:138},{x:8,y:172},{x:10,y:206},{x:12,y:235},{x:15,y:308},{x:18,y:353},{x:20,y:392},{x:22,y:420}]
+    },
+    noisy: {
+        name:'공부시간 → 성적', xLabel:'공부시간 (시간)', yLabel:'성적 (점)',
+        description:'공부 시간이 늘수록 성적이 오르지만 노이즈(개인차)가 있는 현실적인 데이터입니다.',
+        data:[{x:1,y:45},{x:2,y:55},{x:3,y:52},{x:4,y:65},{x:5,y:68},{x:6,y:75},{x:7,y:72},{x:8,y:85},{x:9,y:88},{x:10,y:95}]
+    },
+    overfit: {
+        name:'불규칙 데이터', xLabel:'X', yLabel:'Y',
+        description:'패턴이 불규칙한 데이터입니다. 선형회귀로 설명하기 어려운 경우를 관찰해보세요.',
+        data:[{x:1,y:10},{x:2,y:25},{x:3,y:15},{x:4,y:35},{x:5,y:30},{x:6,y:50},{x:7,y:45},{x:8,y:60},{x:9,y:55},{x:10,y:70}]
+    }
+};
+
+let currentScenario2 = 'simple';
+let fitIntercept2 = true, regType2 = 'none', alpha2 = 0.1;
+let chart2 = null;
+
+function calcRegression2() {
+    const data = scenarios2[currentScenario2].data, n = data.length;
+    let sx=0,sy=0,sxy=0,sx2=0;
+    data.forEach(p=>{sx+=p.x;sy+=p.y;sxy+=p.x*p.y;sx2+=p.x*p.x;});
+    let slope, intercept;
+    if(regType2==='none'){slope=(n*sxy-sx*sy)/(n*sx2-sx*sx);intercept=fitIntercept2?(sy-slope*sx)/n:0;}
+    else if(regType2==='ridge'){const r=1+alpha2;slope=(n*sxy-sx*sy)/((n*sx2-sx*sx)*r);intercept=fitIntercept2?(sy-slope*sx)/n:0;}
+    else if(regType2==='lasso'){slope=(n*sxy-sx*sy)/(n*sx2-sx*sx);slope*=(1-alpha2*0.8);if(alpha2>0.9)slope=0;intercept=fitIntercept2?(sy-slope*sx)/n:0;}
+    const mse = data.reduce((acc,p)=>acc+Math.pow(p.y-(slope*p.x+intercept),2),0)/n;
+    return {slope,intercept,mse};
+}
+
+function initChart2() {
+    const ctx = document.getElementById('chart2').getContext('2d');
+    const sc = scenarios2[currentScenario2];
+    const {slope,intercept} = calcRegression2();
+    const xs = sc.data.map(d=>d.x), minX=Math.min(...xs), maxX=Math.max(...xs);
+    chart2 = new Chart(ctx,{
+        type:'scatter',
+        data:{datasets:[
+            {label:'실제 데이터',data:sc.data,backgroundColor:'#6366f1',pointRadius:7,pointHoverRadius:9},
+            {label:'회귀선',data:[{x:minX,y:slope*minX+intercept},{x:maxX,y:slope*maxX+intercept}],type:'line',borderColor:'#ef4444',borderWidth:3,pointRadius:0,fill:false,tension:0}
+        ]},
+        options:{
+            responsive:true,
+            plugins:{legend:{position:'top'},tooltip:{callbacks:{label:function(c){return c.dataset.label==='실제 데이터'?`(${c.parsed.x}, ${c.parsed.y})`:null;}}}},
+            scales:{x:{type:'linear',title:{display:true,text:sc.xLabel,font:{weight:'bold'}}},y:{title:{display:true,text:sc.yLabel,font:{weight:'bold'}}}}
+        }
+    });
+}
+
+function updateChart2() {
+    if(!chart2)return;
+    const sc=scenarios2[currentScenario2];
+    const {slope,intercept,mse}=calcRegression2();
+    const xs=sc.data.map(d=>d.x),minX=Math.min(...xs),maxX=Math.max(...xs);
+    chart2.data.datasets[0].data=sc.data;
+    chart2.data.datasets[1].data=[{x:minX,y:slope*minX+intercept},{x:maxX,y:slope*maxX+intercept}];
+    chart2.options.scales.x.title.text=sc.xLabel;
+    chart2.options.scales.y.title.text=sc.yLabel;
+    chart2.update();
+    const sign=intercept>=0?'+':'-';
+    document.getElementById('formula2').textContent=`y = ${slope.toFixed(2)}x ${sign} ${Math.abs(intercept).toFixed(2)}`;
+    document.getElementById('slopeVal2').textContent=slope.toFixed(3);
+    document.getElementById('interceptVal2').textContent=intercept.toFixed(3);
+    document.getElementById('mseVal2').textContent=mse.toFixed(2);
+    updateTable2(slope,intercept);
+}
+
+function updateTable2(slope,intercept) {
+    const sc=scenarios2[currentScenario2];
+    const tbody=document.getElementById('dataBody2');
+    tbody.innerHTML='';
+    sc.data.forEach((p,i)=>{
+        const pred=slope*p.x+intercept;
+        const err=p.y-pred;
+        const tr=document.createElement('tr');
+        tr.className=i%2===0?'bg-white':'bg-slate-50';
+        tr.innerHTML=`<td class="border border-slate-200 p-1.5 text-xs">${i+1}</td><td class="border border-slate-200 p-1.5 text-xs">${p.x}</td><td class="border border-slate-200 p-1.5 text-xs">${p.y}</td><td class="border border-slate-200 p-1.5 text-xs ${err>=0?'text-blue-600':'text-rose-600'} font-mono">${err>0?'+':''}${err.toFixed(1)}</td>`;
+        tbody.appendChild(tr);
+    });
+    document.getElementById('xHeader2').textContent=sc.xLabel;
+    document.getElementById('yHeader2').textContent=sc.yLabel;
+    document.getElementById('dataCount2').textContent=sc.data.length;
+    document.getElementById('scenarioDesc2').textContent=sc.description;
+}
+
+function switchScenario(key, btn) {
+    currentScenario2=key;
+    document.querySelectorAll('.chart-tab').forEach(t=>t.classList.remove('active'));
+    btn.classList.add('active');
+    updateChart2();
+}
+
+// 이벤트 바인딩
+document.getElementById('fitIntercept2').addEventListener('change',e=>{
+    fitIntercept2=e.target.checked;
+    document.getElementById('interceptDesc2').textContent=fitIntercept2?'✅ y축 어디서든 시작 가능':'❌ 원점(0,0)을 지나가야 해요';
+    updateChart2();
+});
+document.querySelectorAll('input[name="regType2"]').forEach(r=>{
+    r.addEventListener('change',e=>{
+        regType2=e.target.value;
+        document.getElementById('alphaGroup2').classList.toggle('hidden',regType2==='none');
+        updateChart2();
+    });
+});
+document.getElementById('alpha2').addEventListener('input',e=>{
+    alpha2=parseFloat(e.target.value);
+    document.getElementById('alphaValue2').textContent=alpha2.toFixed(2);
+    document.getElementById('alphaDesc2').textContent=alpha2<0.3?'약한 정규화':alpha2<0.7?'중간 정규화':'강한 정규화';
+    updateChart2();
+});
+
+// ================================================================
+// 퀴즈 토글
+// ================================================================
+function toggleAnswer(btn) {
+    const answer = btn.nextElementSibling;
+    answer.classList.toggle('open');
+    const icon = btn.querySelector('i');
+    if(answer.classList.contains('open')){
+        btn.innerHTML='▲ 정답 숨기기';
+        // icon update not needed (emoji button)
+    } else {
+        btn.innerHTML='▼ 정답 확인';
+    }
+}
+
+// ================================================================
+// 초기화
+// ================================================================
+window.onload = () => {
+    drawErrorCanvas();
+    buildErrorTable();
+    initChart2();
+    updateChart2();
+    window.uiController = new UIController();
+    uiController.loadExample(1);
+};
+
+window.addEventListener('resize', () => {
+    setTimeout(drawErrorCanvas, 100);
+});
+</script>
+</body>
+</html>
