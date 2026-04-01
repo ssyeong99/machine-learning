@@ -133,29 +133,41 @@
 <body>
 
 <!-- ══════════════════════ HERO ══════════════════════ -->
-<header id="top" class="hero-gradient text-white py-16 px-6">
-    <div class="max-w-4xl mx-auto text-center">
-        <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:rgba(255,255,255,0.2);border-radius:999px;font-weight:700;font-size:0.85rem;margin-bottom:20px;text-decoration:none;color:white;">
+<header id="top" class="hero-gradient text-white px-6" style="padding-top:44px;padding-bottom:44px;">
+    <div style="max-width:860px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center;gap:0;">
+
+        <!-- 목록 버튼 -->
+        <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;padding:6px 18px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.45);border-radius:999px;font-weight:700;font-size:0.82rem;text-decoration:none;color:#fff;margin-bottom:12px;">
             ← 목록으로 돌아가기
         </a>
-        <div style="display:inline-block;padding:6px 18px;background:rgba(255,255,255,0.2);border-radius:999px;font-weight:700;font-size:0.85rem;margin-bottom:20px;">
+
+        <!-- 학교 배지 -->
+        <div style="display:inline-block;padding:5px 18px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.38);border-radius:999px;font-weight:700;font-size:0.82rem;color:#fff;margin-bottom:18px;">
             능동고등학교 인공지능기초 | made by 정보교사 송세영
         </div>
-        <h1 style="font-size:clamp(2rem,6vw,3.5rem);font-weight:900;line-height:1.2;margin-bottom:18px;">
-            복잡한 세상의 공식을 찾다,<br><span style="color:#e9d5ff;">Multiple Linear Regression</span>
+
+        <!-- 메인 제목 -->
+        <h1 style="font-size:clamp(2.2rem,6vw,3.8rem);font-weight:900;line-height:1.18;color:#fff;text-align:center;text-shadow:0 2px 16px rgba(0,0,0,0.12);margin-bottom:16px;">
+            복잡한 세상의 공식을 찾다,<br>
+            <span style="color:#e9d5ff;">Multiple Linear Regression</span>
         </h1>
-        <p style="font-size:1.1rem;opacity:0.9;max-width:600px;margin:0 auto 28px;">
+
+        <!-- 설명 -->
+        <p style="font-size:1.05rem;color:rgba(255,255,255,0.92);max-width:560px;line-height:1.7;margin-bottom:22px;">
             세상의 많은 결과는 단 하나의 원인으로 결정되지 않습니다.<br>
             여러 개의 데이터를 조합하여 최적의 예측 공식을 찾아내는 과정을 체험해보세요.
         </p>
-        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;font-size:0.85rem;font-weight:700;">
-            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">🔢 다중 변수</span>
-            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">💡 가중치(w)</span>
-            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">🔬 시뮬레이터</span>
-            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">⑤ 데이터 실습</span>
-            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">🔒 정규화</span>
-            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">⑦ 퀴즈</span>
+
+        <!-- 태그 배지 -->
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;">
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:0.83rem;font-weight:700;color:#fff;">🔢 다중 변수</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:0.83rem;font-weight:700;color:#fff;">💡 가중치(w)</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:0.83rem;font-weight:700;color:#fff;">🔬 시뮬레이터</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:0.83rem;font-weight:700;color:#fff;">📊 데이터 실습</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:0.83rem;font-weight:700;color:#fff;">🔒 정규화</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:0.83rem;font-weight:700;color:#fff;">✏️ 퀴즈</span>
         </div>
+
     </div>
 </header>
 
@@ -167,13 +179,13 @@
             <span style="font-weight:900;font-size:1.1rem;color:#1e1b4b;">다중선형회귀</span>
         </div>
         <div style="display:none;" class="md-nav">
-            <a href="#concept" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">① 개념</a>
-            <a href="#compare" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">② 비교</a>
-            <a href="#formula" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">③ 공식</a>
+            <a href="#concept" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed';this.style.fontWeight='900'" onmouseout="this.style.color='#64748b';this.style.fontWeight='700'">📚 개념</a>
+            <a href="#compare" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed';this.style.fontWeight='900'" onmouseout="this.style.color='#64748b';this.style.fontWeight='700'">↔ 비교</a>
+            <a href="#formula" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed';this.style.fontWeight='900'" onmouseout="this.style.color='#64748b';this.style.fontWeight='700'">= 공식</a>
             <a href="#simulator" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">🔬 시뮬레이터</a>
-            <a href="#chart-demo" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">⑤ 데이터 실습</a>
+            <a href="#chart-demo" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed';this.style.fontWeight='900'" onmouseout="this.style.color='#64748b';this.style.fontWeight='700'">📊 데이터 실습</a>
             <a href="#regularization" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">🔒 정규화</a>
-            <a href="#quiz" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">⑦ 퀴즈</a>
+            <a href="#quiz" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed';this.style.fontWeight='900'" onmouseout="this.style.color='#64748b';this.style.fontWeight='700'">✏️ 퀴즈</a>
         </div>
         <a href="index.html" style="padding:8px 18px;background:#7c3aed;color:white;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;">← 목록</a>
     </div>
@@ -312,7 +324,7 @@
 <section id="formula" style="scroll-margin-top:80px;">
     <div style="text-align:center;margin-bottom:36px;">
         <span style="color:#7c3aed;font-weight:700;letter-spacing:0.1em;font-size:0.85rem;text-transform:uppercase;">Formula & Weights</span>
-        <h2 style="font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;margin-top:8px;">③ 공식과 가중치를 이해해봅시다</h2>
+        <h2 style="font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;margin-top:8px;">공식과 가중치를 이해해봅시다</h2>
     </div>
 
     <!-- 공식 카드 -->
@@ -700,7 +712,7 @@
 
     <!-- 개념 문제 -->
     <div style="margin-bottom:24px;">
-        <h3 style="font-weight:900;color:#374151;font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px;">① 개념 이해 문제</h3>
+        <h3 style="font-weight:900;color:#374151;font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px;">개념 이해 문제</h3>
 
         <div class="quiz-card-wrap" style="display:flex;flex-direction:column;gap:14px;">
 
