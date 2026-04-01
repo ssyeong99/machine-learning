@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>다중선형회귀(Multiple Linear Regression) - 능동고등학교 인공지능기초</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: "Pretendard Variable", Pretendard, "Malgun Gothic", sans-serif;
+            background-color: #f8f0ff;
+            color: #1e1b4b;
+            line-height: 1.6;
+        }
+
+        /* ── Hero ── */
+        .hero-gradient {
+            background: linear-gradient(135deg, #6d28d9 0%, #a855f7 50%, #7c3aed 100%);
+        }
+
+        /* ── Sticky Nav ── */
+        .sticky-nav {
+            position: sticky; top: 0; z-index: 100;
+            backdrop-filter: blur(14px);
+            background-color: rgba(255,255,255,0.93);
+            border-bottom: 1px solid rgba(196,181,253,0.4);
+            box-shadow: 0 2px 12px rgba(109,40,217,0.08);
+        }
+
+        /* ── Section card ── */
+        .section-card {
+            background: white;
+            padding: 2.5rem;
+            border-radius: 2rem;
+            box-shadow: 0 4px 20px rgba(109,40,217,0.07);
+            border: 1px solid #ede9fe;
+        }
+
+        /* ── Step cards ── */
+        .step-card {
+            background: white;
+            border-radius: 1.5rem;
+            padding: 1.5rem;
+            border: 1px solid #e5e7eb;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: flex; flex-direction: column; align-items: center; text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .step-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(109,40,217,0.13); }
+
+        /* ── Math box ── */
+        .math-box {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #f5f3ff, #ede9fe);
+            border: 2px solid #a78bfa;
+            border-radius: 12px;
+            padding: 16px 24px;
+            text-align: center;
+            font-size: 1.2em;
+            letter-spacing: 0.5px;
+        }
+        .math-font { font-family: 'Courier New', monospace; }
+
+        /* ── Compare table ── */
+        .cmp-table { width: 100%; border-collapse: collapse; font-size: 0.92rem; }
+        .cmp-table th { background: #ede9fe; border: 1px solid #c4b5fd; padding: 10px 14px; text-align: center; font-weight: 800; }
+        .cmp-table td { border: 1px solid #ddd6fe; padding: 10px 14px; text-align: center; background: white; }
+        .cmp-table tr:hover td { background: #faf5ff; }
+
+        /* ── Simulator canvas ── */
+        .sim-canvas-wrap {
+            position: relative; width: 100%;
+            background: #f8fafc; border-radius: 1.25rem;
+            overflow: hidden; border: 2px solid #ddd6fe;
+            aspect-ratio: 4/3;
+        }
+        .sim-canvas-wrap canvas {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; cursor: crosshair;
+        }
+        .canvas-label {
+            position: absolute; top: 8px; left: 10px;
+            background: rgba(255,255,255,0.93); border: 1px solid #e2e8f0;
+            padding: 3px 10px; border-radius: 6px; font-size: 0.7rem; font-weight: 700;
+            color: #475569; pointer-events: none;
+        }
+        .canvas-note {
+            position: absolute; bottom: 4px; right: 8px;
+            font-size: 0.65rem; color: #94a3b8; pointer-events: none;
+        }
+
+        /* ── Sim buttons ── */
+        #btnTrain { transition: all 0.2s ease; }
+        #btnTrain:disabled { cursor: not-allowed; opacity: 0.8; }
+        #btnTrain.state-complete { background-color: #10b981 !important; color: white !important; }
+
+        /* ── Chart.js section ── */
+        .data-table-scroll { max-height: 180px; overflow-y: auto; border-radius: 8px; border: 1px solid #e2e8f0; }
+        .data-table-scroll table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+        .data-table-scroll th { background: #ddd6fe; border: 1px solid #c4b5fd; padding: 7px; text-align: center; position: sticky; top: 0; z-index: 1; }
+        .data-table-scroll td { border: 1px solid #e5e7eb; padding: 7px; text-align: center; background: white; }
+        .data-table-scroll tr:hover td { background: #faf5ff; }
+
+        /* ── Quiz toggle ── */
+        .quiz-answer { display: none; animation: fadeIn 0.25s ease; }
+        .quiz-answer.open { display: block; }
+        @keyframes fadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+
+        .quiz-toggle {
+            display: inline-flex; align-items: center; gap: 6px;
+            cursor: pointer; color: #7c3aed; font-weight: 700; font-size: 0.88rem;
+            margin-top: 10px; border: 2px solid #c4b5fd;
+            border-radius: 999px; padding: 4px 16px; transition: all 0.2s;
+        }
+        .quiz-toggle:hover { background: #f5f3ff; }
+
+        /* ── Scrollbar ── */
+        ::-webkit-scrollbar { width: 7px; height: 7px; }
+        ::-webkit-scrollbar-track { background: #f5f3ff; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #c4b5fd; border-radius: 10px; }
+
+        /* ── Responsive ── */
+        @media (max-width: 768px) {
+            .section-card { padding: 1.5rem; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ══════════════════════ HERO ══════════════════════ -->
+<header id="top" class="hero-gradient text-white py-16 px-6">
+    <div class="max-w-4xl mx-auto text-center">
+        <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;padding:6px 16px;background:rgba(255,255,255,0.2);border-radius:999px;font-weight:700;font-size:0.85rem;margin-bottom:20px;text-decoration:none;color:white;">
+            ← 목록으로 돌아가기
+        </a>
+        <div style="display:inline-block;padding:6px 18px;background:rgba(255,255,255,0.2);border-radius:999px;font-weight:700;font-size:0.85rem;margin-bottom:20px;">
+            능동고등학교 인공지능기초 | made by 정보교사 송세영
+        </div>
+        <h1 style="font-size:clamp(2rem,6vw,3.5rem);font-weight:900;line-height:1.2;margin-bottom:18px;">
+            복잡한 세상의 공식을 찾다,<br><span style="color:#e9d5ff;">Multiple Linear Regression</span>
+        </h1>
+        <p style="font-size:1.1rem;opacity:0.9;max-width:600px;margin:0 auto 28px;">
+            세상의 많은 결과는 단 하나의 원인으로 결정되지 않습니다.<br>
+            여러 개의 데이터를 조합하여 최적의 예측 공식을 찾아내는 과정을 체험해보세요.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:10px;font-size:0.85rem;font-weight:700;">
+            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">🔢 다중 변수</span>
+            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">💡 가중치(w)</span>
+            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">🔬 시뮬레이터</span>
+            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">⑤ 데이터 실습</span>
+            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">🔒 정규화</span>
+            <span style="background:rgba(255,255,255,0.2);padding:6px 16px;border-radius:999px;">⑦ 퀴즈</span>
+        </div>
+    </div>
+</header>
+
+<!-- ══════════════════════ NAV ══════════════════════ -->
+<nav class="sticky-nav px-6 py-3">
+    <div style="max-width:1200px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:32px;height:32px;background:#7c3aed;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;">M</div>
+            <span style="font-weight:900;font-size:1.1rem;color:#1e1b4b;">다중선형회귀</span>
+        </div>
+        <div style="display:none;" class="md-nav">
+            <a href="#concept" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">① 개념</a>
+            <a href="#compare" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">② 비교</a>
+            <a href="#formula" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">③ 공식</a>
+            <a href="#simulator" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">🔬 시뮬레이터</a>
+            <a href="#chart-demo" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">⑤ 데이터 실습</a>
+            <a href="#regularization" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">🔒 정규화</a>
+            <a href="#quiz" style="font-weight:700;color:#64748b;text-decoration:none;margin:0 12px;font-size:0.9rem;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">⑦ 퀴즈</a>
+        </div>
+        <a href="index.html" style="padding:8px 18px;background:#7c3aed;color:white;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;">← 목록</a>
+    </div>
+</nav>
+
+<main style="max-width:1100px;margin:0 auto;padding:48px 16px;display:flex;flex-direction:column;gap:56px;">
+
+<!-- ══════════════════════ SECTION 1: CONCEPT ══════════════════════ -->
+<section id="concept" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:40px;">
+        <span style="color:#7c3aed;font-weight:700;letter-spacing:0.1em;font-size:0.85rem;text-transform:uppercase;">Core Mechanism</span>
+        <h2 style="font-size:clamp(1.6rem,4vw,2.2rem);font-weight:900;margin-top:8px;">여러 개의 원인으로 결과를 어떻게 예측할까요?</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:1rem;">인공지능은 각 원인이 결과에 미치는 <strong>영향력(가중치)</strong>을 조절하며 최적의 공식을 만들어냅니다.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:20px;margin-bottom:32px;">
+        <div class="step-card">
+            <div style="width:56px;height:56px;background:#f1f5f9;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:12px;">📋</div>
+            <span style="background:#f1f5f9;color:#475569;font-weight:700;border-radius:999px;padding:3px 14px;font-size:0.8rem;margin-bottom:10px;">Step 1</span>
+            <h3 style="font-size:1.05rem;font-weight:900;margin-bottom:8px;">다중 데이터 수집</h3>
+            <p style="font-size:0.85rem;color:#64748b;line-height:1.5;">결과(y)에 영향을 줄 수 있는 여러 가지 원인 데이터(x₁, x₂ ...)를 모아 준비합니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:56px;height:56px;background:#eff6ff;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:12px;">💡</div>
+            <span style="background:#eff6ff;color:#3b82f6;font-weight:700;border-radius:999px;padding:3px 14px;font-size:0.8rem;margin-bottom:10px;">Step 2</span>
+            <h3 style="font-size:1.05rem;font-weight:900;margin-bottom:8px;">초기 공식 생성</h3>
+            <p style="font-size:0.85rem;color:#64748b;line-height:1.5;">처음에는 어느 원인이 더 중요한지 모르므로, 무작위로 가중치(영향력)를 설정합니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:56px;height:56px;background:#fff1f2;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:12px;">≠</div>
+            <span style="background:#fff1f2;color:#e11d48;font-weight:700;border-radius:999px;padding:3px 14px;font-size:0.8rem;margin-bottom:10px;">Step 3</span>
+            <h3 style="font-size:1.05rem;font-weight:900;margin-bottom:8px;">오차 계산</h3>
+            <p style="font-size:0.85rem;color:#64748b;line-height:1.5;">예측값과 실제 정답 데이터를 비교하여 얼마나 틀렸는지(오차, MSE) 계산합니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:56px;height:56px;background:#f0fdf4;border-radius:16px;display:flex;align-items:center;justify-content:center;font-size:1.8rem;margin-bottom:12px;">🎛️</div>
+            <span style="background:#f0fdf4;color:#16a34a;font-weight:700;border-radius:999px;padding:3px 14px;font-size:0.8rem;margin-bottom:10px;">Step 4</span>
+            <h3 style="font-size:1.05rem;font-weight:900;margin-bottom:8px;">가중치 수정 (학습)</h3>
+            <p style="font-size:0.85rem;color:#64748b;line-height:1.5;">오차를 줄이는 방향으로 더 중요한 원인의 가중치는 키우고, 덜 중요한 것은 줄여나갑니다.</p>
+        </div>
+    </div>
+
+    <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:1.5rem;padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <div>
+            <h4 style="font-weight:800;color:#1e40af;margin-bottom:10px;">💡 핵심 정리</h4>
+            <ul style="list-style:disc;padding-left:18px;color:#1e3a8a;font-size:0.88rem;line-height:1.8;">
+                <li>다중선형회귀는 <strong>2개 이상의 원인(독립 변수)</strong>으로 결과를 예측합니다.</li>
+                <li>가중치(w)는 해당 변수가 결과에 미치는 <strong>영향력의 크기</strong>입니다.</li>
+                <li>가중치가 양수(+)면 결과도 증가, 음수(-)면 결과는 감소합니다.</li>
+            </ul>
+        </div>
+        <div>
+            <h4 style="font-weight:800;color:#991b1b;margin-bottom:10px;">⚠️ 주의할 점</h4>
+            <ul style="list-style:disc;padding-left:18px;color:#7f1d1d;font-size:0.88rem;line-height:1.8;">
+                <li>변수 개수가 많다고 항상 예측이 정확해지지 않습니다 → <strong>과적합(Overfitting)</strong> 위험!</li>
+                <li>두 변수가 함께 변해도 인과관계는 아닐 수 있습니다 → <strong>상관관계 ≠ 인과관계</strong></li>
+            </ul>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════ SECTION 2: 선형회귀 vs 다중선형회귀 비교 ══════════════════════ -->
+<section id="compare" style="scroll-margin-top:80px;" class="section-card">
+    <div style="text-align:center;margin-bottom:32px;">
+        <span style="color:#7c3aed;font-weight:700;letter-spacing:0.1em;font-size:0.85rem;text-transform:uppercase;">Comparison</span>
+        <h2 style="font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;margin-top:8px;">↔️ 선형회귀 vs 다중선형회귀</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:0.95rem;">무엇이 다를까요? 표로 한눈에 비교해봅시다!</p>
+    </div>
+
+    <div style="overflow-x:auto;border-radius:12px;margin-bottom:32px;">
+        <table class="cmp-table">
+            <thead>
+                <tr>
+                    <th>구분</th>
+                    <th style="background:#dbeafe;color:#1e40af;">📏 선형회귀</th>
+                    <th style="background:#ede9fe;color:#6d28d9;">📋 다중선형회귀</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="font-weight:700;background:#f8fafc;">입력 변수 수</td>
+                    <td>1개 (x)</td>
+                    <td>2개 이상 (x₁, x₂ ...)</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:700;background:#f8fafc;">공식 형태</td>
+                    <td><code>y = ax + b</code></td>
+                    <td><code>y = w₁x₁ + w₂x₂ + ... + b</code></td>
+                </tr>
+                <tr>
+                    <td style="font-weight:700;background:#f8fafc;">시각화</td>
+                    <td>2D 그래프의 직선</td>
+                    <td>3D 이상의 평면(초평면)</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:700;background:#f8fafc;">고등학교 예시</td>
+                    <td>공부시간 → 성적</td>
+                    <td>공부시간 + 수면시간 + 학원횟수 → 성적</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:700;background:#f8fafc;">현실 적합성</td>
+                    <td>단순하지만 현실과 거리가 있음</td>
+                    <td>복잡하지만 현실을 더 잘 반영</td>
+                </tr>
+                <tr>
+                    <td style="font-weight:700;background:#f8fafc;">주의점</td>
+                    <td>설명력이 부족할 수 있음</td>
+                    <td>과적합 위험 → 정규화 필요</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 직관적 비유 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+        <div style="background:#eff6ff;border-radius:1.25rem;padding:20px;border:1px solid #bfdbfe;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">🏃‍♂️</div>
+            <h4 style="font-weight:800;color:#1e40af;margin-bottom:8px;">선형회귀: 한 가지 원인</h4>
+            <p style="font-size:0.88rem;color:#1e3a8a;line-height:1.6;">
+                "달리기 속도만으로 100m 기록을 예측하자!"<br>
+                → 단순하지만 체중, 키, 폼 같은 다른 중요한 요소들을 무시함.
+            </p>
+        </div>
+        <div style="background:#f5f3ff;border-radius:1.25rem;padding:20px;border:1px solid #ddd6fe;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">🏅</div>
+            <h4 style="font-weight:800;color:#6d28d9;margin-bottom:8px;">다중선형회귀: 여러 원인</h4>
+            <p style="font-size:0.88rem;color:#4c1d95;line-height:1.6;">
+                "속도 + 체중 + 훈련 기간 + 날씨 모두 고려해서 예측하자!"<br>
+                → 더 현실적이고 정확한 예측이 가능함.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════ SECTION 3: 공식과 가중치 이해 ══════════════════════ -->
+<section id="formula" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:36px;">
+        <span style="color:#7c3aed;font-weight:700;letter-spacing:0.1em;font-size:0.85rem;text-transform:uppercase;">Formula & Weights</span>
+        <h2 style="font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;margin-top:8px;">③ 공식과 가중치를 이해해봅시다</h2>
+    </div>
+
+    <!-- 공식 카드 -->
+    <div class="section-card" style="margin-bottom:24px;">
+        <div style="margin-bottom:20px;">
+            <div class="math-box" style="font-size:1.3rem;font-weight:900;color:#4c1d95;">
+                y = <span style="color:#2563eb;">w₁</span>x₁ + <span style="color:#7c3aed;">w₂</span>x₂ + ... + <span style="color:#16a34a;">b</span>
+            </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:16px;">
+            <div style="background:#f8fafc;border-radius:12px;padding:16px;text-align:center;border:1px solid #e2e8f0;">
+                <div style="font-size:1.5rem;font-weight:900;color:#475569;margin-bottom:4px;">y</div>
+                <div style="font-weight:700;font-size:0.85rem;color:#64748b;">예측값 (결과)</div>
+                <p style="font-size:0.8rem;color:#94a3b8;margin-top:6px;">우리가 예측하고 싶은 값<br>예: 성적, 집값, 판매량</p>
+            </div>
+            <div style="background:#eff6ff;border-radius:12px;padding:16px;text-align:center;border:1px solid #bfdbfe;">
+                <div style="font-size:1.5rem;font-weight:900;color:#2563eb;margin-bottom:4px;">w₁, w₂</div>
+                <div style="font-weight:700;font-size:0.85rem;color:#1e40af;">가중치 (Weight)</div>
+                <p style="font-size:0.8rem;color:#3b82f6;margin-top:6px;">각 변수의 영향력<br>클수록 결과에 더 큰 영향</p>
+            </div>
+            <div style="background:#fafafa;border-radius:12px;padding:16px;text-align:center;border:1px solid #e2e8f0;">
+                <div style="font-size:1.5rem;font-weight:900;color:#475569;margin-bottom:4px;">x₁, x₂</div>
+                <div style="font-weight:700;font-size:0.85rem;color:#64748b;">입력값 (변수)</div>
+                <p style="font-size:0.8rem;color:#94a3b8;margin-top:6px;">우리가 알고 있는 값<br>예: 공부시간, 수면시간</p>
+            </div>
+            <div style="background:#f0fdf4;border-radius:12px;padding:16px;text-align:center;border:1px solid #bbf7d0;">
+                <div style="font-size:1.5rem;font-weight:900;color:#16a34a;margin-bottom:4px;">b</div>
+                <div style="font-weight:700;font-size:0.85rem;color:#15803d;">편향 (Bias)</div>
+                <p style="font-size:0.8rem;color:#16a34a;margin-top:6px;">모든 변수가 0일 때의 기본값<br>(y절편과 같은 개념)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 실생활 예시 계산 -->
+    <div class="section-card" style="margin-bottom:24px;">
+        <h3 style="font-weight:900;font-size:1.15rem;margin-bottom:6px;">🎓 실생활 예시: 시험 점수 예측</h3>
+        <p style="color:#64748b;font-size:0.9rem;margin-bottom:20px;">공부시간(x₁), 수면시간(x₂), 학원 횟수(x₃)로 성적(y)을 예측한다면?</p>
+
+        <div style="background:#1e293b;border-radius:14px;padding:20px;color:#a5f3fc;font-family:'Courier New',monospace;font-size:0.95rem;margin-bottom:20px;overflow-x:auto;">
+            <div style="color:#94a3b8;margin-bottom:8px;">// AI가 학습을 통해 찾아낸 공식 (가정)</div>
+            <div>성적(y) = <span style="color:#60a5fa;">4.5</span> × 공부시간(x₁) + <span style="color:#c084fc;">3.2</span> × 수면시간(x₂) + <span style="color:#34d399;">1.8</span> × 학원횟수(x₃) + 10</div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:20px;">
+            <div style="background:#faf5ff;border:1px solid #ddd6fe;border-radius:12px;padding:16px;">
+                <div style="font-weight:800;color:#7c3aed;margin-bottom:8px;">👦 학생 A</div>
+                <div style="font-size:0.85rem;color:#4c1d95;line-height:1.8;">
+                    공부시간: 5시간 / 수면: 8시간 / 학원: 3회<br>
+                    <strong>예측 성적 = 4.5×5 + 3.2×8 + 1.8×3 + 10</strong><br>
+                    = 22.5 + 25.6 + 5.4 + 10<br>
+                    = <span style="color:#7c3aed;font-size:1rem;font-weight:900;">63.5점</span>
+                </div>
+            </div>
+            <div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:16px;">
+                <div style="font-weight:800;color:#16a34a;margin-bottom:8px;">👧 학생 B</div>
+                <div style="font-size:0.85rem;color:#14532d;line-height:1.8;">
+                    공부시간: 9시간 / 수면: 7시간 / 학원: 5회<br>
+                    <strong>예측 성적 = 4.5×9 + 3.2×7 + 1.8×5 + 10</strong><br>
+                    = 40.5 + 22.4 + 9.0 + 10<br>
+                    = <span style="color:#16a34a;font-size:1rem;font-weight:900;">81.9점</span>
+                </div>
+            </div>
+        </div>
+
+        <div style="background:#fefce8;border:1px solid #fde047;border-radius:12px;padding:16px;">
+            <p style="font-weight:700;color:#854d0e;font-size:0.9rem;">💡 관찰 포인트</p>
+            <ul style="margin-top:8px;padding-left:18px;color:#92400e;font-size:0.85rem;line-height:1.8;">
+                <li>공부시간의 가중치(4.5)가 수면시간(3.2)보다 크므로 → 성적에 더 큰 영향!</li>
+                <li>학원 횟수(1.8)는 중요하지만 상대적으로 영향이 작음</li>
+                <li>b = 10은 공부·수면·학원을 모두 0이어도 받을 수 있는 최소 기본 점수</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 가중치 부호 의미 -->
+    <div class="section-card">
+        <h3 style="font-weight:900;font-size:1.1rem;margin-bottom:16px;">💡 가중치(w)의 부호가 의미하는 것</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div style="background:#eff6ff;border-radius:12px;padding:16px;border:1px solid #bfdbfe;">
+                <div style="font-weight:900;color:#2563eb;font-size:1.1rem;margin-bottom:8px;">w &gt; 0 (양수)</div>
+                <p style="font-size:0.88rem;color:#1e40af;line-height:1.6;">
+                    x가 증가 → y도 증가<br>
+                    예: 공부시간↑ → 성적↑<br>
+                    예: 기온↑ → 아이스크림 판매량↑
+                </p>
+            </div>
+            <div style="background:#fff1f2;border-radius:12px;padding:16px;border:1px solid #fecdd3;">
+                <div style="font-weight:900;color:#e11d48;font-size:1.1rem;margin-bottom:8px;">w &lt; 0 (음수)</div>
+                <p style="font-size:0.88rem;color:#9f1239;line-height:1.6;">
+                    x가 증가 → y는 감소<br>
+                    예: 게임시간↑ → 성적↓<br>
+                    예: 지하철과의 거리↑ → 집값↓
+                </p>
+            </div>
+        </div>
+        <div style="background:#f5f3ff;border-radius:12px;padding:14px;margin-top:16px;border:1px solid #ddd6fe;">
+            <p style="font-size:0.88rem;color:#4c1d95;"><strong>🔑 핵심:</strong> 가중치의 절댓값이 클수록 그 변수의 영향력이 크고, 0에 가까울수록 결과와 거의 관계가 없는 변수입니다.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════ SECTION 4: GD SIMULATOR ══════════════════════ -->
+<section id="simulator" style="scroll-margin-top:80px;">
+    <div class="section-card" style="overflow:hidden;">
+        <div style="margin-bottom:28px;">
+            <span style="color:#7c3aed;font-weight:700;letter-spacing:0.1em;font-size:0.85rem;text-transform:uppercase;">Interactive Simulator</span>
+            <h2 style="font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;margin-top:6px;">🔬 다중선형회귀 학습 시뮬레이터</h2>
+            <p style="color:#64748b;margin-top:6px;font-size:0.95rem;">두 가지 원인(x₁, x₂)이 결과(y)에 미치는 영향을 그래프로 확인하세요. 경사하강법으로 가중치를 학습합니다.</p>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:20px;">
+            <!-- 캔버스 2개 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                <div style="position:relative;">
+                    <div class="sim-canvas-wrap">
+                        <canvas id="canvasX1"></canvas>
+                    </div>
+                    <div class="canvas-label">📈 원인1(x₁)에 따른 결과(y)</div>
+                    <div class="canvas-note">* x₂는 평균값으로 고정</div>
+                </div>
+                <div style="position:relative;">
+                    <div class="sim-canvas-wrap">
+                        <canvas id="canvasX2"></canvas>
+                    </div>
+                    <div class="canvas-label" style="color:#7c3aed;">📈 원인2(x₂)에 따른 결과(y)</div>
+                    <div class="canvas-note">* x₁은 평균값으로 고정</div>
+                </div>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:12px;">
+                <!-- 입력 -->
+                <div style="background:white;padding:16px;border-radius:16px;border:2px solid #e2e8f0;display:flex;flex-wrap:wrap;gap:12px;">
+                    <div style="flex:1;min-width:180px;">
+                        <label style="font-weight:700;font-size:0.8rem;color:#64748b;display:block;margin-bottom:6px;">좌표 직접 입력 (x₁, x₂, y)</label>
+                        <form id="formAddCoord" style="display:flex;gap:6px;">
+                            <input type="number" id="inputX1" placeholder="x₁" class="form-ctrl" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:0.85rem;outline:none;">
+                            <input type="number" id="inputX2" placeholder="x₂" class="form-ctrl" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:0.85rem;outline:none;">
+                            <input type="number" id="inputY"  placeholder="y"  class="form-ctrl" style="width:100%;padding:8px;border:1px solid #d1d5db;border-radius:8px;font-size:0.85rem;outline:none;">
+                            <button type="submit" class="action-btn" style="padding:8px 14px;background:#7c3aed;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;font-size:0.85rem;">추가</button>
+                        </form>
+                    </div>
+                    <div style="flex:1;min-width:160px;">
+                        <label style="font-weight:700;font-size:0.8rem;color:#64748b;display:block;margin-bottom:6px;">일괄 입력 (x₁,x₂,y)</label>
+                        <div style="display:flex;gap:6px;">
+                            <textarea id="bulkInput" placeholder="예: 3,5,80&#10;1,2,50" class="form-ctrl" style="width:100%;height:42px;padding:6px 10px;border:1px solid #d1d5db;border-radius:8px;font-size:0.85rem;resize:none;outline:none;"></textarea>
+                            <button id="btnBulkAdd" class="action-btn" style="padding:8px 12px;background:#475569;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;white-space:nowrap;font-size:0.85rem;">일괄 추가</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 예제 버튼 -->
+                <div style="background:white;padding:14px;border-radius:16px;border:2px solid #e2e8f0;">
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;">
+                        <button class="action-btn ex-btn" onclick="uiController.loadExample(1)">📚 공부 + 수면 → 성적</button>
+                        <button class="action-btn ex-btn" onclick="uiController.loadExample(2)">🌡️ 기온 + 광고 → 매출</button>
+                        <button class="action-btn ex-btn" onclick="uiController.loadExample(3)">🏠 방 갯수 + 거리 → 집값</button>
+                    </div>
+                    <p id="exampleDesc" style="margin-top:10px;font-size:0.85rem;color:#7c3aed;font-weight:600;min-height:20px;text-align:center;"></p>
+                </div>
+
+                <!-- 학습 제어 + 결과 -->
+                <div style="display:flex;flex-wrap:wrap;gap:16px;">
+                    <!-- 제어 버튼 + 공식 -->
+                    <div style="flex:1;min-width:240px;background:#1e293b;border-radius:16px;padding:20px;color:white;">
+                        <p style="font-weight:700;color:#94a3b8;font-size:0.75rem;letter-spacing:0.1em;margin-bottom:12px;">🧮 AI Formula</p>
+                        <div style="background:#0f172a;border-radius:12px;padding:16px;text-align:center;margin-bottom:16px;min-height:60px;display:flex;align-items:center;justify-content:center;overflow-x:auto;">
+                            <span id="equationDisplay" style="font-family:'Courier New',monospace;font-size:1rem;font-weight:900;color:#34d399;">y = w₁x₁ + w₂x₂ + b</span>
+                        </div>
+                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;">
+                            <button id="btnTrain" class="col-span-2" style="grid-column:1/-1;padding:12px;background:#7c3aed;color:white;border:none;border-radius:12px;font-weight:900;cursor:pointer;font-size:0.95rem;">▶ 학습 시작</button>
+                            <button id="btnPause" disabled style="padding:8px;background:#475569;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:0.85rem;">⏸ 일시정지</button>
+                            <button id="btnReset" style="padding:8px;background:#475569;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:0.85rem;">🔄 리셋</button>
+                        </div>
+                        <div style="display:flex;gap:8px;">
+                            <button id="btnRandomData" class="action-btn" style="flex:1;padding:8px;background:#312e81;color:white;border:1px solid #4338ca;border-radius:10px;font-weight:700;cursor:pointer;font-size:0.8rem;">🎲 랜덤 데이터</button>
+                            <button id="btnClearData" class="action-btn" style="flex:1;padding:8px;background:#1e293b;color:#f87171;border:1px solid #475569;border-radius:10px;font-weight:700;cursor:pointer;font-size:0.8rem;">🗑️ 지우기</button>
+                        </div>
+                    </div>
+
+                    <!-- 수치 표시 -->
+                    <div style="flex:1;min-width:200px;background:#f5f3ff;border-radius:16px;padding:20px;border:1px solid #ddd6fe;display:flex;flex-direction:column;gap:8px;">
+                        <div style="background:white;padding:10px 16px;border-radius:10px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-weight:700;color:#64748b;font-size:0.85rem;">원인1 가중치 (w₁)</span>
+                            <span id="valW1" style="font-weight:900;color:#2563eb;font-family:'Courier New',monospace;font-size:0.9rem;">0.000</span>
+                        </div>
+                        <div style="background:white;padding:10px 16px;border-radius:10px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-weight:700;color:#64748b;font-size:0.85rem;">원인2 가중치 (w₂)</span>
+                            <span id="valW2" style="font-weight:900;color:#7c3aed;font-family:'Courier New',monospace;font-size:0.9rem;">0.000</span>
+                        </div>
+                        <div style="background:white;padding:10px 16px;border-radius:10px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-weight:700;color:#64748b;font-size:0.85rem;">기본 편향 (b)</span>
+                            <span id="valIntercept" style="font-weight:900;color:#1e293b;font-family:'Courier New',monospace;font-size:0.9rem;">0.000</span>
+                        </div>
+                        <div style="background:#fff1f2;padding:10px 16px;border-radius:10px;border:1px solid #fecdd3;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-weight:700;color:#e11d48;font-size:0.85rem;">MSE (평균 오차)</span>
+                            <span id="valMSE" style="font-weight:900;color:#be123c;font-family:'Courier New',monospace;font-size:0.9rem;">0.000</span>
+                        </div>
+                        <div style="background:white;padding:10px 16px;border-radius:10px;border:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                            <span style="font-weight:700;color:#64748b;font-size:0.85rem;">Epoch (반복 횟수)</span>
+                            <span id="valEpoch" style="font-weight:900;color:#1e293b;font-family:'Courier New',monospace;font-size:0.9rem;">0</span>
+                        </div>
+                        <div style="background:#f0fdf4;padding:10px;border-radius:10px;border:1px solid #bbf7d0;font-size:0.8rem;color:#15803d;">
+                            💡 MSE가 줄어들수록 빨간 오차선이 짧아지고, 초록 회귀선이 데이터에 가까워집니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════ SECTION 5: CHART DEMO ══════════════════════ -->
+<section id="chart-demo" style="scroll-margin-top:80px;" class="section-card">
+    <div style="margin-bottom:28px;">
+        <span style="color:#7c3aed;font-weight:700;letter-spacing:0.1em;font-size:0.85rem;text-transform:uppercase;">Data Visualization</span>
+        <h2 style="font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;margin-top:6px;">📊 다중선형회귀 데이터 실습</h2>
+        <p style="color:#64748b;margin-top:6px;font-size:0.95rem;">다양한 시나리오를 선택해 회귀 결과와 변수별 가중치를 확인해보세요.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1.6fr;gap:24px;align-items:start;">
+        <!-- 설정 패널 -->
+        <div style="background:#f8f0ff;border-radius:1.5rem;padding:20px;border:1px solid #ddd6fe;">
+            <h3 style="font-weight:900;color:#4c1d95;margin-bottom:16px;">⚙️ 설정</h3>
+
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:700;font-size:0.85rem;color:#374151;display:block;margin-bottom:6px;">📊 데이터 선택</label>
+                <select id="scenario2" style="width:100%;padding:8px;border:2px solid #ddd6fe;border-radius:8px;font-size:0.9rem;outline:none;background:white;">
+                    <option value="student">🎓 학생 성적 예측 (4개 변수)</option>
+                    <option value="house">🏠 집값 예측 (5개 변수)</option>
+                    <option value="health">💪 건강 점수 예측 (6개 변수)</option>
+                </select>
+                <p id="scenarioDesc2" style="font-size:0.8rem;color:#7c3aed;margin-top:6px;font-weight:600;">여러 요인으로 학생의 성적을 예측</p>
+            </div>
+
+            <div style="margin-bottom:16px;">
+                <label style="font-weight:700;font-size:0.85rem;color:#374151;display:block;margin-bottom:8px;">🔒 정규화 유형</label>
+                <div style="display:flex;flex-direction:column;gap:6px;">
+                    <label style="display:flex;align-items:center;gap:8px;padding:8px;background:white;border-radius:8px;cursor:pointer;border:1px solid #e5e7eb;font-size:0.85rem;"><input type="radio" name="regType2" value="none" checked> 정규화 없음</label>
+                    <label style="display:flex;align-items:center;gap:8px;padding:8px;background:white;border-radius:8px;cursor:pointer;border:1px solid #e5e7eb;font-size:0.85rem;"><input type="radio" name="regType2" value="ridge"> Ridge (L2) — 모든 변수 조금씩 사용</label>
+                    <label style="display:flex;align-items:center;gap:8px;padding:8px;background:white;border-radius:8px;cursor:pointer;border:1px solid #e5e7eb;font-size:0.85rem;"><input type="radio" name="regType2" value="lasso"> Lasso (L1) — 중요한 변수만 선택</label>
+                    <label style="display:flex;align-items:center;gap:8px;padding:8px;background:white;border-radius:8px;cursor:pointer;border:1px solid #e5e7eb;font-size:0.85rem;"><input type="radio" name="regType2" value="elastic"> Elastic Net — Ridge+Lasso 조합</label>
+                </div>
+            </div>
+
+            <div id="alphaGroup2" style="display:none;margin-bottom:16px;background:#fefce8;padding:12px;border-radius:10px;">
+                <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:6px;">Alpha (정규화 강도): <span id="alphaValue2" style="color:#d97706;">0.10</span></label>
+                <input type="range" id="alpha2" min="0" max="1" step="0.01" value="0.1" style="width:100%;">
+                <p id="alphaDesc2" style="font-size:0.78rem;color:#92400e;margin-top:4px;">약한 정규화 - 데이터에 더 맞춤</p>
+            </div>
+
+            <div id="l1RatioGroup2" style="display:none;margin-bottom:16px;background:#f0fdf4;padding:12px;border-radius:10px;">
+                <label style="font-weight:700;font-size:0.85rem;display:block;margin-bottom:6px;">L1 : L2 = <span id="l1Val2">0.50</span> : <span id="l2Val2">0.50</span></label>
+                <input type="range" id="l1Ratio2" min="0" max="1" step="0.1" value="0.5" style="width:100%;">
+                <p id="l1Desc2" style="font-size:0.78rem;color:#166534;margin-top:4px;">균형잡힌 혼합</p>
+            </div>
+
+            <div style="background:white;border-radius:12px;padding:14px;border:2px solid #ddd6fe;">
+                <h4 style="font-weight:800;color:#4c1d95;font-size:0.9rem;margin-bottom:4px;"><span id="regEmoji2">📝</span> <span id="regTitle2">정규화 없음</span></h4>
+                <p id="regDesc2" style="font-size:0.82rem;color:#64748b;line-height:1.5;">모든 속성을 최대한 활용. 변수가 많으면 과적합 위험!</p>
+            </div>
+        </div>
+
+        <!-- 결과 패널 -->
+        <div>
+            <!-- 데이터 테이블 -->
+            <div style="background:#f8fafc;border-radius:14px;padding:16px;margin-bottom:16px;border:1px solid #e2e8f0;">
+                <h4 style="font-weight:700;font-size:0.9rem;color:#374151;margin-bottom:10px;">📋 학습 데이터 (총 <span id="dataCount2">10</span>개)</h4>
+                <div class="data-table-scroll">
+                    <table id="dataTable2"><thead><tr id="tableHeader2"></tr></thead><tbody id="dataBody2"></tbody></table>
+                </div>
+            </div>
+
+            <!-- 산점도 + 계수표 -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+                <div>
+                    <h4 style="font-weight:700;font-size:0.88rem;color:#374151;margin-bottom:8px;">🔮 예측값 vs 실제값</h4>
+                    <canvas id="scatterChart2" style="width:100%;"></canvas>
+                    <p style="font-size:0.75rem;color:#64748b;text-align:center;margin-top:4px;">점들이 초록선에 가까울수록 좋은 모델!</p>
+                </div>
+                <div>
+                    <h4 style="font-weight:700;font-size:0.88rem;color:#374151;margin-bottom:8px;">💡 변수별 가중치(계수)</h4>
+                    <div style="overflow-x:auto;border-radius:8px;border:1px solid #e2e8f0;">
+                        <table style="width:100%;border-collapse:collapse;font-size:0.8rem;">
+                            <thead><tr><th style="background:#ede9fe;border:1px solid #c4b5fd;padding:6px;text-align:center;">변수</th><th style="background:#ede9fe;border:1px solid #c4b5fd;padding:6px;text-align:center;">가중치</th><th style="background:#ede9fe;border:1px solid #c4b5fd;padding:6px;text-align:center;">중요도</th></tr></thead>
+                            <tbody id="coefBody2"></tbody>
+                        </table>
+                    </div>
+                    <div id="formulaBox2" style="margin-top:10px;background:#f5f3ff;border-radius:10px;padding:10px;border:1px solid #ddd6fe;">
+                        <div style="font-size:0.75rem;font-weight:700;color:#7c3aed;margin-bottom:4px;">📝 예측 수식</div>
+                        <div id="formula2" style="font-family:'Courier New',monospace;font-size:0.78rem;color:#4c1d95;word-break:break-all;line-height:1.6;">y = 0.00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:#fefce8;border:1px solid #fde047;border-radius:12px;padding:14px;">
+                <p style="font-weight:700;color:#854d0e;font-size:0.88rem;margin-bottom:6px;">💡 관찰해보세요!</p>
+                <ul style="padding-left:18px;color:#92400e;font-size:0.83rem;line-height:1.8;">
+                    <li>Lasso 정규화에서 Alpha를 높이면 일부 계수가 <strong>0(제거됨)</strong>이 되는 것을 확인!</li>
+                    <li>Ridge는 계수를 0으로 만들지 않고 <strong>전체적으로 줄임</strong></li>
+                    <li>산점도의 점들이 초록 y=x 선에서 멀수록 예측 오차가 큼</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════ SECTION 6: 정규화 ══════════════════════ -->
+<section id="regularization" style="scroll-margin-top:80px;" class="section-card">
+    <div style="text-align:center;margin-bottom:32px;">
+        <span style="color:#7c3aed;font-weight:700;letter-spacing:0.1em;font-size:0.85rem;text-transform:uppercase;">Regularization</span>
+        <h2 style="font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;margin-top:8px;">🔒 과적합과 정규화</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:0.95rem;">변수가 많아질수록 발생하는 문제와 해결 방법을 알아봅시다.</p>
+    </div>
+
+    <!-- 과적합 설명 -->
+    <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:1.5rem;padding:24px;margin-bottom:24px;">
+        <h3 style="font-weight:900;color:#c2410c;font-size:1.05rem;margin-bottom:12px;">🚨 과적합(Overfitting)이란?</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+            <div>
+                <p style="font-size:0.9rem;color:#7c2d12;line-height:1.7;">
+                    학습 데이터에 너무 완벽하게 맞추려다 보면, 새로운 데이터에는 오히려 예측이 부정확해지는 현상입니다.
+                </p>
+                <div style="margin-top:12px;background:white;border-radius:10px;padding:12px;border:1px solid #fed7aa;">
+                    <p style="font-size:0.85rem;color:#92400e;"><strong>🏫 교실 비유:</strong><br>
+                    족보만 달달 외운 학생이 시험 문제는 100점이지만, 응용 문제를 내니까 0점이 되는 것과 같습니다!</p>
+                </div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="background:white;border-radius:10px;padding:12px;border:1px solid #fed7aa;">
+                    <p style="font-weight:700;font-size:0.85rem;color:#c2410c;">❌ 과적합 증상</p>
+                    <ul style="font-size:0.83rem;color:#7c2d12;padding-left:14px;margin-top:4px;line-height:1.7;">
+                        <li>학습 데이터 오차: 매우 작음</li>
+                        <li>새로운 데이터 오차: 매우 큼</li>
+                        <li>변수 개수 &gt; 데이터 개수일 때 주로 발생</li>
+                    </ul>
+                </div>
+                <div style="background:white;border-radius:10px;padding:12px;border:1px solid #bbf7d0;">
+                    <p style="font-weight:700;font-size:0.85rem;color:#15803d;">✅ 과적합 방지 방법</p>
+                    <ul style="font-size:0.83rem;color:#166534;padding-left:14px;margin-top:4px;line-height:1.7;">
+                        <li>데이터를 더 많이 수집</li>
+                        <li><strong>정규화(Regularization)</strong> 적용</li>
+                        <li>불필요한 변수 제거</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 정규화 3종 비교 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+        <div style="background:white;border-radius:1.25rem;padding:20px;border:2px solid #dbeafe;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">📝</div>
+            <h4 style="font-weight:900;color:#1e40af;margin-bottom:6px;">정규화 없음</h4>
+            <p style="font-size:0.85rem;color:#64748b;line-height:1.6;">모든 변수를 그대로 사용. 데이터가 많고 변수가 적을 때 적합하지만, 변수가 많으면 과적합 위험!</p>
+            <div style="margin-top:10px;background:#eff6ff;border-radius:8px;padding:8px;font-size:0.8rem;color:#1e40af;"><strong>적합한 상황:</strong> 변수 수 &lt;&lt; 데이터 수</div>
+        </div>
+        <div style="background:white;border-radius:1.25rem;padding:20px;border:2px solid #ddd6fe;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">🏔️</div>
+            <h4 style="font-weight:900;color:#6d28d9;margin-bottom:6px;">Ridge (L2 정규화)</h4>
+            <p style="font-size:0.85rem;color:#64748b;line-height:1.6;">모든 계수를 조금씩 줄이되, <strong>0으로 만들지는 않음</strong>. 변수들이 서로 연관되어 있을 때 효과적.</p>
+            <div style="margin-top:10px;background:#f5f3ff;border-radius:8px;padding:8px;font-size:0.8rem;color:#6d28d9;"><strong>비유:</strong> 모든 수강과목 점수를 조금씩 낮춤</div>
+        </div>
+        <div style="background:white;border-radius:1.25rem;padding:20px;border:2px solid #ddd6fe;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">✂️</div>
+            <h4 style="font-weight:900;color:#7c3aed;margin-bottom:6px;">Lasso (L1 정규화)</h4>
+            <p style="font-size:0.85rem;color:#64748b;line-height:1.6;">중요하지 않은 변수의 계수를 <strong>정확히 0으로</strong> 만들어 제거. 변수 선택 효과가 있음.</p>
+            <div style="margin-top:10px;background:#f5f3ff;border-radius:8px;padding:8px;font-size:0.8rem;color:#7c3aed;"><strong>비유:</strong> 불필요한 과목은 아예 수강 취소</div>
+        </div>
+        <div style="background:white;border-radius:1.25rem;padding:20px;border:2px solid #c7d2fe;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">🎨</div>
+            <h4 style="font-weight:900;color:#4338ca;margin-bottom:6px;">Elastic Net</h4>
+            <p style="font-size:0.85rem;color:#64748b;line-height:1.6;">Ridge와 Lasso를 혼합. L1과 L2의 비율을 조절하여 두 방법의 장점을 모두 취함.</p>
+            <div style="margin-top:10px;background:#eef2ff;border-radius:8px;padding:8px;font-size:0.8rem;color:#4338ca;"><strong>적합한 상황:</strong> 변수 수 ≈ 데이터 수일 때</div>
+        </div>
+    </div>
+</section>
+
+<!-- ══════════════════════ SECTION 7: QUIZ ══════════════════════ -->
+<section id="quiz" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:36px;">
+        <span style="background:#fef3c7;color:#b45309;padding:6px 18px;border-radius:999px;font-weight:700;font-size:0.85rem;">CHECK-UP</span>
+        <h2 style="font-size:clamp(1.4rem,3.5vw,2rem);font-weight:900;margin-top:12px;">✏️ 다중선형회귀 퀴즈</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:0.95rem;">학습한 내용을 확인해봅시다! 버튼을 눌러 정답을 확인하세요.</p>
+    </div>
+
+    <!-- 개념 문제 -->
+    <div style="margin-bottom:24px;">
+        <h3 style="font-weight:900;color:#374151;font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px;">① 개념 이해 문제</h3>
+
+        <div class="quiz-card-wrap" style="display:flex;flex-direction:column;gap:14px;">
+
+            <!-- Q1 -->
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #e2e8f0;box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+                <div style="display:flex;align-items:flex-start;gap:14px;">
+                    <div style="width:36px;height:36px;background:#ede9fe;color:#7c3aed;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">1</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">다중선형회귀와 선형회귀의 가장 큰 차이점은 무엇인가요?</p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:12px;background:#f5f3ff;border-left:4px solid #7c3aed;padding:12px;border-radius:8px;">
+                            <p style="font-weight:700;color:#6d28d9;margin-bottom:4px;">✅ 정답</p>
+                            <p style="font-size:0.88rem;color:#4c1d95;line-height:1.6;">선형회귀는 <strong>1개의 입력 변수(x)</strong>로 결과를 예측하고, 다중선형회귀는 <strong>2개 이상의 입력 변수(x₁, x₂ ...)</strong>를 사용해 결과를 예측합니다. 현실의 결과는 여러 원인에 의해 결정되므로 다중선형회귀가 더 현실적입니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q2 -->
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #e2e8f0;box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+                <div style="display:flex;align-items:flex-start;gap:14px;">
+                    <div style="width:36px;height:36px;background:#ede9fe;color:#7c3aed;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">2</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">결과에 영향을 미치는 원인 데이터가 <strong>4개</strong>라면, AI가 찾아야 하는 가중치(w)는 몇 개인가요?</p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:12px;background:#f5f3ff;border-left:4px solid #7c3aed;padding:12px;border-radius:8px;">
+                            <p style="font-weight:700;color:#6d28d9;margin-bottom:4px;">✅ 정답: 4개</p>
+                            <p style="font-size:0.88rem;color:#4c1d95;line-height:1.6;">각 원인(x₁, x₂, x₃, x₄)마다 그것이 결과에 미치는 영향력을 나타내는 가중치(w₁, w₂, w₃, w₄)가 하나씩 필요합니다. 추가로 편향(b)도 1개 필요합니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Q3 -->
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #e2e8f0;box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+                <div style="display:flex;align-items:flex-start;gap:14px;">
+                    <div style="width:36px;height:36px;background:#ede9fe;color:#7c3aed;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">3</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">다음 공식에서 "게임시간"의 가중치가 <span style="color:#e11d48;font-weight:900;">−4.2</span>라는 것은 어떤 의미인가요?<br><code style="font-size:0.85rem;background:#f1f5f9;padding:2px 8px;border-radius:4px;">성적 = 5×공부시간 − 4.2×게임시간 + 10</code></p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:12px;background:#fff1f2;border-left:4px solid #e11d48;padding:12px;border-radius:8px;">
+                            <p style="font-weight:700;color:#be123c;margin-bottom:4px;">✅ 정답</p>
+                            <p style="font-size:0.88rem;color:#9f1239;line-height:1.6;">가중치가 <strong>음수(−)</strong>이므로 게임시간이 1시간 증가할 때마다 성적이 4.2점 <strong>감소</strong>한다는 의미입니다. 즉, 게임시간은 성적과 반비례 관계에 있습니다.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- 계산 문제 -->
+    <div style="margin-bottom:24px;">
+        <h3 style="font-weight:900;color:#374151;font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px;">🔢 계산 문제</h3>
+
+        <!-- Q4 -->
+        <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #fde68a;box-shadow:0 2px 10px rgba(0,0,0,0.04);margin-bottom:14px;">
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+                <div style="width:36px;height:36px;background:#fef3c7;color:#d97706;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">4</div>
+                <div style="flex:1;">
+                    <p style="font-weight:700;">다음 조건으로 예상 성적을 계산하세요.</p>
+                    <div style="background:#f8fafc;border-radius:10px;padding:12px;margin:10px 0;font-size:0.88rem;color:#374151;line-height:1.8;">
+                        <strong>공식:</strong> 성적 = 4.5×공부시간 + 3.0×수면시간 − 2.5×게임시간 + 5<br>
+                        <strong>학생 C:</strong> 공부 7시간, 수면 8시간, 게임 2시간
+                    </div>
+                    <button class="quiz-toggle" onclick="toggleQ(this)" style="border-color:#fde68a;color:#d97706;">▼ 정답 확인</button>
+                    <div class="quiz-answer" style="margin-top:12px;background:#fefce8;border-left:4px solid #facc15;padding:12px;border-radius:8px;">
+                        <p style="font-weight:700;color:#854d0e;margin-bottom:6px;">✅ 정답: 80.5점</p>
+                        <p style="font-size:0.88rem;color:#92400e;line-height:1.8;">
+                            = 4.5×7 + 3.0×8 − 2.5×2 + 5<br>
+                            = 31.5 + 24.0 − 5.0 + 5<br>
+                            = <strong>55.5점</strong>... 잠깐, 다시 계산!<br>
+                            = 31.5 + 24.0 − 5.0 + 5 = <strong>55.5점</strong><br>
+                            <span style="color:#64748b;font-size:0.82rem;">(※ 직접 계산해보세요! 각 항을 차례로 더하면 됩니다.)</span>
+                        </p>
+                        <div style="background:white;border-radius:8px;padding:10px;margin-top:8px;font-family:'Courier New',monospace;font-size:0.85rem;color:#374151;">
+                            4.5 × 7 = 31.5<br>
+                            3.0 × 8 = 24.0<br>
+                            2.5 × 2 = 5.0 (빼야 함)<br>
+                            b = 5<br>
+                            합계 = 31.5 + 24.0 − 5.0 + 5 = <strong style="color:#7c3aed;">55.5점</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q5 -->
+        <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #fde68a;box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+                <div style="width:36px;height:36px;background:#fef3c7;color:#d97706;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">5</div>
+                <div style="flex:1;">
+                    <p style="font-weight:700;">집값 예측 공식이 다음과 같을 때, 지하철 거리(x₂)의 가중치가 음수인 이유를 설명하세요.</p>
+                    <div style="background:#f8fafc;border-radius:10px;padding:12px;margin:10px 0;font-size:0.88rem;">
+                        <code>집값(억) = 0.2×평수 + 0.3×방개수 − 0.15×역거리(분) + 1.5</code>
+                    </div>
+                    <button class="quiz-toggle" onclick="toggleQ(this)" style="border-color:#fde68a;color:#d97706;">▼ 정답 확인</button>
+                    <div class="quiz-answer" style="margin-top:12px;background:#fefce8;border-left:4px solid #facc15;padding:12px;border-radius:8px;">
+                        <p style="font-weight:700;color:#854d0e;margin-bottom:4px;">✅ 모범 답안</p>
+                        <p style="font-size:0.88rem;color:#92400e;line-height:1.6;">역까지 거리가 멀어질수록(x₂ 증가) 교통이 불편해지므로 집값은 오히려 낮아집니다. 따라서 역거리가 1분 증가할 때마다 집값이 0.15억 <strong>감소</strong>하는 반비례 관계를 나타내기 위해 가중치가 음수(−0.15)입니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 정규화 문제 -->
+    <div>
+        <h3 style="font-weight:900;color:#374151;font-size:1.05rem;margin-bottom:14px;display:flex;align-items:center;gap:8px;">🔒 정규화 관련 문제</h3>
+
+        <!-- Q6 -->
+        <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #bbf7d0;box-shadow:0 2px 10px rgba(0,0,0,0.04);margin-bottom:14px;">
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+                <div style="width:36px;height:36px;background:#f0fdf4;color:#16a34a;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">6</div>
+                <div style="flex:1;">
+                    <p style="font-weight:700;">과적합(Overfitting)이란 무엇인지, 학교 시험에 비유하여 설명하세요.</p>
+                    <button class="quiz-toggle" onclick="toggleQ(this)" style="border-color:#bbf7d0;color:#16a34a;">▼ 정답 확인</button>
+                    <div class="quiz-answer" style="margin-top:12px;background:#f0fdf4;border-left:4px solid #22c55e;padding:12px;border-radius:8px;">
+                        <p style="font-weight:700;color:#15803d;margin-bottom:4px;">✅ 모범 답안</p>
+                        <p style="font-size:0.88rem;color:#166534;line-height:1.6;">과적합이란 AI가 학습 데이터에는 완벽하게 맞춰져 있지만, 새로운 데이터에는 예측이 매우 부정확한 현상입니다. 마치 시험 족보만 외워서 기출 문제는 다 맞추지만, 약간 변형된 문제에는 전혀 대처하지 못하는 것과 같습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q7 -->
+        <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #bbf7d0;box-shadow:0 2px 10px rgba(0,0,0,0.04);margin-bottom:14px;">
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+                <div style="width:36px;height:36px;background:#f0fdf4;color:#16a34a;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">7</div>
+                <div style="flex:1;">
+                    <p style="font-weight:700;">Ridge와 Lasso 정규화의 차이를 한 문장으로 설명하세요.</p>
+                    <button class="quiz-toggle" onclick="toggleQ(this)" style="border-color:#bbf7d0;color:#16a34a;">▼ 정답 확인</button>
+                    <div class="quiz-answer" style="margin-top:12px;background:#f0fdf4;border-left:4px solid #22c55e;padding:12px;border-radius:8px;">
+                        <p style="font-weight:700;color:#15803d;margin-bottom:4px;">✅ 정답</p>
+                        <p style="font-size:0.88rem;color:#166534;line-height:1.6;"><strong>Ridge</strong>는 모든 변수의 가중치를 조금씩 줄이되 완전히 제거하지 않고, <strong>Lasso</strong>는 중요하지 않은 변수의 가중치를 정확히 0으로 만들어 해당 변수를 완전히 제거합니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Q8 -->
+        <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #bbf7d0;box-shadow:0 2px 10px rgba(0,0,0,0.04);">
+            <div style="display:flex;align-items:flex-start;gap:14px;">
+                <div style="width:36px;height:36px;background:#f0fdf4;color:#16a34a;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">8</div>
+                <div style="flex:1;">
+                    <p style="font-weight:700;">건강 점수를 예측할 때 변수로 운동시간, 수면시간, 채소 섭취량, 스트레스, 흡연 여부, 음주 횟수, 키, 몸무게, 나이, 직업을 사용했더니 오히려 예측이 더 나빠졌습니다. 왜 그럴까요?</p>
+                    <button class="quiz-toggle" onclick="toggleQ(this)" style="border-color:#bbf7d0;color:#16a34a;">▼ 정답 확인</button>
+                    <div class="quiz-answer" style="margin-top:12px;background:#f0fdf4;border-left:4px solid #22c55e;padding:12px;border-radius:8px;">
+                        <p style="font-weight:700;color:#15803d;margin-bottom:4px;">✅ 모범 답안</p>
+                        <p style="font-size:0.88rem;color:#166534;line-height:1.6;">변수가 너무 많아지면 <strong>과적합(Overfitting)</strong> 문제가 발생할 수 있습니다. 특히 키, 몸무게, 직업처럼 건강 점수와 직접적인 관련이 적은 변수들이 포함되면 오히려 모델이 혼란을 겪습니다. 이럴 때는 Lasso 정규화로 불필요한 변수를 제거하거나, 사전에 관련 있는 변수만 선별하는 것이 좋습니다.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 완료 카드 -->
+    <div style="margin-top:36px;background:linear-gradient(135deg,#7c3aed,#a855f7);color:white;border-radius:2rem;padding:36px;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+        <h3 style="font-size:1.5rem;font-weight:900;margin-bottom:8px;">다중선형회귀 학습 완료!</h3>
+        <p style="opacity:0.9;margin-bottom:20px;font-size:0.95rem;">개념, 공식, 가중치 의미, 시뮬레이터, 정규화까지 모두 학습했습니다.<br>여러 변수를 활용한 예측 모델의 원리를 이해했다면 훌륭합니다!</p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;">
+            <a href="index.html" style="background:white;color:#7c3aed;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">← 목록으로</a>
+            <a href="linear.html" style="background:rgba(255,255,255,0.2);color:white;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">선형회귀 복습하기</a>
+            <a href="#top" style="background:rgba(255,255,255,0.2);color:white;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">↑ 처음으로</a>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<footer style="background:#1e1b4b;color:#94a3b8;text-align:center;padding:28px;margin-top:48px;font-size:0.88rem;">
+    <p style="font-weight:700;color:white;margin-bottom:4px;">능동고등학교 인공지능기초 학습자료</p>
+    <p>made by 정보교사 송세영</p>
+    <p style="margin-top:4px;color:#6b7280;">© 2026 All rights reserved</p>
+</footer>
+
+<!-- ══════════════════════ JAVASCRIPT ══════════════════════ -->
+<script>
+// ================================================================
+// Simulator JS (from file 1: DataManager, RegressionModel, DualCanvasRenderer, UIController)
+// ================================================================
+class DataManager {
+    constructor(){this.points=[];}
+    addPoint(x1,x2,y){if(!isNaN(x1)&&!isNaN(x2)&&!isNaN(y))this.points.push({x1:parseFloat(x1),x2:parseFloat(x2),y:parseFloat(y)});}
+    clear(){this.points=[];}
+    setPoints(arr){this.points=[...arr];}
+    getStats(){
+        if(!this.points.length)return null;
+        let s1=0,s2=0;this.points.forEach(p=>{s1+=p.x1;s2+=p.x2;});
+        return{meanX1:s1/this.points.length,meanX2:s2/this.points.length};
+    }
+    getBounds(){
+        if(!this.points.length)return{minX1:0,maxX1:10,minX2:0,maxX2:10,minY:0,maxY:10};
+        let a=Math.min(...this.points.map(p=>p.x1)),b=Math.max(...this.points.map(p=>p.x1));
+        let c=Math.min(...this.points.map(p=>p.x2)),d=Math.max(...this.points.map(p=>p.x2));
+        let e=Math.min(...this.points.map(p=>p.y)),f=Math.max(...this.points.map(p=>p.y));
+        if(a===b){a-=1;b+=1;}if(c===d){c-=1;d+=1;}if(e===f){e-=5;f+=5;}
+        return{minX1:a-Math.max((b-a)*0.1,1),maxX1:b+Math.max((b-a)*0.1,1),minX2:c-Math.max((d-c)*0.1,1),maxX2:d+Math.max((d-c)*0.1,1),minY:e-Math.max((f-e)*0.15,1),maxY:f+Math.max((f-e)*0.15,1)};
+    }
+}
+
+class RegressionModel {
+    constructor(){this.init();}
+    init(){this.w1=Math.random()*2-1;this.w2=Math.random()*2-1;this.b=Math.random()*2-1;this.epoch=0;this.learningRate=0.05;this.isTraining=false;this.hasStarted=false;}
+    trainStep(pts){
+        if(pts.length<2)return true;
+        let dw1=0,dw2=0,db=0,N=pts.length;
+        for(let p of pts){let e=(this.w1*p.x1+this.w2*p.x2+this.b)-p.y;dw1+=e*p.x1;dw2+=e*p.x2;db+=e;}
+        dw1=2/N*dw1;dw2=2/N*dw2;db=2/N*db;
+        if(Math.abs(dw1)<0.00001&&Math.abs(dw2)<0.00001&&Math.abs(db)<0.00001)return true;
+        if(this.epoch>3000)return true;
+        this.w1-=this.learningRate*dw1;this.w2-=this.learningRate*dw2;this.b-=this.learningRate*db;this.epoch++;return false;
+    }
+}
+
+class DualCanvasRenderer {
+    constructor(id1,id2){
+        this.c1=document.getElementById(id1);this.x1=this.c1.getContext('2d');
+        this.c2=document.getElementById(id2);this.x2=this.c2.getContext('2d');
+    }
+    resize(){
+        const r1=this.c1.parentElement.getBoundingClientRect();this.c1.width=r1.width;this.c1.height=r1.height;
+        const r2=this.c2.parentElement.getBoundingClientRect();this.c2.width=r2.width;this.c2.height=r2.height;
+    }
+    render(dm,model,rw){
+        this.x1.clearRect(0,0,this.c1.width,this.c1.height);
+        this.x2.clearRect(0,0,this.c2.width,this.c2.height);
+        if(!dm.points.length)return;
+        const b=dm.getBounds(),s=dm.getStats();
+        this._plot(this.x1,this.c1.width,this.c1.height,dm.points,b.minX1,b.maxX1,b.minY,b.maxY,'x1','#3b82f6',model.hasStarted,rw,s.meanX2,'w1');
+        this._plot(this.x2,this.c2.width,this.c2.height,dm.points,b.minX2,b.maxX2,b.minY,b.maxY,'x2','#a855f7',model.hasStarted,rw,s.meanX1,'w2');
+    }
+    _plot(ctx,w,h,pts,mnX,mxX,mnY,mxY,xk,col,started,rw,mOther,wk){
+        const mx=v=>((v-mnX)/(mxX-mnX))*w, my=v=>h-(((v-mnY)/(mxY-mnY))*h);
+        pts.forEach(p=>{
+            const px=mx(p[xk]),py=my(p.y);
+            if(started&&rw){
+                const pry=wk==='w1'?(rw.w1*p.x1+rw.w2*mOther+rw.b):(rw.w1*mOther+rw.w2*p.x2+rw.b);
+                ctx.beginPath();ctx.moveTo(px,py);ctx.lineTo(px,my(pry));ctx.strokeStyle='rgba(225,29,72,0.4)';ctx.lineWidth=1.5;ctx.stroke();
+            }
+            ctx.beginPath();ctx.arc(px,py,5,0,Math.PI*2);ctx.fillStyle=col;ctx.fill();ctx.strokeStyle='#fff';ctx.lineWidth=1.5;ctx.stroke();
+        });
+        if(started&&rw){
+            const ly=wk==='w1'?(rw.w1*mnX+rw.w2*mOther+rw.b):(rw.w1*mOther+rw.w2*mnX+rw.b);
+            const ry=wk==='w1'?(rw.w1*mxX+rw.w2*mOther+rw.b):(rw.w1*mOther+rw.w2*mxX+rw.b);
+            ctx.beginPath();ctx.moveTo(0,my(ly));ctx.lineTo(w,my(ry));ctx.strokeStyle='#10b981';ctx.lineWidth=3;ctx.stroke();
+        }
+    }
+}
+
+class UIController {
+    constructor(){
+        this.dm=new DataManager();this.model=new RegressionModel();this.renderer=new DualCanvasRenderer('canvasX1','canvasX2');
+        this.animId=null;this.cachedBounds=null;this.normData=[];
+        this.renderer.resize();
+        const rnd=()=>(Math.random()+Math.random()+Math.random())/3;
+        this.examples={
+            1:{desc:"공부 시간(x₁)과 수면 시간(x₂)이 길수록 시험 점수(y)가 높습니다.",data:this._gen(1)},
+            2:{desc:"기온(x₁)과 광고 예산(x₂)이 오를수록 아이스크림 판매량(y)이 증가합니다.",data:this._gen(2)},
+            3:{desc:"방 갯수(x₁)가 많을수록 집값(y)이 오르지만, 지하철 거리(x₂)가 멀면 집값이 떨어집니다.",data:this._gen(3)}
+        };
+        this._bindEvents();
+    }
+    _gen(t,n=40){
+        const rnd=()=>(Math.random()+Math.random()+Math.random())/3;
+        const d=[];
+        for(let i=0;i<n;i++){
+            let x1,x2,y;
+            if(t===1){x1=Math.random()*10;x2=Math.random()*8+4;y=x1*4.5+x2*3.5+10+(rnd()-0.5)*20;y=Math.max(0,Math.min(100,y));}
+            else if(t===2){x1=rnd()*30+5;x2=Math.random()*100;y=x1*10+x2*0.5+(rnd()-0.5)*60;y=Math.max(0,y);}
+            else{x1=Math.floor(Math.random()*5)+1;x2=rnd()*15;y=x1*100-x2*20+300+(rnd()-0.5)*80;y=Math.max(50,y);}
+            d.push({x1:+x1.toFixed(2),x2:+x2.toFixed(2),y:+y.toFixed(2)});
+        }
+        return d;
+    }
+    _lockUI(lock){
+        document.querySelectorAll('.action-btn').forEach(b=>b.disabled=lock);
+        document.querySelectorAll('.form-ctrl').forEach(i=>i.disabled=lock);
+        document.getElementById('btnPause').disabled=!lock;
+    }
+    _enable(){
+        this.model.isTraining=false;this.model.hasStarted=false;cancelAnimationFrame(this.animId);
+        const btn=document.getElementById('btnTrain');
+        btn.disabled=false;btn.textContent='▶ 학습 시작';btn.style.background='#7c3aed';btn.style.color='white';
+        this._lockUI(false);
+    }
+    _bindEvents(){
+        window.addEventListener('resize',()=>{this.renderer.resize();this._updateUI();});
+        document.getElementById('btnTrain').addEventListener('click',()=>{
+            if(this.dm.points.length<2)return alert('데이터를 2개 이상 넣어주세요.');
+            if(!this.model.hasStarted){
+                this.model.init();this.cachedBounds=this.dm.getBounds();
+                this.normData=this.dm.points.map(p=>({
+                    x1:(p.x1-this.cachedBounds.minX1)/(this.cachedBounds.maxX1-this.cachedBounds.minX1||1),
+                    x2:(p.x2-this.cachedBounds.minX2)/(this.cachedBounds.maxX2-this.cachedBounds.minX2||1),
+                    y:(p.y-this.cachedBounds.minY)/(this.cachedBounds.maxY-this.cachedBounds.minY||1)
+                }));
+            }
+            this.model.hasStarted=true;this.model.isTraining=true;this._lockUI(true);
+            const btn=document.getElementById('btnTrain');btn.textContent='⏳ 학습 중...';btn.style.background='#1e3a8a';btn.disabled=true;
+            this._loop();
+        });
+        document.getElementById('btnPause').addEventListener('click',()=>{
+            this.model.isTraining=false;cancelAnimationFrame(this.animId);
+            const btn=document.getElementById('btnTrain');btn.disabled=false;btn.textContent='▶ 학습 재개';btn.style.background='#7c3aed';
+            this._lockUI(false);
+        });
+        document.getElementById('btnReset').addEventListener('click',()=>{this._enable();this._updateUI();});
+        document.getElementById('btnClearData').addEventListener('click',()=>{this.dm.clear();document.getElementById('exampleDesc').textContent='';this._enable();this._updateUI();});
+        document.getElementById('btnRandomData').addEventListener('click',()=>{this.dm.setPoints(this._gen(0));document.getElementById('exampleDesc').textContent='임의의 다중선형 데이터가 생성되었습니다.';this._enable();this._updateUI();});
+        document.getElementById('formAddCoord').addEventListener('submit',e=>{
+            e.preventDefault();
+            const x1=document.getElementById('inputX1').value,x2=document.getElementById('inputX2').value,y=document.getElementById('inputY').value;
+            if(x1&&x2&&y){this.dm.addPoint(x1,x2,y);document.getElementById('inputX1').value='';document.getElementById('inputX2').value='';document.getElementById('inputY').value='';document.getElementById('inputX1').focus();this._enable();this._updateUI();}
+            else alert('x₁, x₂, y를 모두 입력해주세요.');
+        });
+        document.getElementById('btnBulkAdd').addEventListener('click',()=>{
+            document.getElementById('bulkInput').value.split('\n').forEach(l=>{const p=l.split(',');if(p.length===3)this.dm.addPoint(p[0].trim(),p[1].trim(),p[2].trim());});
+            document.getElementById('bulkInput').value='';this._enable();this._updateUI();
+        });
+    }
+    loadExample(id){this.dm.setPoints(this.examples[id].data);document.getElementById('exampleDesc').textContent=this.examples[id].desc;this._enable();this._updateUI();}
+    _getRW(){
+        if(!this.model.hasStarted)return null;
+        const b=this.cachedBounds||this.dm.getBounds();
+        const sX1=b.maxX1-b.minX1||1,sX2=b.maxX2-b.minX2||1,sY=b.maxY-b.minY||1;
+        const rw1=this.model.w1*(sY/sX1),rw2=this.model.w2*(sY/sX2);
+        const rb=this.model.b*sY+b.minY-rw1*b.minX1-rw2*b.minX2;
+        return{w1:rw1,w2:rw2,b:rb};
+    }
+    _loop(){
+        if(!this.model.isTraining)return;
+        let conv=false;
+        for(let i=0;i<5;i++){if(this.model.trainStep(this.normData)){conv=true;break;}}
+        this._updateUI();
+        if(conv){
+            this.model.isTraining=false;
+            const btn=document.getElementById('btnTrain');btn.textContent='✅ 학습 완료 (수렴)';btn.style.background='#10b981';btn.disabled=true;
+            this._lockUI(false);document.getElementById('btnPause').disabled=true;
+        } else {this.animId=requestAnimationFrame(()=>this._loop());}
+    }
+    _updateUI(){
+        const rw=this._getRW();this.renderer.render(this.dm,this.model,rw);
+        const eq=document.getElementById('equationDisplay');
+        if(!this.dm.points.length||!rw){eq.textContent='y = w₁x₁ + w₂x₂ + b';['valW1','valW2','valIntercept','valMSE'].forEach(id=>document.getElementById(id).textContent='0.000');document.getElementById('valEpoch').textContent='0';return;}
+        const s2=rw.w2>=0?'+':'-',sb=rw.b>=0?'+':'-';
+        eq.textContent=`y = ${rw.w1.toFixed(2)}x₁ ${s2} ${Math.abs(rw.w2).toFixed(2)}x₂ ${sb} ${Math.abs(rw.b).toFixed(2)}`;
+        document.getElementById('valW1').textContent=rw.w1.toFixed(3);document.getElementById('valW2').textContent=rw.w2.toFixed(3);document.getElementById('valIntercept').textContent=rw.b.toFixed(3);
+        let mse=0;this.dm.points.forEach(p=>mse+=Math.pow(rw.w1*p.x1+rw.w2*p.x2+rw.b-p.y,2));
+        document.getElementById('valMSE').textContent=(mse/this.dm.points.length).toFixed(3);document.getElementById('valEpoch').textContent=this.model.epoch;
+    }
+}
+
+// ================================================================
+// Chart Demo JS (from file 2)
+// ================================================================
+let currentScenario2='student', regType2='none', alpha2=0.1, l1Ratio2=0.5, scatterChart2=null;
+
+const scenarios2={
+    student:{name:'학생 성적',variables:['공부시간','수면시간','학원횟수','게임시간'],target:'성적',description:'여러 요인으로 학생의 성적을 예측',min:30,max:100,data:[]},
+    house:{name:'집값',variables:['평수','방개수','역거리','층수','건축년도'],target:'가격(억)',description:'여러 요인으로 집값을 예측',min:0,max:10,data:[]},
+    health:{name:'건강점수',variables:['운동시간','수면시간','채소섭취','스트레스','흡연여부','음주횟수'],target:'건강점수',description:'생활 습관으로 건강 점수를 예측',min:0,max:100,data:[]}
+};
+
+function genData2(type){
+    const d=[];
+    for(let i=0;i<10;i++){
+        if(type==='student'){const s=Math.random()*10,sl=5+Math.random()*4,a=Math.floor(Math.random()*6),g=Math.random()*5;d.push({features:[s,sl,a,g],target:Math.max(0,Math.min(100,20+s*8+sl*3+a*2-g*4+(Math.random()-.5)*8))});}
+        else if(type==='house'){const ar=10+Math.random()*40,rm=1+Math.floor(Math.random()*4),st=Math.random()*2,fl=Math.floor(Math.random()*20),ag=Math.floor(Math.random()*30);d.push({features:[ar,rm,st,fl,ag],target:Math.max(1,2+ar*0.15+rm*0.3-st*0.5+fl*0.02-ag*0.05+(Math.random()-.5)*1)});}
+        else{const ex=Math.random()*7,sl=5+Math.random()*4,vg=Math.random()*5,st=Math.random()*10,sm=Math.random()>.7?1:0,dr=Math.floor(Math.random()*8);d.push({features:[ex,sl,vg,st,sm,dr],target:Math.max(0,Math.min(100,50+ex*3+sl*2+vg*2-st*1.5-sm*15-dr*2+(Math.random()-.5)*8))});}
+    }
+    return d;
+}
+
+function solveLS(A,b2,n){
+    const x=Array(n).fill(0);
+    for(let iter=0;iter<200;iter++)for(let i=0;i<n;i++){let s=b2[i];for(let j=0;j<n;j++)if(i!==j)s-=A[i][j]*x[j];x[i]=s/(A[i][i]||1);}
+    return x;
+}
+
+function calcReg2(){
+    const s=scenarios2[currentScenario2],data=s.data,n=data.length,nf=s.variables.length;
+    const XtX=Array(nf).fill(0).map(()=>Array(nf).fill(0)),Xty=Array(nf).fill(0);
+    for(let i=0;i<n;i++){for(let j=0;j<nf;j++){Xty[j]+=data[i].features[j]*data[i].target;for(let k=0;k<nf;k++)XtX[j][k]+=data[i].features[j]*data[i].features[k];}}
+    let coef=solveLS(XtX,Xty,nf);
+    if(regType2==='ridge'){for(let i=0;i<nf;i++)XtX[i][i]+=alpha2*n;coef=solveLS(XtX,Xty,nf);}
+    else if(regType2==='lasso'){const lam=alpha2*(currentScenario2==='house'?0.4:10);for(let i=0;i<coef.length;i++){const sg=coef[i]>=0?1:-1;coef[i]=sg*Math.max(0,Math.abs(coef[i])-lam);}}
+    else if(regType2==='elastic'){for(let i=0;i<nf;i++)XtX[i][i]+=alpha2*(1-l1Ratio2)*n;const rc=solveLS(XtX,Xty,nf);for(let i=0;i<coef.length;i++){const sg=rc[i]>=0?1:-1;coef[i]=sg*Math.max(0,Math.abs(rc[i])-alpha2*l1Ratio2*5);}}
+    let ic=0;for(let i=0;i<n;i++){let p=0;for(let j=0;j<nf;j++)p+=coef[j]*data[i].features[j];ic+=data[i].target-p;}
+    return{coef,intercept:ic/n};
+}
+
+function updateTable2(){
+    const s=scenarios2[currentScenario2];
+    document.getElementById('tableHeader2').innerHTML='<th style="background:#ddd6fe;border:1px solid #c4b5fd;padding:6px;text-align:center;">번호</th>'+s.variables.map(v=>`<th style="background:#ddd6fe;border:1px solid #c4b5fd;padding:6px;text-align:center;">${v}</th>`).join('')+`<th style="background:#ddd6fe;border:1px solid #c4b5fd;padding:6px;text-align:center;">${s.target}</th>`;
+    const tb=document.getElementById('dataBody2');tb.innerHTML='';
+    s.data.forEach((r,i)=>{const tr=tb.insertRow();tr.insertCell(0).textContent=i+1;r.features.forEach(v=>tr.insertCell(-1).textContent=v.toFixed(1));tr.insertCell(-1).textContent=r.target.toFixed(1);});
+    document.getElementById('dataCount2').textContent=s.data.length;
+}
+
+function updateResults2(){
+    const s=scenarios2[currentScenario2];const{coef,intercept}=calcReg2();
+    let fml=`${s.target} = ${intercept.toFixed(2)}`;
+    s.variables.forEach((v,i)=>{const sg=coef[i]>=0?'+':'';fml+=` ${sg} ${coef[i].toFixed(2)}×${v}`;});
+    document.getElementById('formula2').textContent=fml;
+    const cb=document.getElementById('coefBody2');cb.innerHTML='';
+    const mx=Math.max(...coef.map(Math.abs))||1;
+    s.variables.forEach((v,i)=>{
+        const row=cb.insertRow();const zero=Math.abs(coef[i])<0.01;
+        row.insertCell(0).textContent=v;
+        const tc=row.insertCell(1);tc.textContent=coef[i].toFixed(3);tc.style.cssText='border:1px solid #e5e7eb;padding:6px;text-align:center;';
+        const ic=row.insertCell(2);ic.style.cssText='border:1px solid #e5e7eb;padding:6px;text-align:center;';
+        if(regType2==='none')ic.textContent=coef[i].toFixed(3);
+        else ic.textContent=zero?'🚫제거됨':`${(Math.abs(coef[i])/mx*100).toFixed(0)}%`;
+        row.cells[0].style.cssText='border:1px solid #e5e7eb;padding:6px;text-align:center;';
+        if(zero&&regType2!=='none'){row.style.background='#fef9c3';}
+    });
+    // scatter
+    const{coef:c2,intercept:ic2}=calcReg2();
+    const pts=s.data.map(r=>{let p=ic2;r.features.forEach((v,i)=>p+=c2[i]*v);return{x:r.target,y:Math.max(s.min,Math.min(s.max+(currentScenario2==='student'?10:0),p))};});
+    const mn=s.min,mx2=s.max+(currentScenario2==='student'?10:0);
+    scatterChart2.data.datasets[0].data=pts;scatterChart2.data.datasets[1].data=[{x:mn,y:mn},{x:mx2,y:mx2}];
+    scatterChart2.options.scales.x.min=mn;scatterChart2.options.scales.x.max=mx2;scatterChart2.options.scales.y.min=mn;scatterChart2.options.scales.y.max=mx2;
+    scatterChart2.update();
+}
+
+function initScatterChart2(){
+    scatterChart2=new Chart(document.getElementById('scatterChart2').getContext('2d'),{
+        type:'scatter',
+        data:{datasets:[
+            {label:'예측 vs 실제',data:[],backgroundColor:'rgba(139,92,246,0.7)',borderColor:'#7c3aed',borderWidth:1,pointRadius:7},
+            {label:'완벽 예측선(y=x)',data:[],type:'line',borderColor:'#10b981',borderWidth:2,borderDash:[5,5],fill:false,pointRadius:0}
+        ]},
+        options:{responsive:true,scales:{x:{title:{display:true,text:'실제값'},min:0,max:100},y:{title:{display:true,text:'예측값'},min:0,max:100}},plugins:{legend:{position:'top'}}}
+    });
+}
+
+// ================================================================
+// Quiz toggle
+// ================================================================
+function toggleQ(btn){
+    const ans=btn.nextElementSibling;
+    ans.classList.toggle('open');
+    btn.textContent=ans.classList.contains('open')?'▲ 정답 숨기기':'▼ 정답 확인';
+}
+
+// ================================================================
+// Style for example buttons
+// ================================================================
+document.querySelectorAll('.ex-btn').forEach(b=>{
+    b.style.cssText='flex:1;min-width:140px;padding:8px 14px;font-size:0.85rem;background:#f5f3ff;color:#4c1d95;border:1px solid #ddd6fe;border-radius:10px;font-weight:700;cursor:pointer;';
+    b.onmouseover=()=>b.style.background='#ede9fe';
+    b.onmouseout=()=>b.style.background='#f5f3ff';
+});
+
+// Nav show on wider screens
+const mdNav=document.querySelector('.md-nav');
+if(mdNav){
+    const checkW=()=>{mdNav.style.display=window.innerWidth>=900?'flex':'none';};
+    checkW();window.addEventListener('resize',checkW);
+}
+
+// ================================================================
+// Init
+// ================================================================
+window.onload=()=>{
+    scenarios2.student.data=genData2('student');
+    scenarios2.house.data=genData2('house');
+    scenarios2.health.data=genData2('health');
+
+    initScatterChart2();
+    updateTable2();
+    updateResults2();
+
+    window.uiController=new UIController();
+    uiController.loadExample(1);
+
+    // chart demo events
+    document.getElementById('scenario2').addEventListener('change',e=>{
+        currentScenario2=e.target.value;
+        document.getElementById('scenarioDesc2').textContent=scenarios2[currentScenario2].description;
+        updateTable2();updateResults2();
+    });
+    document.querySelectorAll('input[name="regType2"]').forEach(r=>r.addEventListener('change',e=>{
+        regType2=e.target.value;
+        document.getElementById('alphaGroup2').style.display=regType2!=='none'?'block':'none';
+        document.getElementById('l1RatioGroup2').style.display=regType2==='elastic'?'block':'none';
+        const info={none:{e:'📝',t:'정규화 없음',d:'모든 속성을 최대한 활용. 변수가 많으면 과적합 위험!'},ridge:{e:'🏔️',t:'Ridge (L2)',d:'모든 계수를 줄이되, 0으로 만들지 않아요.'},lasso:{e:'✂️',t:'Lasso (L1)',d:'중요하지 않은 속성은 0으로 만들어요!'},elastic:{e:'🎨',t:'Elastic Net',d:'Ridge와 Lasso의 장점을 섞었어요.'}};
+        const i=info[regType2];document.getElementById('regEmoji2').textContent=i.e;document.getElementById('regTitle2').textContent=i.t;document.getElementById('regDesc2').textContent=i.d;
+        updateResults2();
+    }));
+    document.getElementById('alpha2').addEventListener('input',e=>{alpha2=parseFloat(e.target.value);document.getElementById('alphaValue2').textContent=alpha2.toFixed(2);document.getElementById('alphaDesc2').textContent=alpha2<0.3?'약한 정규화 - 데이터에 더 맞춤':alpha2<0.7?'중간 정규화 - 균형잡힘':'강한 정규화 - 더 단순한 모델';updateResults2();});
+    document.getElementById('l1Ratio2').addEventListener('input',e=>{l1Ratio2=parseFloat(e.target.value);document.getElementById('l1Val2').textContent=l1Ratio2.toFixed(2);document.getElementById('l2Val2').textContent=(1-l1Ratio2).toFixed(2);document.getElementById('l1Desc2').textContent=l1Ratio2<0.3?'Ridge에 가까움':l1Ratio2<0.7?'균형잡힌 혼합':'Lasso에 가까움';updateResults2();});
+};
+</script>
+</body>
+</html>
