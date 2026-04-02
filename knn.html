@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-최근접 이웃(KNN) - 능동고등학교 인공지능기초</title>
+    <style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: "Pretendard Variable", Pretendard, "Malgun Gothic", sans-serif; background: #fdf4ff; color: #1e1b4b; line-height: 1.6; }
+        .hero-gradient { background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%); }
+        .sticky-nav { position:sticky; top:0; z-index:100; backdrop-filter:blur(14px); background:rgba(255,255,255,0.93); border-bottom:1px solid rgba(196,181,253,0.4); box-shadow:0 2px 12px rgba(124,58,237,0.08); padding-top:14px; padding-bottom:14px; }
+        .section-card { background:white; padding:2.5rem; border-radius:2rem; box-shadow:0 4px 20px rgba(124,58,237,0.07); border:1px solid #ede9fe; }
+        .step-card { background:white; border-radius:1.5rem; padding:1.5rem; border:1px solid #e5e7eb; box-shadow:0 4px 12px rgba(0,0,0,0.05); display:flex; flex-direction:column; align-items:center; text-align:center; transition:transform .2s, box-shadow .2s; }
+        .step-card:hover { transform:translateY(-4px); box-shadow:0 8px 24px rgba(124,58,237,0.13); }
+        .quiz-answer { display:none; animation:fadeIn .25s ease; }
+        .quiz-answer.open { display:block; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(-6px);} to{opacity:1;transform:translateY(0);} }
+        .quiz-toggle { display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:#7c3aed;font-weight:700;font-size:.88rem;margin-top:10px;border:2px solid #c4b5fd;border-radius:999px;padding:4px 16px;transition:all .2s;background:none; }
+        .quiz-toggle:hover { background:#f5f3ff; }
+        .mc-btn { width:100%;padding:12px 16px;text-align:left;border-radius:12px;border:2px solid #e5e7eb;background:#f9fafb;font-weight:600;color:#374151;transition:all .25s;cursor:pointer;font-size:.88rem; }
+        .mc-btn:hover { background:#f5f3ff;border-color:#c4b5fd; }
+        .mc-btn.correct { background:#7c3aed;color:white;border-color:#7c3aed; }
+        .mc-btn.wrong { background:#f43f5e;color:white;border-color:#f43f5e; }
+        .mc-btn.disabled { opacity:.5;pointer-events:none; }
+        .animal-input { width:60px;padding:6px;border:2px solid #c4b5fd;border-radius:8px;text-align:center;font-size:1.1rem;font-weight:900;outline:none;transition:border .2s; }
+        .animal-input:focus { border-color:#7c3aed; }
+        .knn-canvas-wrap { position:relative;width:100%;background:#f8fafc;border-radius:1.25rem;overflow:hidden;border:2px solid #e0e7ff;aspect-ratio:4/3; }
+        .knn-canvas-wrap canvas { position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair; }
+        .tool-btn { padding:8px 14px;border-radius:10px;font-weight:700;font-size:.82rem;cursor:pointer;border:2px solid transparent;transition:all .2s; }
+        .tool-btn.active { transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.12); }
+        .dist-card { border-radius:1.25rem;padding:16px;border:2px solid; }
+        ::-webkit-scrollbar { width:7px; }
+        ::-webkit-scrollbar-track { background:#f5f3ff;border-radius:10px; }
+        ::-webkit-scrollbar-thumb { background:#c4b5fd;border-radius:10px; }
+        @media(max-width:768px){ .section-card{padding:1.5rem;} }
+    </style>
+</head>
+<body>
+
+<!-- ═══ HERO ═══ -->
+<header id="top" class="hero-gradient text-white px-6" style="padding-top:44px;padding-bottom:44px;">
+    <div style="max-width:860px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center;">
+        <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;padding:6px 18px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.45);border-radius:999px;font-weight:700;font-size:.82rem;text-decoration:none;color:#fff;margin-bottom:12px;">← 목록으로 돌아가기</a>
+        <div style="padding:5px 18px;background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.38);border-radius:999px;font-weight:700;font-size:.82rem;color:#fff;margin-bottom:18px;">능동고등학교 인공지능기초 | made by 정보교사 송세영</div>
+        <h1 style="font-size:clamp(2.2rem,6vw,3.6rem);font-weight:900;line-height:1.18;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,0.12);margin-bottom:16px;">
+            유유상종의 법칙,<br><span style="color:#f9a8d4;">K-Nearest Neighbors</span>
+        </h1>
+        <p style="font-size:1.05rem;color:rgba(255,255,255,0.92);max-width:580px;line-height:1.7;margin-bottom:22px;">
+            새로운 데이터가 들어오면 가장 가까운 이웃 K개에게 물어보고<br>다수결로 답을 결정하는 직관적인 분류 알고리즘을 체험하세요.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;">
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">📏 거리 측정</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">🗳️ 다수결 투표</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">🦒 기린/코끼리 퀴즈</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">🔬 시뮬레이터</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,0.22);border:1px solid rgba(255,255,255,0.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">✏️ 퀴즈</span>
+        </div>
+    </div>
+</header>
+
+<!-- ═══ NAV ═══ -->
+<nav class="sticky-nav px-6">
+    <div style="max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:32px;height:32px;background:#7c3aed;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;">👥</div>
+            <span style="font-weight:900;font-size:1.1rem;color:#4c1d95;">K-최근접 이웃</span>
+        </div>
+        <div style="display:flex;gap:14px;font-weight:700;font-size:.85rem;flex-wrap:wrap;">
+            <a href="#concept" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">개념</a>
+            <a href="#giraffe-quiz" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">기린/코끼리</a>
+            <a href="#k-value" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">K값 설정</a>
+            <a href="#distance" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">거리 측정</a>
+            <a href="#simulator" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">시뮬레이터</a>
+            <a href="#quiz" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#7c3aed'" onmouseout="this.style.color='#64748b'">퀴즈</a>
+        </div>
+        <a href="index.html" style="padding:8px 18px;background:#7c3aed;color:white;border-radius:10px;font-weight:700;font-size:.85rem;text-decoration:none;">← 목록</a>
+    </div>
+</nav>
+
+<main style="max-width:1100px;margin:0 auto;padding:48px 16px;display:flex;flex-direction:column;gap:56px;">
+
+<!-- ═══ S1: 개념 ═══ -->
+<section id="concept" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:36px;">
+        <span style="color:#7c3aed;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Core Mechanism</span>
+        <h2 style="font-size:clamp(1.5rem,3.5vw,2.1rem);font-weight:900;margin-top:8px;">K-NN은 어떻게 정답을 맞힐까요?</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:.95rem;">새로운 데이터(Query)가 들어오면, 가장 가까운 K개의 이웃을 찾아 <strong>다수결</strong>로 결정합니다.</p>
+    </div>
+
+    <div class="section-card" style="margin-bottom:24px;">
+        <h3 style="font-weight:900;font-size:1.1rem;margin-bottom:14px;">🤔 K-NN이란?</h3>
+        <p style="font-size:.92rem;color:#374151;line-height:1.8;margin-bottom:14px;">
+            K-최근접 이웃(K-Nearest Neighbors)은 <strong>입력값과 가장 가까운 k개의 이웃을 찾아 다수결 방식으로 클래스를 결정</strong>하는 분류 알고리즘입니다.
+            새로 전학 온 학생이 어느 동아리에 어울릴지 모를 때, 가장 비슷한 성향의 친구 K명을 찾아 그들이 속한 동아리를 보고 결정하는 것과 같습니다.
+        </p>
+        <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:14px;">
+            <p style="font-size:.88rem;color:#92400e;"><strong>💡 핵심:</strong> K-NN은 별도의 '학습' 과정 없이, 새 데이터가 들어올 때마다 기존 모든 데이터와의 거리를 계산합니다. 그래서 <strong>게으른 학습(Lazy Learning)</strong>이라고도 부릅니다!</p>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:24px;">
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#dbeafe;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">📏</div>
+            <span style="background:#dbeafe;color:#2563eb;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">Step 1</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">거리 측정</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">새 데이터와 기존 <strong>모든</strong> 데이터 사이의 거리를 하나씩 계산합니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#ede9fe;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">🔍</div>
+            <span style="background:#ede9fe;color:#7c3aed;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">Step 2</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">이웃 선정</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">거리가 가까운 순서로 정렬 후, <strong>K개</strong>의 가장 가까운 이웃을 선택합니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#fce7f3;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">🗳️</div>
+            <span style="background:#fce7f3;color:#be185d;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">Step 3</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">다수결 투표</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">K개 이웃 중 <strong>가장 많은 클래스</strong>로 새 데이터를 분류합니다.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ S2: 기린/코끼리 퀴즈 ═══ -->
+<section id="giraffe-quiz" style="scroll-margin-top:80px;" class="section-card">
+    <div style="text-align:center;margin-bottom:28px;">
+        <span style="color:#7c3aed;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Interactive Quiz</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:8px;">🦒 기린과 코끼리로 KNN 이해하기</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:.95rem;">교과서 그림 II-78, II-79를 참고해 k값에 따른 분류 결과를 직접 계산해보세요!</p>
+    </div>
+
+    <div style="background:#f5f3ff;border-radius:1.25rem;padding:18px;margin-bottom:24px;border:1px solid #ddd6fe;">
+        <p style="font-size:.92rem;color:#4c1d95;line-height:1.8;font-weight:600;">
+            새로운 데이터 <strong>q</strong>가 들어왔습니다. q 주변에는 <strong>기린 🦒</strong>과 <strong>코끼리 🐘</strong> 데이터들이 있습니다.<br>
+            k값에 따라 가장 가까운 이웃 k개를 선택해서 다수결로 q를 분류해봅시다!
+        </p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px;">
+        <div style="background:#eff6ff;border-radius:1.25rem;padding:20px;border:2px solid #bfdbfe;">
+            <h3 style="font-weight:900;color:#1e40af;margin-bottom:12px;font-size:1.05rem;">📌 k = 3 일 때</h3>
+            <div style="background:white;border-radius:12px;padding:10px;margin-bottom:14px;border:1px solid #bfdbfe;">
+                <canvas id="giraffeCanvas3" style="width:100%;height:190px;display:block;"></canvas>
+                <p style="font-size:.75rem;color:#94a3b8;margin-top:4px;text-align:center;">q와 가장 가까운 3개를 선택하세요</p>
+            </div>
+            <p style="font-size:.85rem;color:#374151;margin-bottom:10px;">q에서 가장 가까운 3개의 이웃 중<br>기린과 코끼리는 각각 몇 마리인가요?</p>
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                <label style="font-weight:700;font-size:.9rem;">🦒 기린:</label>
+                <input class="animal-input" id="giraffe3" type="number" min="0" max="3" placeholder="?">
+                <label style="font-weight:700;font-size:.9rem;">🐘 코끼리:</label>
+                <input class="animal-input" id="elephant3" type="number" min="0" max="3" placeholder="?">
+            </div>
+            <button onclick="checkGiraffeK3()" style="width:100%;padding:10px;background:#2563eb;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:.88rem;">확인하기</button>
+            <div id="result3" style="display:none;margin-top:12px;border-radius:10px;padding:12px;font-size:.85rem;line-height:1.6;"></div>
+        </div>
+
+        <div style="background:#fdf4ff;border-radius:1.25rem;padding:20px;border:2px solid #e9d5ff;">
+            <h3 style="font-weight:900;color:#6b21a8;margin-bottom:12px;font-size:1.05rem;">📌 k = 5 일 때</h3>
+            <div style="background:white;border-radius:12px;padding:10px;margin-bottom:14px;border:1px solid #e9d5ff;">
+                <canvas id="giraffeCanvas5" style="width:100%;height:190px;display:block;"></canvas>
+                <p style="font-size:.75rem;color:#94a3b8;margin-top:4px;text-align:center;">q와 가장 가까운 5개를 선택하세요</p>
+            </div>
+            <p style="font-size:.85rem;color:#374151;margin-bottom:10px;">q에서 가장 가까운 5개의 이웃 중<br>기린과 코끼리는 각각 몇 마리인가요?</p>
+            <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap;">
+                <label style="font-weight:700;font-size:.9rem;">🦒 기린:</label>
+                <input class="animal-input" id="giraffe5" type="number" min="0" max="5" placeholder="?">
+                <label style="font-weight:700;font-size:.9rem;">🐘 코끼리:</label>
+                <input class="animal-input" id="elephant5" type="number" min="0" max="5" placeholder="?">
+            </div>
+            <button onclick="checkGiraffeK5()" style="width:100%;padding:10px;background:#7c3aed;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;font-size:.88rem;">확인하기</button>
+            <div id="result5" style="display:none;margin-top:12px;border-radius:10px;padding:12px;font-size:.85rem;line-height:1.6;"></div>
+        </div>
+    </div>
+
+    <div id="knnPrinciple" style="display:none;background:linear-gradient(135deg,#ede9fe,#fce7f3);border-radius:1.25rem;padding:22px;border:1px solid #c4b5fd;">
+        <h4 style="font-weight:900;color:#4c1d95;margin-bottom:12px;font-size:1.05rem;">🎉 KNN의 핵심 원리를 이해했어요!</h4>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;font-size:.88rem;color:#374151;line-height:1.7;">
+            <div style="background:white;border-radius:10px;padding:12px;border:1px solid #ddd6fe;">
+                <strong style="color:#1e40af;">k=3일 때 → 코끼리 🐘</strong><br>
+                가장 가까운 3개 중 코끼리 2마리, 기린 1마리<br>→ 다수결: <strong>코끼리(2) 승!</strong>
+            </div>
+            <div style="background:white;border-radius:10px;padding:12px;border:1px solid #ddd6fe;">
+                <strong style="color:#6b21a8;">k=5일 때 → 기린 🦒</strong><br>
+                가장 가까운 5개 중 기린 3마리, 코끼리 2마리<br>→ 다수결: <strong>기린(3) 승!</strong>
+            </div>
+        </div>
+        <div style="margin-top:14px;background:#fef3c7;border-radius:10px;padding:12px;border:1px solid #fde68a;">
+            <p style="font-size:.88rem;color:#92400e;font-weight:600;">💡 같은 데이터 q인데도 k값에 따라 분류 결과가 달라집니다! 따라서 <strong>k값 설정</strong>이 KNN에서 매우 중요합니다.</p>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ S3: K값 설정 ═══ -->
+<section id="k-value" style="scroll-margin-top:80px;" class="section-card">
+    <div style="text-align:center;margin-bottom:28px;">
+        <span style="color:#7c3aed;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">K Value Setting</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:8px;">⚙️ k값, 어떻게 설정해야 할까?</h2>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;margin-bottom:22px;">
+        <div style="background:#fff1f2;border-radius:1.25rem;padding:18px;border:2px solid #fecdd3;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">🎯</div>
+            <h4 style="font-weight:900;color:#be123c;margin-bottom:8px;">작은 k값</h4>
+            <p style="font-size:.85rem;color:#9f1239;line-height:1.6;">예측이 <strong>너무 민감하게</strong> 변할 수 있습니다. 노이즈(이상한 데이터)에 쉽게 영향을 받아 분류 경계가 복잡해집니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;border:1px solid #fecdd3;font-size:.8rem;text-align:center;color:#be123c;">k=1: 가장 가까운 1개만<br>→ 이상치에 취약 (과적합)</div>
+        </div>
+        <div style="background:#f0fdf4;border-radius:1.25rem;padding:18px;border:2px solid #bbf7d0;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">🏔️</div>
+            <h4 style="font-weight:900;color:#14532d;margin-bottom:8px;">큰 k값</h4>
+            <p style="font-size:.85rem;color:#15803d;line-height:1.6;"><strong>너무 일반적으로</strong> 예측할 수 있습니다. 분류 경계가 부드러워지지만 세밀한 구분이 어려울 수 있습니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;border:1px solid #bbf7d0;font-size:.8rem;text-align:center;color:#14532d;">k=데이터 전체: 항상 다수 클래스<br>→ 과소적합 위험</div>
+        </div>
+        <div style="background:#fefce8;border-radius:1.25rem;padding:18px;border:2px solid #fde047;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">⚡</div>
+            <h4 style="font-weight:900;color:#854d0e;margin-bottom:8px;">계산 비용</h4>
+            <p style="font-size:.85rem;color:#92400e;line-height:1.6;">새로운 데이터를 예측할 때 <strong>모든 데이터를 비교</strong>해야 합니다. 데이터가 많을수록 시간이 매우 오래 걸립니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;border:1px solid #fde047;font-size:.8rem;text-align:center;color:#854d0e;">데이터 N개 → N번 거리 계산<br>→ 데이터↑ = 시간↑</div>
+        </div>
+        <div style="background:#ede9fe;border-radius:1.25rem;padding:18px;border:2px solid #c4b5fd;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">🔢</div>
+            <h4 style="font-weight:900;color:#4c1d95;margin-bottom:8px;">홀수 k 권장!</h4>
+            <p style="font-size:.85rem;color:#5b21b6;line-height:1.6;"><strong>k값은 홀수로 설정</strong>하는 것이 좋습니다. 이진 분류(클래스 2개)에서 동점(tie) 발생을 방지할 수 있습니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;border:1px solid #c4b5fd;font-size:.8rem;text-align:center;color:#4c1d95;">k=3, 5, 7 ← 권장<br>k=2, 4, 6 ← 동점 위험</div>
+        </div>
+    </div>
+
+    <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:1.5rem;padding:20px;">
+        <h4 style="font-weight:800;color:#3730a3;margin-bottom:10px;">💡 k값 선택 팁</h4>
+        <ul style="list-style:disc;padding-left:18px;color:#3730a3;font-size:.88rem;line-height:2;">
+            <li>일반적으로 <strong>√N (데이터 수의 제곱근)</strong>을 k의 초기값으로 사용합니다.</li>
+            <li>교차 검증(Cross Validation)을 통해 최적의 k를 찾는 것이 좋습니다.</li>
+            <li>이진 분류에서는 반드시 홀수 k를 사용하여 동점을 방지하세요.</li>
+        </ul>
+    </div>
+</section>
+
+<!-- ═══ S4: 거리 측정 ═══ -->
+<section id="distance" style="scroll-margin-top:80px;" class="section-card">
+    <div style="text-align:center;margin-bottom:28px;">
+        <span style="color:#7c3aed;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Distance Metrics</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:8px;">📐 거리를 어떻게 측정할까?</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:.95rem;">KNN에서 '가장 가깝다'는 기준은 어떤 거리 공식을 쓰느냐에 따라 달라집니다.</p>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:22px;">
+        <div class="dist-card" style="background:#eff6ff;border-color:#bfdbfe;">
+            <div style="font-size:2rem;margin-bottom:8px;">✈️</div>
+            <h4 style="font-weight:900;color:#1e40af;margin-bottom:8px;">유클리드 거리</h4>
+            <div style="background:white;border-radius:8px;padding:10px;margin-bottom:10px;text-align:center;font-family:'Courier New',monospace;font-size:.88rem;color:#1e40af;border:1px solid #bfdbfe;">d = √((x₂-x₁)² + (y₂-y₁)²)</div>
+            <p style="font-size:.83rem;color:#1e40af;line-height:1.6;"><strong>직선 거리</strong> — 비행기처럼 두 점을 가장 짧은 경로로 연결합니다. 가장 일반적으로 사용합니다.</p>
+        </div>
+        <div class="dist-card" style="background:#fefce8;border-color:#fde047;">
+            <div style="font-size:2rem;margin-bottom:8px;">🚶</div>
+            <h4 style="font-weight:900;color:#854d0e;margin-bottom:8px;">맨해튼 거리</h4>
+            <div style="background:white;border-radius:8px;padding:10px;margin-bottom:10px;text-align:center;font-family:'Courier New',monospace;font-size:.88rem;color:#854d0e;border:1px solid #fde047;">d = |x₂-x₁| + |y₂-y₁|</div>
+            <p style="font-size:.83rem;color:#92400e;line-height:1.6;"><strong>격자 거리</strong> — 도시 블록을 따라 이동하는 것처럼 수평/수직으로만 이동합니다.</p>
+        </div>
+        <div class="dist-card" style="background:#fdf4ff;border-color:#e9d5ff;">
+            <div style="font-size:2rem;margin-bottom:8px;">♟️</div>
+            <h4 style="font-weight:900;color:#6b21a8;margin-bottom:8px;">체비셰프 거리</h4>
+            <div style="background:white;border-radius:8px;padding:10px;margin-bottom:10px;text-align:center;font-family:'Courier New',monospace;font-size:.88rem;color:#6b21a8;border:1px solid #e9d5ff;">d = max(|x₂-x₁|, |y₂-y₁|)</div>
+            <p style="font-size:.83rem;color:#6b21a8;line-height:1.6;"><strong>체스 킹 거리</strong> — 체스판의 킹처럼 대각선도 1칸으로 취급합니다.</p>
+        </div>
+    </div>
+
+    <div style="background:#f8fafc;border-radius:1.25rem;padding:16px;border:1px solid #e2e8f0;text-align:center;">
+        <canvas id="distCanvas" style="width:100%;max-width:580px;height:180px;display:block;margin:0 auto;"></canvas>
+        <p style="font-size:.78rem;color:#94a3b8;margin-top:6px;">세 가지 거리: 파란=유클리드(직선), 노란=맨해튼(격자), 보라=체비셰프(체스)</p>
+    </div>
+</section>
+
+<!-- ═══ S5: 시뮬레이터 ═══ -->
+<section id="simulator" style="scroll-margin-top:80px;">
+    <div class="section-card" style="overflow:hidden;">
+        <div style="margin-bottom:24px;">
+            <span style="color:#7c3aed;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Interactive Simulator</span>
+            <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:6px;">🔬 K-NN 분류 시뮬레이터</h2>
+            <p style="color:#64748b;margin-top:6px;font-size:.95rem;">데이터를 배치하고 'Query Point(✦)'를 찍어보세요. 이웃들이 투표하는 과정을 실시간으로 확인할 수 있습니다.</p>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:16px;">
+            <!-- 캔버스 영역 -->
+            <div style="flex:1.6;min-width:280px;display:flex;flex-direction:column;gap:10px;">
+                <div class="knn-canvas-wrap" style="min-height:360px;">
+                    <canvas id="knnCanvas"></canvas>
+                </div>
+
+                <!-- 툴 선택 -->
+                <div style="background:white;border-radius:14px;padding:12px;border:2px solid #e5e7eb;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                    <button class="tool-btn active" data-tool="A" style="background:#fee2e2;color:#dc2626;border-color:#fca5a5;">⬤ Class A</button>
+                    <button class="tool-btn" data-tool="B" style="background:#dbeafe;color:#2563eb;border-color:#93c5fd;">■ Class B</button>
+                    <button class="tool-btn" data-tool="C" style="background:#d1fae5;color:#059669;border-color:#6ee7b7;">▲ Class C</button>
+                    <button class="tool-btn" data-tool="Q" style="background:#f5f3ff;color:#7c3aed;border-color:#c4b5fd;">✦ Query Point</button>
+                    <div style="flex:1;min-width:130px;background:#f5f3ff;border-radius:8px;padding:6px 10px;border:1px solid #ddd6fe;">
+                        <p style="font-size:.72rem;font-weight:700;color:#4c1d95;">격자 좌표 (x: 1~14, y: 1~10)</p>
+                        <p style="font-size:.7rem;color:#7c3aed;">클릭하면 가장 가까운 격자점에 스냅됩니다</p>
+                    </div>
+                    <button id="btnRandom" style="padding:7px 12px;background:#f5f3ff;color:#7c3aed;border:2px solid #c4b5fd;border-radius:10px;font-weight:700;cursor:pointer;font-size:.82rem;">🎲 랜덤</button>
+                    <button id="btnClear" style="padding:7px 12px;background:white;color:#e11d48;border:2px solid #fecdd3;border-radius:10px;font-weight:700;cursor:pointer;font-size:.82rem;">🗑️ 초기화</button>
+                </div>
+
+                <!-- K & 거리 -->
+                <div style="background:white;border-radius:14px;padding:12px;border:2px solid #ede9fe;display:flex;gap:14px;align-items:center;flex-wrap:wrap;">
+                    <div style="flex:1;min-width:130px;">
+                        <label style="font-size:.78rem;font-weight:700;color:#4c1d95;display:block;margin-bottom:3px;">탐색할 이웃 수 K = <span id="kLabel" style="color:#7c3aed;font-size:1rem;">3</span></label>
+                        <input type="range" id="kSlider" min="1" max="15" value="3" style="width:100%;accent-color:#7c3aed;">
+                        <div style="display:flex;justify-content:space-between;font-size:.7rem;color:#94a3b8;"><span>1</span><span>홀수 권장</span><span>15</span></div>
+                    </div>
+                    <div style="flex:1;min-width:130px;">
+                        <label style="font-size:.78rem;font-weight:700;color:#4c1d95;display:block;margin-bottom:3px;">거리 측정 방식</label>
+                        <select id="metricSelect" style="width:100%;padding:6px;border:2px solid #ddd6fe;border-radius:8px;font-size:.82rem;outline:none;background:white;">
+                            <option value="euclidean">✈️ 유클리드 (직선)</option>
+                            <option value="manhattan">🚶 맨해튼 (격자)</option>
+                            <option value="chebyshev">♟️ 체비셰프 (체스)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른쪽 패널 -->
+            <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:12px;">
+                <!-- 알고리즘 진행과정 -->
+                <div style="background:#f8fafc;border-radius:14px;padding:14px;border:1px solid #e2e8f0;">
+                    <h4 style="font-weight:800;color:#374151;margin-bottom:10px;font-size:.88rem;">📋 알고리즘 진행 과정</h4>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <div id="flow-IDLE" style="padding:8px 10px;border-radius:8px;border:2px solid #7c3aed;background:#f5f3ff;">
+                            <span style="background:#7c3aed;color:white;font-size:.7rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-right:6px;">Step 0</span>
+                            <span style="font-size:.82rem;font-weight:700;color:#4c1d95;">Query Point 추가 대기</span>
+                        </div>
+                        <div id="flow-CALC" style="padding:8px 10px;border-radius:8px;border:2px solid #e2e8f0;background:#f8fafc;opacity:.4;">
+                            <span style="background:#e2e8f0;color:#64748b;font-size:.7rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-right:6px;">Step 1</span>
+                            <span style="font-size:.82rem;font-weight:700;color:#64748b;">모든 점들과 거리 계산</span>
+                        </div>
+                        <div id="flow-SELECT" style="padding:8px 10px;border-radius:8px;border:2px solid #e2e8f0;background:#f8fafc;opacity:.4;">
+                            <span style="background:#e2e8f0;color:#64748b;font-size:.7rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-right:6px;">Step 2</span>
+                            <span style="font-size:.82rem;font-weight:700;color:#64748b;">가까운 K개 이웃 선택</span>
+                        </div>
+                        <div id="flow-DONE" style="padding:8px 10px;border-radius:8px;border:2px solid #e2e8f0;background:#f8fafc;opacity:.4;">
+                            <span style="background:#e2e8f0;color:#64748b;font-size:.7rem;font-weight:700;padding:1px 7px;border-radius:4px;margin-right:6px;">Step 3</span>
+                            <span style="font-size:.82rem;font-weight:700;color:#64748b;">다수결 투표 및 분류 완료</span>
+                        </div>
+                    </div>
+                    <!-- 단계 제어 버튼 -->
+                    <div style="display:flex;gap:6px;margin-top:10px;">
+                        <button id="btnStepNext" disabled onclick="stepNext()" style="flex:1;padding:8px 6px;background:#7c3aed;color:white;border:none;border-radius:9px;font-weight:700;cursor:pointer;font-size:.78rem;opacity:.4;">▶ 다음 단계</button>
+                        <button id="btnRunAll"   disabled onclick="runAll()"   style="flex:1;padding:8px 6px;background:#4c1d95;color:white;border:none;border-radius:9px;font-weight:700;cursor:pointer;font-size:.78rem;opacity:.4;">⚡ 한번에 실행</button>
+                        <button id="btnResetQ"            onclick="resetQuery()" style="flex:1;padding:8px 6px;background:white;color:#7c3aed;border:2px solid #ddd6fe;border-radius:9px;font-weight:700;cursor:pointer;font-size:.78rem;">🔄 초기화</button>
+                    </div>
+                </div>
+
+                <!-- 투표 현황 -->
+                <div style="background:white;border-radius:14px;padding:14px;border:2px solid #ede9fe;">
+                    <div id="stepMsg" style="display:none;background:#f5f3ff;border-radius:8px;padding:9px 12px;margin-bottom:10px;font-size:.8rem;font-weight:700;color:#4c1d95;border:1px solid #ddd6fe;line-height:1.5;"></div>
+                    <h4 style="font-weight:800;color:#374151;margin-bottom:10px;font-size:.88rem;">🗳️ 이웃들의 다수결 투표 현황</h4>
+                    <div style="display:flex;flex-direction:column;gap:6px;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;background:#fff1f2;padding:8px 12px;border-radius:8px;border:1px solid #fecdd3;">
+                            <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;background:#f43f5e;border-radius:50%;"></div><span style="font-weight:700;font-size:.85rem;">Class A</span></div>
+                            <span id="voteA" style="font-weight:900;font-size:1.3rem;color:#dc2626;">0</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;background:#eff6ff;padding:8px 12px;border-radius:8px;border:1px solid #bfdbfe;">
+                            <div style="display:flex;align-items:center;gap:8px;"><div style="width:12px;height:12px;background:#3b82f6;border-radius:3px;"></div><span style="font-weight:700;font-size:.85rem;">Class B</span></div>
+                            <span id="voteB" style="font-weight:900;font-size:1.3rem;color:#2563eb;">0</span>
+                        </div>
+                        <div style="display:flex;justify-content:space-between;align-items:center;background:#f0fdf4;padding:8px 12px;border-radius:8px;border:1px solid #bbf7d0;">
+                            <div style="display:flex;align-items:center;gap:8px;">
+                                <div style="width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-bottom:12px solid #10b981;"></div>
+                                <span style="font-weight:700;font-size:.85rem;">Class C</span>
+                            </div>
+                            <span id="voteC" style="font-weight:900;font-size:1.3rem;color:#059669;">0</span>
+                        </div>
+                    </div>
+                    <div style="margin-top:10px;padding-top:10px;border-top:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:700;font-size:.82rem;color:#64748b;">최종 분류 결과</span>
+                        <span id="finalResult" style="font-weight:900;font-size:.9rem;background:#f5f3ff;color:#4c1d95;padding:4px 14px;border-radius:8px;border:1px solid #ddd6fe;">대기 중</span>
+                    </div>
+                </div>
+
+                <div style="background:#fef9c3;border-radius:12px;padding:12px;border:1px solid #fde047;font-size:.8rem;color:#854d0e;line-height:1.6;">
+                    💡 <strong>사용법:</strong> 클래스 버튼 선택 후 캔버스 클릭으로 데이터 추가, Query Point(✦)를 찍으면 즉시 분류됩니다!
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══ S6: 퀴즈 ═══ -->
+<section id="quiz" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:36px;">
+        <span style="background:#ede9fe;color:#4c1d95;padding:6px 18px;border-radius:999px;font-weight:700;font-size:.85rem;">CHECK-UP</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:12px;">✏️ KNN 퀴즈</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:.95rem;">학습한 내용을 확인해봅시다!</p>
+    </div>
+
+    <div style="margin-bottom:24px;">
+        <h3 style="font-weight:900;font-size:1.05rem;margin-bottom:14px;">📝 객관식 문제</h3>
+        <div style="display:flex;flex-direction:column;gap:20px;">
+
+            <div style="background:white;border-radius:1.25rem;padding:20px;border:1px solid #ede9fe;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <p style="font-weight:700;margin-bottom:12px;font-size:.95rem;">Q1. K-NN 알고리즘에서 새로운 데이터를 분류하는 방법은 무엇인가요?</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button onclick="checkMC(this,false,'K-NN은 수학 함수 없이 이웃의 다수결로 분류합니다.')" class="mc-btn">A. 수학 함수(직선)를 학습하여 경계를 그은 다음 분류한다</button>
+                    <button onclick="checkMC(this,true,'정답! K-NN은 가장 가까운 K개 이웃의 다수결로 분류합니다.')" class="mc-btn">B. 가장 가까운 K개의 이웃을 찾아 다수결로 분류한다</button>
+                    <button onclick="checkMC(this,false,'K-NN은 확률이 아닌 이웃의 다수결을 사용합니다.')" class="mc-btn">C. 각 클래스에 속할 확률을 계산하여 가장 높은 확률로 분류한다</button>
+                </div>
+            </div>
+
+            <div style="background:white;border-radius:1.25rem;padding:20px;border:1px solid #ede9fe;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <p style="font-weight:700;margin-bottom:12px;font-size:.95rem;">Q2. 이진 분류(클래스 2개)에서 k값을 홀수로 설정하는 이유는 무엇인가요?</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button onclick="checkMC(this,false,'홀수 k와 거리 계산 속도는 관계가 없습니다.')" class="mc-btn">A. 홀수일 때 거리 계산이 더 빠르기 때문이다</button>
+                    <button onclick="checkMC(this,true,'정답! 이진 분류에서 짝수 k는 동점이 발생할 수 있어 홀수 k가 권장됩니다.')" class="mc-btn">B. 동점(tie) 발생을 방지하여 항상 명확한 다수결이 가능하기 때문이다</button>
+                    <button onclick="checkMC(this,false,'홀수 k가 항상 더 정확한 것은 아닙니다.')" class="mc-btn">C. 홀수 k는 항상 짝수 k보다 정확도가 높기 때문이다</button>
+                </div>
+            </div>
+
+            <div style="background:white;border-radius:1.25rem;padding:20px;border:1px solid #ede9fe;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <p style="font-weight:700;margin-bottom:12px;font-size:.95rem;">Q3. K-NN에서 k=1로 설정할 때의 문제점은 무엇인가요?</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button onclick="checkMC(this,false,'k=1이 가장 빠릅니다. 모든 데이터를 비교하는 것은 k에 무관합니다.')" class="mc-btn">A. 계산 시간이 가장 오래 걸린다</button>
+                    <button onclick="checkMC(this,false,'k=1은 과소적합이 아닌 과적합의 문제가 있습니다.')" class="mc-btn">B. 분류 경계가 너무 단순해지는 과소적합이 발생한다</button>
+                    <button onclick="checkMC(this,true,'정답! k=1은 노이즈나 이상치에 매우 민감해 과적합 위험이 있습니다.')" class="mc-btn">C. 노이즈(이상치)에 너무 민감하여 과적합이 발생할 수 있다</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <h3 style="font-weight:900;font-size:1.05rem;margin-bottom:14px;">📖 서술형 문제</h3>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #fde68a;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <div style="width:34px;height:34px;background:#fef3c7;color:#d97706;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">4</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">K-NN 알고리즘이 '게으른 학습(Lazy Learning)'이라 불리는 이유를 설명하세요.</p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)" style="border-color:#fde68a;color:#d97706;">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:10px;background:#fefce8;border-left:4px solid #facc15;padding:12px;border-radius:8px;font-size:.88rem;color:#92400e;line-height:1.8;">
+                            K-NN은 별도의 '학습(training)' 단계가 없습니다. 새로운 데이터가 들어올 때마다 기존의 모든 데이터와 거리를 계산하여 분류합니다. 즉, 미리 모델을 만들지 않고 실제 예측 시점에 모든 계산을 수행하므로 '게으른 학습'이라고 부릅니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #fde68a;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <div style="width:34px;height:34px;background:#fef3c7;color:#d97706;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">5</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">유클리드 거리와 맨해튼 거리의 차이를 비유를 들어 설명하세요.</p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)" style="border-color:#fde68a;color:#d97706;">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:10px;background:#fefce8;border-left:4px solid #facc15;padding:12px;border-radius:8px;font-size:.88rem;color:#92400e;line-height:1.8;">
+                            <strong>유클리드 거리</strong>는 비행기처럼 두 점을 가장 짧은 직선으로 연결하는 거리입니다. √((x₂-x₁)²+(y₂-y₁)²)으로 계산합니다.<br>
+                            <strong>맨해튼 거리</strong>는 도시 블록을 따라 걷는 것처럼 수평·수직 이동만 허용한 거리입니다. |x₂-x₁|+|y₂-y₁|로 계산합니다.<br>
+                            예: A(0,0)→B(3,4)일 때 유클리드=5, 맨해튼=7입니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #bbf7d0;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <div style="width:34px;height:34px;background:#d1fae5;color:#059669;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">6</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">데이터가 100,000개일 때 K-NN이 느린 이유와 해결 방법을 설명하세요.</p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)" style="border-color:#bbf7d0;color:#059669;">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:10px;background:#f0fdf4;border-left:4px solid #22c55e;padding:12px;border-radius:8px;font-size:.88rem;color:#166534;line-height:1.8;">
+                            <strong>이유:</strong> K-NN은 새 데이터가 들어올 때마다 기존 모든 데이터와 거리를 계산합니다. 100,000개라면 100,000번 거리 계산이 필요해 매우 느립니다.<br>
+                            <strong>해결 방법:</strong> ① KD-Tree나 Ball-Tree 등 공간 인덱싱 자료구조로 불필요한 비교를 줄입니다. ② 차원 축소(PCA)로 특성 수를 줄입니다. ③ Approximate KNN(근사 검색)을 사용합니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top:36px;background:linear-gradient(135deg,#7c3aed,#ec4899);color:white;border-radius:2rem;padding:36px;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+        <h3 style="font-size:1.5rem;font-weight:900;margin-bottom:8px;">K-NN 학습 완료!</h3>
+        <p style="opacity:.9;margin-bottom:20px;font-size:.95rem;">거리 측정, 이웃 선정, 다수결, k값의 의미까지 모두 배웠습니다!</p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;">
+            <a href="index.html" style="background:white;color:#7c3aed;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">← 목록으로</a>
+            <a href="svm.html" style="background:rgba(255,255,255,.2);color:white;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">SVM 복습</a>
+            <a href="#top" style="background:rgba(255,255,255,.2);color:white;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">↑ 처음으로</a>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<footer style="background:#1e1b4b;color:#c4b5fd;text-align:center;padding:28px;margin-top:48px;font-size:.88rem;">
+    <p style="font-weight:700;color:white;margin-bottom:4px;">능동고등학교 인공지능기초 학습자료</p>
+    <p>made by 정보교사 송세영 &nbsp;|&nbsp; © 2026 All rights reserved</p>
+</footer>
+
+<script>
+// ================================================================
+// 기린/코끼리 데이터 (교과서 그림 II-78,79 재현)
+// q=(0.50,0.50) 기준 거리 순:
+// rank1 E(0.66,0.40) d=0.197, rank2 E(0.34,0.38) d=0.224
+// rank3 G(0.30,0.64) d=0.244, rank4 G(0.65,0.68) d=0.267, rank5 G(0.28,0.32) d=0.307
+// k=3: E2 G1 → 코끼리, k=5: E2 G3 → 기린 ✓
+// ================================================================
+const QX=0.50, QY=0.50;
+const ANIMAL_DATA=[
+    {t:'E',x:0.66,y:0.40},  // rank1
+    {t:'E',x:0.34,y:0.38},  // rank2
+    {t:'G',x:0.30,y:0.64},  // rank3
+    {t:'G',x:0.65,y:0.68},  // rank4
+    {t:'G',x:0.28,y:0.32},  // rank5
+    {t:'G',x:0.18,y:0.55},  // far
+    {t:'E',x:0.80,y:0.72},  // far
+    {t:'G',x:0.78,y:0.22},  // far
+    {t:'E',x:0.15,y:0.22},  // far
+    {t:'G',x:0.88,y:0.50},  // far
+    {t:'E',x:0.18,y:0.80},  // far
+];
+
+function drawGiraffeCanvas(id, k) {
+    const canvas=document.getElementById(id);
+    if(!canvas)return;
+    const W=canvas.offsetWidth||260, H=canvas.offsetHeight||190;
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+
+    ctx.fillStyle='#dbeafe'; ctx.fillRect(0,0,W,H);
+
+    // Sort by distance
+    const sorted=ANIMAL_DATA.map(a=>({...a,d:Math.sqrt((a.x-QX)**2+(a.y-QY)**2)})).sort((a,b)=>a.d-b.d);
+    const kNeighbors=sorted.slice(0,k);
+
+    // Circle for k-th distance
+    const kr=sorted[k-1].d;
+    ctx.beginPath(); ctx.arc(QX*W,QY*H,kr*Math.min(W,H)*1.05,0,Math.PI*2);
+    ctx.strokeStyle='rgba(124,58,237,0.25)'; ctx.lineWidth=2; ctx.setLineDash([5,4]); ctx.stroke(); ctx.setLineDash([]);
+
+    // Connection lines to k neighbors
+    kNeighbors.forEach(a=>{
+        ctx.beginPath(); ctx.moveTo(QX*W,QY*H); ctx.lineTo(a.x*W,a.y*H);
+        ctx.strokeStyle=a.t==='E'?'rgba(37,99,235,0.6)':'rgba(251,146,60,0.6)';
+        ctx.lineWidth=2; ctx.stroke();
+    });
+
+    // Animals — draw all, then SV ring on top
+    ctx.textBaseline='middle'; ctx.textAlign='center';
+    ANIMAL_DATA.forEach(a=>{
+        ctx.font='17px serif'; ctx.fillText(a.t==='E'?'🐘':'🦒',a.x*W,a.y*H);
+    });
+    // SV rings on top of icons
+    kNeighbors.forEach(a=>{
+        ctx.beginPath(); ctx.arc(a.x*W,a.y*H,14,0,Math.PI*2);
+        ctx.strokeStyle='#7c3aed'; ctx.lineWidth=2.5; ctx.stroke();
+    });
+
+    // Q point
+    ctx.beginPath(); ctx.arc(QX*W,QY*H,13,0,Math.PI*2);
+    ctx.fillStyle='#1e293b'; ctx.fill();
+    ctx.fillStyle='white'; ctx.font='bold 11px Pretendard'; ctx.textBaseline='middle';
+    ctx.fillText('q',QX*W,QY*H);
+
+    // k label
+    ctx.fillStyle='#1e293b'; ctx.font='bold 11px Pretendard'; ctx.textAlign='center';
+    ctx.textBaseline='alphabetic'; ctx.fillText('k='+k, QX*W, QY*H+28);
+}
+
+let answered3=false, answered5=false;
+
+function checkGiraffeK3(){
+    const g=parseInt(document.getElementById('giraffe3').value||'-1');
+    const e=parseInt(document.getElementById('elephant3').value||'-1');
+    const res=document.getElementById('result3');
+    res.style.display='block';
+    if(g===1&&e===2){
+        res.style.background='#f0fdf4'; res.style.border='2px solid #86efac'; res.style.color='#14532d';
+        res.innerHTML='🎉 <strong>정답!</strong><br>기린 1마리, 코끼리 2마리 → 코끼리(2) 승!<br>→ q는 <strong>🐘 코끼리</strong>로 분류됩니다.';
+        answered3=true; if(answered5)showPrinciple();
+    } else {
+        res.style.background='#fff1f2'; res.style.border='2px solid #fca5a5'; res.style.color='#9f1239';
+        res.innerHTML='❌ <strong>아쉬워요!</strong><br>힌트: q와 연결된 선 3개를 따라가 보세요.<br>코끼리가 더 많습니다!';
+    }
+}
+
+function checkGiraffeK5(){
+    const g=parseInt(document.getElementById('giraffe5').value||'-1');
+    const e=parseInt(document.getElementById('elephant5').value||'-1');
+    const res=document.getElementById('result5');
+    res.style.display='block';
+    if(g===3&&e===2){
+        res.style.background='#f0fdf4'; res.style.border='2px solid #86efac'; res.style.color='#14532d';
+        res.innerHTML='🎉 <strong>정답!</strong><br>기린 3마리, 코끼리 2마리 → 기린(3) 승!<br>→ q는 <strong>🦒 기린</strong>으로 분류됩니다.';
+        answered5=true; if(answered3)showPrinciple();
+    } else {
+        res.style.background='#fff1f2'; res.style.border='2px solid #fca5a5'; res.style.color='#9f1239';
+        res.innerHTML='❌ <strong>아쉬워요!</strong><br>힌트: q와 연결된 선 5개를 세어보세요.<br>기린이 더 많습니다!';
+    }
+}
+
+function showPrinciple(){
+    const el=document.getElementById('knnPrinciple');
+    el.style.display='block';
+    el.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+// ================================================================
+// 거리 측정 시각화
+// ================================================================
+function drawDistCanvas(){
+    const canvas=document.getElementById('distCanvas');
+    if(!canvas)return;
+    const W=canvas.offsetWidth||580, H=canvas.offsetHeight||180;
+    canvas.width=W; canvas.height=H;
+    const ctx=canvas.getContext('2d');
+    ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+
+    const gs=36;
+    ctx.strokeStyle='#e0e7ff'; ctx.lineWidth=1;
+    for(let x=0;x<W;x+=gs){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<H;y+=gs){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+
+    const A={x:W*.12, y:H*.55};
+    const B={x:W*.70, y:H*.20};
+
+    // 유클리드
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,B.y);
+    ctx.strokeStyle='#2563eb'; ctx.lineWidth=2.5; ctx.setLineDash([]); ctx.stroke();
+
+    // 맨해튼
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(B.x,A.y); ctx.lineTo(B.x,B.y);
+    ctx.strokeStyle='#d97706'; ctx.lineWidth=2.5; ctx.setLineDash([7,5]); ctx.stroke(); ctx.setLineDash([]);
+
+    // 체비셰프
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(A.x,B.y); ctx.lineTo(B.x,B.y);
+    ctx.strokeStyle='#7c3aed'; ctx.lineWidth=2.5; ctx.setLineDash([3,5]); ctx.stroke(); ctx.setLineDash([]);
+
+    [{p:A,l:'A'},{p:B,l:'B'}].forEach(({p,l})=>{
+        ctx.beginPath(); ctx.arc(p.x,p.y,9,0,Math.PI*2);
+        ctx.fillStyle='#1e293b'; ctx.fill();
+        ctx.fillStyle='white'; ctx.font='bold 11px Pretendard'; ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(l,p.x,p.y);
+    });
+
+    const legends=[['#2563eb','─── 유클리드(직선)'],['#d97706','- - 맨해튼(격자)'],['#7c3aed','··· 체비셰프(체스)']];
+    legends.forEach(([c,t],i)=>{
+        const lx=W*.03+i*(W*.32), ly=H*.88;
+        ctx.fillStyle=c; ctx.fillRect(lx,ly-2,20,4);
+        ctx.fillStyle='#374151'; ctx.font='11px Pretendard'; ctx.textAlign='left'; ctx.textBaseline='middle';
+        ctx.fillText(t,lx+25,ly);
+    });
+}
+
+// ================================================================
+// KNN 시뮬레이터
+// ================================================================
+const CC={A:'#f43f5e',B:'#3b82f6',C:'#10b981',Q:'#1e293b'};
+
+// ── 격자 설정 (교과서형 좌표계) ──────────────────────────────────
+const GRID = { maxX:14, maxY:10 };
+
+function gridToCanvas(gx, gy, W, H) {
+    const pad = {l:36, r:14, t:16, b:30};
+    return {
+        x: pad.l + (gx - 1) / (GRID.maxX - 1) * (W - pad.l - pad.r),
+        y: pad.t + (gy - 1) / (GRID.maxY - 1) * (H - pad.t - pad.b)
+    };
+}
+function canvasToGrid(cx, cy, W, H) {
+    const pad = {l:36, r:14, t:16, b:30};
+    const gx = 1 + (cx - pad.l) / (W - pad.l - pad.r) * (GRID.maxX - 1);
+    const gy = 1 + (cy - pad.t) / (H - pad.t - pad.b) * (GRID.maxY - 1);
+    return {
+        gx: Math.max(1, Math.min(GRID.maxX, Math.round(gx))),
+        gy: Math.max(1, Math.min(GRID.maxY, Math.round(gy)))
+    };
+}
+
+class KNNData{
+    constructor(){this.pts=[];this.q=null;}
+    // gx,gy = 격자 좌표 (1~14, 1~10)
+    add(gx,gy,c){ if(!this.pts.some(p=>p.gx===gx&&p.gy===gy&&p.c!=='Q')) this.pts.push({gx,gy,c}); }
+    setQ(gx,gy){this.q={gx,gy,res:null};}
+    clear(){this.pts=[];this.q=null;}
+    random(){
+        this.clear();
+        // Class A: 왼쪽 위, Class B: 오른쪽 아래, Class C: 오른쪽 위
+        const templates={
+            A:[[3,2],[4,3],[5,2],[5,4],[3,4],[4,5]],
+            B:[[9,7],[10,8],[11,9],[10,9],[12,8],[11,7]],
+            C:[[11,2],[12,3],[13,2],[12,4],[10,3],[11,4]]
+        };
+        Object.entries(templates).forEach(([cls,pts])=>{
+            pts.forEach(([gx,gy])=>this.add(gx,gy,cls));
+        });
+    }
+}
+
+class KNNEngine{
+    constructor(d){this.d=d;this.dists=[];this.nbrs=[];this.votes={A:0,B:0,C:0};}
+    calc(metric){
+        if(!this.d.q)return;
+        const q=this.d.q;
+        this.dists=this.d.pts.map(p=>{
+            const dx=p.gx-q.gx, dy=p.gy-q.gy;
+            let dist;
+            if(metric==='euclidean') dist=Math.sqrt(dx*dx+dy*dy);
+            else if(metric==='manhattan') dist=Math.abs(dx)+Math.abs(dy);
+            else dist=Math.max(Math.abs(dx),Math.abs(dy));
+            return{p,dist};
+        }).sort((a,b)=>a.dist-b.dist);
+    }
+    selectK(k){this.nbrs=this.dists.slice(0,k);}
+    vote(){
+        this.votes={A:0,B:0,C:0};
+        this.nbrs.forEach(n=>this.votes[n.p.c]++);
+        let max=0,tied=[];
+        for(let c in this.votes){if(this.votes[c]>max){max=this.votes[c];tied=[c];}else if(this.votes[c]===max&&max>0)tied.push(c);}
+        this.isTie=tied.length>1;
+        const res=this.isTie?this.nbrs.find(n=>tied.includes(n.p.c)).p.c:tied[0];
+        this.d.q.res=res; return res;
+    }
+}
+
+class KNNRend{
+    constructor(canvas,data,eng){
+        this.cv=canvas; this.ctx=canvas.getContext('2d');
+        this.data=data; this.eng=eng; this.W=0; this.H=0;
+        this.phase='IDLE'; this.metric='euclidean';
+        this.resize(); window.addEventListener('resize',()=>this.resize());
+        const loop=()=>{this.draw();requestAnimationFrame(loop);}; loop();
+    }
+    resize(){
+        const r=this.cv.parentElement.getBoundingClientRect();
+        const dpr=window.devicePixelRatio||1;
+        this.cv.width=r.width*dpr; this.cv.height=r.height*dpr;
+        this.cv.style.width=r.width+'px'; this.cv.style.height=r.height+'px';
+        this.ctx.setTransform(dpr,0,0,dpr,0,0);
+        this.W=r.width; this.H=r.height;
+    }
+    shape(cx,cy,c,s){
+        const ctx=this.ctx; ctx.beginPath();
+        if(c==='A') ctx.arc(cx,cy,s,0,Math.PI*2);
+        else if(c==='B') ctx.rect(cx-s,cy-s,s*2,s*2);
+        else{ctx.moveTo(cx,cy-s);ctx.lineTo(cx+s,cy+s);ctx.lineTo(cx-s,cy+s);ctx.closePath();}
+    }
+    distLine(q,p){
+        const ctx=this.ctx;
+        const qc=gridToCanvas(q.gx,q.gy,this.W,this.H);
+        const pc=gridToCanvas(p.gx,p.gy,this.W,this.H);
+        ctx.beginPath();
+        if(this.metric==='euclidean'){ctx.moveTo(qc.x,qc.y);ctx.lineTo(pc.x,pc.y);}
+        else if(this.metric==='manhattan'){ctx.moveTo(qc.x,qc.y);ctx.lineTo(pc.x,qc.y);ctx.lineTo(pc.x,pc.y);}
+        else{const dx=Math.abs(pc.x-qc.x),dy=Math.abs(pc.y-qc.y);
+            if(dx>dy){ctx.moveTo(qc.x,qc.y);ctx.lineTo(pc.x,qc.y);ctx.lineTo(pc.x,pc.y);}
+            else{ctx.moveTo(qc.x,qc.y);ctx.lineTo(qc.x,pc.y);ctx.lineTo(pc.x,pc.y);}}
+        ctx.strokeStyle=CC[p.c]; ctx.globalAlpha=.65; ctx.lineWidth=2.5; ctx.stroke(); ctx.globalAlpha=1;
+    }
+    drawGrid(){
+        const ctx=this.ctx, W=this.W, H=this.H;
+        const pad={l:36,r:14,t:16,b:30};
+        // 배경
+        ctx.fillStyle='#f8faff'; ctx.fillRect(0,0,W,H);
+        // 격자선
+        for(let gx=1;gx<=GRID.maxX;gx++){
+            const {x,y}=gridToCanvas(gx,1,W,H);
+            ctx.strokeStyle='#e0e7ff'; ctx.lineWidth=1;
+            ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,H-pad.b); ctx.stroke();
+            ctx.fillStyle='#4f46e5'; ctx.font='11px Pretendard';
+            ctx.textAlign='center'; ctx.textBaseline='top'; ctx.fillText(gx,x,H-pad.b+4);
+        }
+        for(let gy=1;gy<=GRID.maxY;gy++){
+            const {x,y}=gridToCanvas(1,gy,W,H);
+            ctx.strokeStyle='#e0e7ff'; ctx.lineWidth=1;
+            ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(W-pad.r,y); ctx.stroke();
+            ctx.fillStyle='#4f46e5'; ctx.font='11px Pretendard';
+            ctx.textAlign='right'; ctx.textBaseline='middle'; ctx.fillText(gy,pad.l-4,y);
+        }
+        // 축 테두리
+        ctx.strokeStyle='#c7d2fe'; ctx.lineWidth=1.5;
+        ctx.strokeRect(pad.l,pad.t,W-pad.l-pad.r,H-pad.t-pad.b);
+    }
+    draw(){
+        const ctx=this.ctx; ctx.clearRect(0,0,this.W,this.H);
+        this.drawGrid();
+        const ph=this.phase, q=this.data.q;
+
+        // 거리선 (흐리게, CALC 단계)
+        if(q&&ph==='CALC'){
+            ctx.globalAlpha=.15; ctx.lineWidth=1; ctx.strokeStyle='#94a3b8';
+            const qc=gridToCanvas(q.gx,q.gy,this.W,this.H);
+            this.eng.dists.forEach(d=>{
+                const pc=gridToCanvas(d.p.gx,d.p.gy,this.W,this.H);
+                ctx.beginPath(); ctx.moveTo(qc.x,qc.y); ctx.lineTo(pc.x,pc.y); ctx.stroke();
+            });
+            ctx.globalAlpha=1;
+        }
+        // 이웃 연결선
+        if(q&&(ph==='SELECT'||ph==='DONE')){
+            this.eng.nbrs.forEach(n=>this.distLine(q,n.p));
+        }
+        // 이웃 강조 테두리
+        if(q&&(ph==='SELECT'||ph==='DONE')){
+            this.eng.nbrs.forEach(n=>{
+                const {x,y}=gridToCanvas(n.p.gx,n.p.gy,this.W,this.H);
+                this.shape(x,y,n.p.c,13); ctx.strokeStyle='#334155'; ctx.lineWidth=2.5; ctx.stroke();
+            });
+        }
+        // 데이터 포인트
+        this.data.pts.forEach(p=>{
+            const {x,y}=gridToCanvas(p.gx,p.gy,this.W,this.H);
+            this.shape(x,y,p.c,9); ctx.fillStyle=CC[p.c]; ctx.fill();
+            ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.stroke();
+        });
+        // Query Point
+        if(q){
+            const {x,y}=gridToCanvas(q.gx,q.gy,this.W,this.H);
+            ctx.beginPath(); ctx.arc(x,y,13,0,Math.PI*2);
+            ctx.fillStyle=(ph==='DONE'&&q.res)?CC[q.res]:CC['Q'];
+            ctx.fill(); ctx.strokeStyle='white'; ctx.lineWidth=2.5; ctx.stroke();
+            ctx.fillStyle='white'; ctx.font='bold 11px Pretendard';
+            ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText('q',x,y);
+            // 좌표 표시
+            ctx.fillStyle='#4c1d95'; ctx.font='bold 11px Pretendard'; ctx.textBaseline='alphabetic';
+            ctx.fillText(`(${q.gx},${q.gy})`,x,y-18);
+        }
+    }
+}
+
+const kd=new KNNData(), ke=new KNNEngine(kd);
+const knnCv=document.getElementById('knnCanvas');
+const kr2=new KNNRend(knnCv,kd,ke);
+let activeTool='A';
+
+function setPhase(ph){
+    kr2.phase=ph;
+    ['IDLE','CALC','SELECT','DONE'].forEach(p=>{
+        const el=document.getElementById('flow-'+p); if(!el)return;
+        const sp=el.querySelector('span');
+        if(p===ph){el.style.opacity='1';el.style.borderColor='#7c3aed';el.style.background='#f5f3ff';sp.style.background='#7c3aed';sp.style.color='white';}
+        else{el.style.opacity='.4';el.style.borderColor='#e2e8f0';el.style.background='#f8fafc';sp.style.background='#e2e8f0';sp.style.color='#64748b';}
+    });
+}
+
+// ── 단계별 실행 상태머신 ─────────────────────────────────────────
+let stepState = 'IDLE'; // IDLE → CALC → SELECT → DONE
+
+function getK(){ return parseInt(document.getElementById('kSlider').value); }
+function getMetric(){ return document.getElementById('metricSelect').value; }
+
+function setStepBtns(active) {
+    const sn = document.getElementById('btnStepNext');
+    const ra = document.getElementById('btnRunAll');
+    if(active) {
+        sn.disabled = false; sn.style.opacity = '1';
+        ra.disabled = false; ra.style.opacity = '1';
+    } else {
+        sn.disabled = true; sn.style.opacity = '.4';
+        ra.disabled = true; ra.style.opacity = '.4';
+    }
+}
+
+function applyDone(res) {
+    document.getElementById('voteA').textContent = ke.votes.A||0;
+    document.getElementById('voteB').textContent = ke.votes.B||0;
+    document.getElementById('voteC').textContent = ke.votes.C||0;
+    const fr = document.getElementById('finalResult');
+    fr.textContent = `Class ${res}${ke.isTie?' (동점: 거리 우선)':''}`;
+    fr.style.background = CC[res]+'22'; fr.style.color = CC[res];
+    fr.style.border = `1px solid ${CC[res]}66`;
+}
+
+function showStepMsg(ph) {
+    const msgs = {
+        CALC:   '🔵 Step 1: 모든 데이터와의 거리를 계산합니다.',
+        SELECT: '🟡 Step 2: 가장 가까운 K개 이웃을 선택합니다.',
+        DONE:   '🟢 Step 3: 다수결로 최종 클래스를 결정합니다!'
+    };
+    const box = document.getElementById('stepMsg');
+    if(box) { box.textContent = msgs[ph]||''; box.style.display = ph==='IDLE'?'none':'block'; }
+}
+
+function stepNext() {
+    if(!kd.q || !kd.pts.length) return;
+    const k = getK(), metric = getMetric();
+    kr2.metric = metric;
+
+    if(stepState === 'IDLE') {
+        stepState = 'CALC';
+        ke.calc(metric);
+        setPhase('CALC'); showStepMsg('CALC');
+    } else if(stepState === 'CALC') {
+        stepState = 'SELECT';
+        ke.selectK(k);
+        setPhase('SELECT'); showStepMsg('SELECT');
+    } else if(stepState === 'SELECT') {
+        stepState = 'DONE';
+        const res = ke.vote();
+        setPhase('DONE'); showStepMsg('DONE');
+        applyDone(res);
+        setStepBtns(false);
+    }
+}
+
+function runAll() {
+    if(!kd.q || !kd.pts.length) return;
+    const k = getK(), metric = getMetric();
+    kr2.metric = metric;
+    // CALC
+    ke.calc(metric); setPhase('CALC'); showStepMsg('CALC'); stepState='CALC';
+    setTimeout(() => {
+        ke.selectK(k); setPhase('SELECT'); showStepMsg('SELECT'); stepState='SELECT';
+        setTimeout(() => {
+            const res = ke.vote();
+            setPhase('DONE'); showStepMsg('DONE'); stepState='DONE';
+            applyDone(res); setStepBtns(false);
+        }, 600);
+    }, 600);
+}
+
+function resetQuery() {
+    kd.q = null; stepState = 'IDLE';
+    ke.dists = []; ke.nbrs = []; ke.votes = {A:0,B:0,C:0};
+    setPhase('IDLE'); showStepMsg('IDLE');
+    ['voteA','voteB','voteC'].forEach(id => document.getElementById(id).textContent='0');
+    const fr = document.getElementById('finalResult');
+    fr.textContent='대기 중'; fr.style.background='#f5f3ff'; fr.style.color='#4c1d95'; fr.style.border='1px solid #ddd6fe';
+    setStepBtns(false);
+}
+
+function runKNN(){
+    // Query 찍힌 직후 호출 — 단계 버튼 활성화만
+    if(!kd.q || !kd.pts.length) { setPhase('IDLE'); return; }
+    stepState = 'IDLE';
+    ke.dists = []; ke.nbrs = []; ke.votes = {A:0,B:0,C:0};
+    setPhase('IDLE'); showStepMsg('IDLE');
+    ['voteA','voteB','voteC'].forEach(id => document.getElementById(id).textContent='0');
+    const fr = document.getElementById('finalResult');
+    fr.textContent='단계 버튼을 눌러보세요!'; fr.style.background='#f5f3ff'; fr.style.color='#4c1d95'; fr.style.border='1px solid #ddd6fe';
+    setStepBtns(true);
+}
+
+document.querySelectorAll('.tool-btn').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+        document.querySelectorAll('.tool-btn').forEach(b=>b.classList.remove('active'));
+        btn.classList.add('active'); activeTool=btn.dataset.tool;
+    });
+});
+
+knnCv.addEventListener('click',e=>{
+    const rect=knnCv.getBoundingClientRect();
+    const cx=e.clientX-rect.left, cy=e.clientY-rect.top;
+    const {gx,gy}=canvasToGrid(cx,cy,kr2.W,kr2.H);
+    if(activeTool==='Q'){
+        kd.setQ(gx,gy);
+        ['voteA','voteB','voteC'].forEach(id=>document.getElementById(id).textContent='0');
+        document.getElementById('finalResult').textContent='계산 중...';
+        runKNN();
+    } else {
+        kd.add(gx,gy,activeTool);
+        if(kd.q) runKNN();
+    }
+});
+
+document.getElementById('kSlider').addEventListener('input',function(){
+    const v=parseInt(this.value);
+    const lbl=document.getElementById('kLabel');
+    lbl.textContent=v; lbl.style.color=v%2===1?'#7c3aed':'#dc2626';
+    if(kd.q) resetQuery();
+});
+document.getElementById('metricSelect').addEventListener('change',()=>{if(kd.q) resetQuery();});
+
+document.getElementById('btnRandom').addEventListener('click',()=>{
+    kd.random(); kd.q=null;
+    setPhase('IDLE'); ['voteA','voteB','voteC'].forEach(id=>document.getElementById(id).textContent='0');
+    document.getElementById('finalResult').textContent='대기 중';
+});
+document.getElementById('btnClear').addEventListener('click',()=>{
+    kd.clear(); setPhase('IDLE');
+    ['voteA','voteB','voteC'].forEach(id=>document.getElementById(id).textContent='0');
+    document.getElementById('finalResult').textContent='대기 중';
+});
+
+function checkMC(btn,ok,msg){
+    const btns=btn.parentElement.querySelectorAll('.mc-btn');
+    btns.forEach(b=>b.classList.add('disabled'));
+    btn.classList.add(ok?'correct':'wrong');
+    showToast(msg,ok?'success':'error');
+    setTimeout(()=>{btns.forEach(b=>b.classList.remove('correct','wrong','disabled'));},3000);
+}
+function showToast(msg,type){
+    const t=document.createElement('div');
+    t.style.cssText=`position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(80px);padding:14px 28px;border-radius:16px;color:white;font-weight:700;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:9999;transition:transform .3s;font-size:.9rem;background:${type==='success'?'#7c3aed':'#e11d48'};max-width:90vw;text-align:center;`;
+    t.textContent=msg; document.body.appendChild(t);
+    setTimeout(()=>t.style.transform='translateX(-50%) translateY(0)',10);
+    setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400);},2500);
+}
+function toggleQ(btn){
+    const a=btn.nextElementSibling; a.classList.toggle('open');
+    btn.textContent=a.classList.contains('open')?'▲ 정답 숨기기':'▼ 정답 확인';
+}
+
+window.onload=()=>{
+    drawGiraffeCanvas('giraffeCanvas3',3);
+    drawGiraffeCanvas('giraffeCanvas5',5);
+    drawDistCanvas();
+    setPhase('IDLE');
+    setTimeout(()=>kd.random(),150);
+};
+window.addEventListener('resize',()=>{
+    setTimeout(()=>{
+        drawGiraffeCanvas('giraffeCanvas3',3);
+        drawGiraffeCanvas('giraffeCanvas5',5);
+        drawDistCanvas();
+    },100);
+});
+</script>
+</body>
+</html>
