@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>의사결정 트리(Decision Tree) - 능동고등학교 인공지능기초</title>
+    <script src="https://cdn.jsdelivr.net/npm/vis-network@9.1.9/standalone/umd/vis-network.min.js"></script>
+    <style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body { font-family: "Pretendard Variable", Pretendard, "Malgun Gothic", sans-serif; background: #fff7ed; color: #1c1917; line-height: 1.6; }
+        .hero-gradient { background: linear-gradient(135deg, #c2410c 0%, #f97316 50%, #f59e0b 100%); }
+        .sticky-nav { position:sticky;top:0;z-index:100;backdrop-filter:blur(14px);background:rgba(255,255,255,.93);border-bottom:1px solid rgba(253,186,116,.4);box-shadow:0 2px 12px rgba(249,115,22,.08);padding-top:14px;padding-bottom:14px; }
+        .section-card { background:white;padding:2.5rem;border-radius:2rem;box-shadow:0 4px 20px rgba(249,115,22,.07);border:1px solid #ffedd5; }
+        .step-card { background:white;border-radius:1.5rem;padding:1.5rem;border:1px solid #e5e7eb;box-shadow:0 4px 12px rgba(0,0,0,.05);display:flex;flex-direction:column;align-items:center;text-align:center;transition:transform .2s,box-shadow .2s; }
+        .step-card:hover { transform:translateY(-4px);box-shadow:0 8px 24px rgba(249,115,22,.13); }
+        .tab-btn { padding:12px 24px;border-bottom:3px solid transparent;font-weight:700;font-size:.9rem;cursor:pointer;background:none;border-top:none;border-left:none;border-right:none;transition:all .2s;color:#64748b; }
+        .tab-btn.active { border-bottom-color:#f97316;color:#c2410c; }
+        .tab-btn:hover:not(.active) { color:#f97316; }
+        .quiz-answer { display:none;animation:fadeIn .25s ease; }
+        .quiz-answer.open { display:block; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);} }
+        .quiz-toggle { display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:#f97316;font-weight:700;font-size:.88rem;margin-top:10px;border:2px solid #fed7aa;border-radius:999px;padding:4px 16px;transition:all .2s;background:none; }
+        .quiz-toggle:hover { background:#fff7ed; }
+        .mc-btn { width:100%;padding:11px 16px;text-align:left;border-radius:12px;border:2px solid #e5e7eb;background:#f9fafb;font-weight:600;color:#374151;transition:all .25s;cursor:pointer;font-size:.88rem; }
+        .mc-btn:hover { background:#fff7ed;border-color:#fed7aa; }
+        .mc-btn.correct { background:#f97316;color:white;border-color:#f97316; }
+        .mc-btn.wrong { background:#f43f5e;color:white;border-color:#f43f5e; }
+        .mc-btn.disabled { opacity:.5;pointer-events:none; }
+        /* Decision Tree Example */
+        .dt-node { display:inline-block;background:#fff7ed;border:2px solid #f97316;border-radius:12px;padding:10px 16px;font-weight:700;font-size:.85rem;color:#c2410c;text-align:center; }
+        .dt-leaf { display:inline-block;background:#10b981;border:2px solid #059669;border-radius:999px;padding:8px 16px;font-weight:700;font-size:.85rem;color:white;text-align:center; }
+        .dt-edge { border-left:2px dashed #fb923c;margin-left:20px;padding-left:16px; }
+        /* Example tabs */
+        .ex-tab { padding:8px 18px;border-radius:999px;font-weight:700;font-size:.83rem;cursor:pointer;border:2px solid transparent;transition:all .2s;background:#f9fafb;color:#64748b; }
+        .ex-tab.active { background:#f97316;color:white;border-color:#f97316; }
+        /* Canvas */
+        #canvas2d { cursor:crosshair;border-radius:12px;display:block; }
+        .tree-net { width:100%;min-height:420px;background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0; }
+        ::-webkit-scrollbar { width:7px; }
+        ::-webkit-scrollbar-track { background:#fff7ed;border-radius:10px; }
+        ::-webkit-scrollbar-thumb { background:#fed7aa;border-radius:10px; }
+        @media(max-width:768px){ .section-card{padding:1.5rem;} }
+    </style>
+</head>
+<body>
+
+<!-- HERO -->
+<header id="top" class="hero-gradient text-white px-6" style="padding-top:44px;padding-bottom:44px;">
+    <div style="max-width:860px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center;">
+        <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;padding:6px 18px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.45);border-radius:999px;font-weight:700;font-size:.82rem;text-decoration:none;color:#fff;margin-bottom:12px;">← 목록으로 돌아가기</a>
+        <div style="padding:5px 18px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.38);border-radius:999px;font-weight:700;font-size:.82rem;color:#fff;margin-bottom:18px;">능동고등학교 인공지능기초 | made by 정보교사 송세영</div>
+        <h1 style="font-size:clamp(2.2rem,6vw,3.6rem);font-weight:900;line-height:1.18;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.12);margin-bottom:16px;">
+            스무고개처럼 분류하다,<br><span style="color:#fde68a;">Decision Tree</span>
+        </h1>
+        <p style="font-size:1.05rem;color:rgba(255,255,255,.92);max-width:580px;line-height:1.7;margin-bottom:22px;">
+            한 번에 하나씩 질문하며 데이터를 분류하는 직관적인 알고리즘.<br>스무고개 예시와 2차원 분류 시뮬레이터로 원리를 체험하세요.
+        </p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;">
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">🌳 트리 구조</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">📊 Gini 불순도</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">🎯 스무고개 체험</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">📐 2D 분류</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">✏️ 퀴즈</span>
+        </div>
+    </div>
+</header>
+
+<!-- NAV -->
+<nav class="sticky-nav px-6">
+    <div style="max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:32px;height:32px;background:#f97316;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;">🌳</div>
+            <span style="font-weight:900;font-size:1.1rem;color:#7c2d12;">의사결정 트리</span>
+        </div>
+        <div style="display:flex;gap:12px;font-weight:700;font-size:.85rem;flex-wrap:wrap;">
+            <a href="#concept"  style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#64748b'">개념</a>
+            <a href="#examples" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#64748b'">스무고개</a>
+            <a href="#sim2d"    style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#64748b'">2D 분류</a>
+            <a href="#params"   style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#64748b'">파라미터</a>
+            <a href="#proscons" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#64748b'">장단점</a>
+            <a href="#quiz"     style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#f97316'" onmouseout="this.style.color='#64748b'">퀴즈</a>
+        </div>
+        <a href="index.html" style="padding:8px 18px;background:#f97316;color:white;border-radius:10px;font-weight:700;font-size:.85rem;text-decoration:none;">← 목록</a>
+    </div>
+</nav>
+
+<main style="max-width:1100px;margin:0 auto;padding:48px 16px;display:flex;flex-direction:column;gap:56px;">
+
+<!-- S1: 개념 -->
+<section id="concept" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:36px;">
+        <span style="color:#f97316;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Core Concept</span>
+        <h2 style="font-size:clamp(1.5rem,3.5vw,2.1rem);font-weight:900;margin-top:8px;">의사결정 트리란 무엇인가요?</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:.95rem;">스무고개처럼 질문을 반복하여 데이터를 분류하는 직관적인 알고리즘입니다.</p>
+    </div>
+
+    <div class="section-card" style="margin-bottom:24px;">
+        <h3 style="font-weight:900;font-size:1.1rem;margin-bottom:14px;">🌳 의사결정 트리(Decision Tree)란?</h3>
+        <p style="font-size:.92rem;color:#374151;line-height:1.8;margin-bottom:14px;">
+            의사결정 트리는 <strong>한 번에 하나씩 질문을 하며 정답을 찾아가는 방식</strong>으로 데이터를 분류합니다.
+            마치 스무고개 게임처럼 "색깔이 노란색인가요?", "키가 320 이상인가요?" 같은 질문을 통해 데이터를 단계적으로 나누어 최종 답을 찾습니다.
+        </p>
+        <div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:12px;padding:14px;margin-bottom:14px;">
+            <p style="font-size:.88rem;color:#92400e;"><strong>💡 핵심 원칙:</strong> 맨 처음 질문(루트 노드)은 <strong>데이터를 가장 잘 구분하는 것</strong>으로 정해야 합니다! 불순도(Gini) 지수를 최소화하는 질문이 최적입니다.</p>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+            <div style="background:#f0fdf4;border-radius:12px;padding:12px;border:1px solid #bbf7d0;">
+                <p style="font-size:.85rem;color:#166534;font-weight:700;margin-bottom:6px;">✅ 장점</p>
+                <ul style="font-size:.83rem;color:#15803d;line-height:1.8;list-style:disc;padding-left:14px;">
+                    <li>직관적이고 시각적으로 이해하기 쉽다</li>
+                    <li>복잡한 문제도 과정이 명확하게 드러남</li>
+                    <li>수치형·범주형 데이터 모두 처리 가능</li>
+                </ul>
+            </div>
+            <div style="background:#fff1f2;border-radius:12px;padding:12px;border:1px solid #fecdd3;">
+                <p style="font-size:.85rem;color:#9f1239;font-weight:700;margin-bottom:6px;">⚠️ 단점(과적합 주의!)</p>
+                <ul style="font-size:.83rem;color:#be123c;line-height:1.8;list-style:disc;padding-left:14px;">
+                    <li><strong>과적합</strong>될 수 있음 (훈련 데이터에만 잘 맞음)</li>
+                    <li>트리 <strong>가지치기(Pruning)</strong>나 깊이 제한 필요</li>
+                    <li>데이터가 조금만 바뀌어도 트리가 크게 변할 수 있음</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#ffedd5;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">🌱</div>
+            <span style="background:#ffedd5;color:#c2410c;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">루트 노드</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">첫 번째 질문</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">데이터 전체를 가장 잘 나누는 질문. 불순도를 가장 많이 낮추는 기준이 선택됩니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#fef3c7;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">🔀</div>
+            <span style="background:#fef3c7;color:#d97706;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">내부 노드</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">추가 질문</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">분류된 그룹을 다시 나누는 질문. 각 그룹 안에서 가장 좋은 기준을 찾습니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#d1fae5;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">🍃</div>
+            <span style="background:#d1fae5;color:#059669;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">리프 노드</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">최종 결과</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">더 이상 나눌 수 없거나 나눌 필요가 없는 최종 분류 결과입니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#ede9fe;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">📉</div>
+            <span style="background:#ede9fe;color:#7c3aed;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">Gini 불순도</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">분할 기준</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">데이터 집합이 얼마나 섞여있는지를 나타냄. 0에 가까울수록 순수한 분류입니다.</p>
+        </div>
+    </div>
+</section>
+
+<!-- S2: 스무고개 예시 -->
+<section id="examples" style="scroll-margin-top:80px;" class="section-card">
+    <div style="margin-bottom:24px;">
+        <span style="color:#f97316;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Interactive Examples</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:6px;">🎯 스무고개 AI — 예시로 배우기</h2>
+        <p style="color:#64748b;margin-top:6px;font-size:.95rem;">예/아니오 질문을 통해 데이터를 단계적으로 분류하는 의사결정 트리를 체험해보세요.</p>
+    </div>
+
+    <!-- 예시 탭 -->
+    <div style="display:flex;gap:8px;margin-bottom:24px;flex-wrap:wrap;">
+        <button class="ex-tab active" onclick="switchExample(0,this)">🦒 동물 분류 (색상·키)</button>
+        <button class="ex-tab" onclick="switchExample(1,this)">🍎 과일 맞히기</button>
+        <button class="ex-tab" onclick="switchExample(2,this)">🦅 날개/비행/지느러미</button>
+    </div>
+
+    <!-- 예시 0: 동물 분류 (교과서 그림 II-80) -->
+    <div id="ex0" style="display:block;">
+        <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:20px;align-items:start;">
+            <div>
+                <h3 style="font-weight:900;color:#c2410c;margin-bottom:10px;">📊 동물 데이터 (표 II-9)</h3>
+                <div style="overflow-x:auto;border-radius:10px;border:1px solid #fed7aa;margin-bottom:10px;max-height:200px;overflow-y:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+                        <thead><tr style="background:#fff7ed;position:sticky;top:0;">
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">이름</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">색상</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">키(cm)</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">삭제</th>
+                        </tr></thead>
+                        <tbody id="animalTableBody"></tbody>
+                    </table>
+                </div>
+                <!-- 입력 폼 -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+                    <div><label style="font-size:.72rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px;">이름</label>
+                        <input id="animalName" placeholder="예: 기린" style="width:100%;padding:5px;border:2px solid #e5e7eb;border-radius:7px;font-size:.82rem;outline:none;"></div>
+                    <div><label style="font-size:.72rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px;">색상</label>
+                        <select id="animalColor" style="width:100%;padding:5px;border:2px solid #e5e7eb;border-radius:7px;font-size:.82rem;outline:none;">
+                            <option value="노란색">노란색</option><option value="회색">회색</option><option value="갈색">갈색</option><option value="흰색">흰색</option><option value="검은색">검은색</option>
+                        </select></div>
+                    <div><label style="font-size:.72rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px;">키(cm)</label>
+                        <input id="animalHeight" type="number" value="200" min="1" max="600" style="width:100%;padding:5px;border:2px solid #e5e7eb;border-radius:7px;font-size:.82rem;outline:none;"></div>
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:10px;">
+                    <button onclick="addAnimalData()" style="flex:1;padding:7px;background:#f97316;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.8rem;">+ 추가</button>
+                    <button onclick="runAnimalTraining()" style="flex:1;padding:7px;background:#c2410c;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.8rem;">🌳 트리 생성</button>
+                    <button onclick="initAnimalData()" style="padding:7px 10px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.8rem;">↺</button>
+                </div>
+                <!-- 예측 -->
+                <div style="background:#f0fdf4;border-radius:10px;padding:10px;border:1px solid #bbf7d0;">
+                    <p style="font-weight:700;font-size:.8rem;color:#14532d;margin-bottom:7px;">🤖 새로운 데이터로 트리 탐색</p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:7px;">
+                        <select id="testAnimalColor" style="padding:5px;border:1px solid #e5e7eb;border-radius:6px;font-size:.78rem;outline:none;">
+                            <option value="노란색">노란색</option><option value="회색">회색</option><option value="갈색">갈색</option><option value="흰색">흰색</option><option value="검은색">검은색</option>
+                        </select>
+                        <input id="testAnimalHeight" type="number" value="200" min="1" max="600" placeholder="키(cm)" style="padding:5px;border:1px solid #e5e7eb;border-radius:6px;font-size:.78rem;outline:none;">
+                    </div>
+                    <button onclick="runAnimalPrediction()" style="width:100%;padding:7px;background:#059669;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.8rem;">▶ 예측 시작</button>
+                    <div id="animalPredResult" style="margin-top:7px;padding:7px;text-align:center;font-weight:700;font-size:.83rem;border-radius:7px;display:none;"></div>
+                </div>
+            </div>
+            <div>
+                <h3 style="font-weight:900;color:#c2410c;margin-bottom:10px;">🌳 의사결정 트리 (그림 II-80)</h3>
+                <div style="position:relative;">
+                    <button onclick="if(networkEx0)networkEx0.fit({animation:{duration:300}})" style="position:absolute;top:8px;right:8px;z-index:10;padding:4px 12px;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:.75rem;font-weight:700;color:#64748b;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);">⊞ 맞춤</button>
+                <div id="network-ex0" style="height:460px;background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 예시 1: 과일 맞히기 -->
+    <div id="ex1" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:20px;align-items:start;">
+            <div>
+                <h3 style="font-weight:900;color:#c2410c;margin-bottom:12px;">📊 과일 데이터</h3>
+                <div style="overflow-x:auto;border-radius:12px;border:1px solid #fed7aa;margin-bottom:12px;">
+                    <table style="width:100%;border-collapse:collapse;font-size:.83rem;">
+                        <thead><tr style="background:#fff7ed;">
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">이름</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">색깔</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">크기</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">모양</th>
+                        </tr></thead>
+                        <tbody id="fruitTableBody"></tbody>
+                    </table>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:10px;">
+                    <div><label style="font-size:.75rem;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">이름</label><input id="catName" placeholder="예: 사과" style="width:100%;padding:6px;border:2px solid #e5e7eb;border-radius:7px;font-size:.83rem;outline:none;"></div>
+                    <div><label style="font-size:.75rem;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">색깔</label>
+                        <select id="catColor" style="width:100%;padding:6px;border:2px solid #e5e7eb;border-radius:7px;font-size:.83rem;outline:none;">
+                            <option value="빨강">빨강</option><option value="노랑">노랑</option><option value="초록">초록</option><option value="보라">보라</option>
+                        </select></div>
+                    <div><label style="font-size:.75rem;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">크기</label>
+                        <select id="catSize" style="width:100%;padding:6px;border:2px solid #e5e7eb;border-radius:7px;font-size:.83rem;outline:none;">
+                            <option value="큼">큼</option><option value="작음">작음</option>
+                        </select></div>
+                    <div><label style="font-size:.75rem;font-weight:700;color:#64748b;display:block;margin-bottom:3px;">모양</label>
+                        <select id="catShape" style="width:100%;padding:6px;border:2px solid #e5e7eb;border-radius:7px;font-size:.83rem;outline:none;">
+                            <option value="둥긂">둥긂</option><option value="길쭉함">길쭉함</option>
+                        </select></div>
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:10px;">
+                    <button onclick="addCatData()" style="flex:1;padding:8px;background:#f97316;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82rem;">+ 추가</button>
+                    <button onclick="runCatTraining()" style="flex:1;padding:8px;background:#c2410c;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82rem;">🌳 트리 생성</button>
+                    <button onclick="initCatData()" style="padding:8px 10px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82rem;">↺</button>
+                </div>
+                <!-- 예측 -->
+                <div style="background:#f0fdf4;border-radius:10px;padding:12px;border:1px solid #bbf7d0;">
+                    <p style="font-weight:700;font-size:.82rem;color:#14532d;margin-bottom:8px;">🤖 새로운 데이터로 트리 탐색</p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:8px;">
+                        <select id="testColor" style="padding:5px;border:1px solid #e5e7eb;border-radius:6px;font-size:.78rem;outline:none;">
+                            <option value="빨강">빨강</option><option value="노랑">노랑</option><option value="초록">초록</option><option value="보라">보라</option>
+                        </select>
+                        <select id="testSize" style="padding:5px;border:1px solid #e5e7eb;border-radius:6px;font-size:.78rem;outline:none;">
+                            <option value="큼">큼</option><option value="작음">작음</option>
+                        </select>
+                        <select id="testShape" style="padding:5px;border:1px solid #e5e7eb;border-radius:6px;font-size:.78rem;outline:none;">
+                            <option value="둥긂">둥긂</option><option value="길쭉함">길쭉함</option>
+                        </select>
+                    </div>
+                    <button onclick="runCatPrediction()" style="width:100%;padding:8px;background:#059669;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82rem;">▶ 예측 시작</button>
+                    <div id="predResult" style="margin-top:8px;padding:8px;text-align:center;font-weight:700;font-size:.85rem;border-radius:8px;display:none;"></div>
+                </div>
+            </div>
+            <div>
+                <h3 style="font-weight:900;color:#c2410c;margin-bottom:12px;">🌳 생성된 의사결정 트리</h3>
+                <div style="position:relative;">
+                    <button onclick="if(networkCat)networkCat.fit({animation:{duration:300}})" style="position:absolute;top:8px;right:8px;z-index:10;padding:4px 12px;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:.75rem;font-weight:700;color:#64748b;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);">⊞ 맞춤</button>
+                <div id="network-cat" style="height:460px;background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 예시 2: 매/펭귄/돌고래/곰 -->
+    <div id="ex2" style="display:none;">
+        <div style="display:grid;grid-template-columns:1fr 1.4fr;gap:20px;align-items:start;">
+            <div>
+                <h3 style="font-weight:900;color:#c2410c;margin-bottom:10px;">📊 동물 데이터 (표 II-4)</h3>
+                <div style="overflow-x:auto;border-radius:10px;border:1px solid #fed7aa;margin-bottom:10px;max-height:200px;overflow-y:auto;">
+                    <table style="width:100%;border-collapse:collapse;font-size:.82rem;">
+                        <thead><tr style="background:#fff7ed;position:sticky;top:0;">
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;border-bottom:2px solid #fed7aa;">동물</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">날개</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">비행</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">지느러미</th>
+                            <th style="padding:7px 8px;font-weight:800;color:#c2410c;text-align:center;border-bottom:2px solid #fed7aa;">삭제</th>
+                        </tr></thead>
+                        <tbody id="birdTableBody"></tbody>
+                    </table>
+                </div>
+                <!-- 입력 폼 -->
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:5px;margin-bottom:8px;">
+                    <div><label style="font-size:.7rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px;">이름</label>
+                        <input id="birdName" placeholder="예: 독수리" style="width:100%;padding:5px;border:2px solid #e5e7eb;border-radius:7px;font-size:.78rem;outline:none;"></div>
+                    <div><label style="font-size:.7rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px;">날개</label>
+                        <select id="birdWing" style="width:100%;padding:5px;border:2px solid #e5e7eb;border-radius:7px;font-size:.78rem;outline:none;">
+                            <option value="T">T (있음)</option><option value="F">F (없음)</option>
+                        </select></div>
+                    <div><label style="font-size:.7rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px;">비행</label>
+                        <select id="birdFly" style="width:100%;padding:5px;border:2px solid #e5e7eb;border-radius:7px;font-size:.78rem;outline:none;">
+                            <option value="T">T (가능)</option><option value="F">F (불가)</option>
+                        </select></div>
+                    <div><label style="font-size:.7rem;font-weight:700;color:#64748b;display:block;margin-bottom:2px;">지느러미</label>
+                        <select id="birdFin" style="width:100%;padding:5px;border:2px solid #e5e7eb;border-radius:7px;font-size:.78rem;outline:none;">
+                            <option value="F">F (없음)</option><option value="T">T (있음)</option>
+                        </select></div>
+                </div>
+                <div style="display:flex;gap:6px;margin-bottom:10px;">
+                    <button onclick="addBirdData()" style="flex:1;padding:7px;background:#f97316;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.8rem;">+ 추가</button>
+                    <button onclick="runBirdTraining()" style="flex:1;padding:7px;background:#c2410c;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.8rem;">🌳 트리 생성</button>
+                    <button onclick="initBirdData()" style="padding:7px 10px;background:#f3f4f6;color:#374151;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.8rem;">↺</button>
+                </div>
+                <!-- 예측 -->
+                <div style="background:#f0fdf4;border-radius:10px;padding:10px;border:1px solid #bbf7d0;">
+                    <p style="font-weight:700;font-size:.8rem;color:#14532d;margin-bottom:7px;">🤖 새로운 데이터로 트리 탐색</p>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:5px;margin-bottom:7px;">
+                        <select id="testBirdWing" style="padding:5px;border:1px solid #e5e7eb;border-radius:6px;font-size:.75rem;outline:none;">
+                            <option value="T">날개: T</option><option value="F">날개: F</option>
+                        </select>
+                        <select id="testBirdFly" style="padding:5px;border:1px solid #e5e7eb;border-radius:6px;font-size:.75rem;outline:none;">
+                            <option value="T">비행: T</option><option value="F">비행: F</option>
+                        </select>
+                        <select id="testBirdFin" style="padding:5px;border:1px solid #e5e7eb;border-radius:6px;font-size:.75rem;outline:none;">
+                            <option value="F">지느러미: F</option><option value="T">지느러미: T</option>
+                        </select>
+                    </div>
+                    <button onclick="runBirdPrediction()" style="width:100%;padding:7px;background:#059669;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.8rem;">▶ 예측 시작</button>
+                    <div id="birdPredResult" style="margin-top:7px;padding:7px;text-align:center;font-weight:700;font-size:.83rem;border-radius:7px;display:none;"></div>
+                </div>
+            </div>
+            <div>
+                <h3 style="font-weight:900;color:#c2410c;margin-bottom:10px;">🌳 의사결정 트리 (그림 II-30)</h3>
+                <div style="position:relative;">
+                    <button onclick="if(networkEx2)networkEx2.fit({animation:{duration:300}})" style="position:absolute;top:8px;right:8px;z-index:10;padding:4px 12px;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:.75rem;font-weight:700;color:#64748b;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);">⊞ 맞춤</button>
+                <div id="network-ex2" style="height:460px;background:#f8fafc;border-radius:14px;border:1px solid #e2e8f0;overflow:hidden;"></div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- S3: 2D 분류 시뮬레이터 -->
+<section id="sim2d" style="scroll-margin-top:80px;" class="section-card">
+    <div style="margin-bottom:24px;">
+        <span style="color:#f97316;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Interactive Simulator</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:6px;">📐 2차원 평면 분류 시뮬레이터</h2>
+        <p style="color:#64748b;margin-top:6px;font-size:.95rem;">X·Y 좌표 공간에서 데이터를 분류하는 결정 경계(Decision Boundary)를 시각적으로 확인합니다.</p>
+    </div>
+
+    <!-- 컨트롤 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;background:#f8fafc;border-radius:1.25rem;padding:16px;border:1px solid #e2e8f0;margin-bottom:18px;">
+        <div>
+            <p style="font-weight:700;font-size:.85rem;color:#374151;margin-bottom:8px;">① 데이터 클래스 선택</p>
+            <div style="display:flex;gap:6px;">
+                <button id="btnClass1" onclick="set2DClass(1)" style="flex:1;padding:8px;background:#ef4444;color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82rem;">빨강</button>
+                <button id="btnClass2" onclick="set2DClass(2)" style="flex:1;padding:8px;background:white;color:#3b82f6;border:2px solid #3b82f6;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82rem;">파랑</button>
+                <button id="btnClass3" onclick="set2DClass(3)" style="flex:1;padding:8px;background:white;color:#10b981;border:2px solid #10b981;border-radius:8px;font-weight:700;cursor:pointer;font-size:.82rem;">초록</button>
+            </div>
+            <p style="font-size:.72rem;color:#94a3b8;margin-top:5px;text-align:center;">선택 후 좌표 공간을 클릭하세요</p>
+        </div>
+        <div>
+            <p style="font-weight:700;font-size:.85rem;color:#374151;margin-bottom:8px;">② 파라미터</p>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <label style="font-size:.78rem;font-weight:600;color:#374151;min-width:60px;">최대 깊이</label>
+                    <input type="range" id="paramDepth2D" min="1" max="10" value="4" style="flex:1;accent-color:#f97316;" oninput="document.getElementById('lblDepth2D').textContent=this.value" onchange="update2DParams()">
+                    <span id="lblDepth2D" style="font-weight:900;color:#f97316;min-width:18px;">4</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <label style="font-size:.78rem;font-weight:600;color:#374151;min-width:60px;">최소 샘플</label>
+                    <input type="range" id="paramMinLeaf2D" min="1" max="15" value="2" style="flex:1;accent-color:#f97316;" oninput="document.getElementById('lblMinLeaf2D').textContent=this.value" onchange="update2DParams()">
+                    <span id="lblMinLeaf2D" style="font-weight:900;color:#f97316;min-width:18px;">2</span>
+                </div>
+            </div>
+        </div>
+        <div>
+            <p style="font-weight:700;font-size:.85rem;color:#374151;margin-bottom:8px;">③ 실행</p>
+            <div style="display:flex;flex-direction:column;gap:6px;">
+                <button onclick="run2DTraining()" style="padding:9px;background:#f97316;color:white;border:none;border-radius:9px;font-weight:700;cursor:pointer;font-size:.85rem;">▶ 학습 실행</button>
+                <button onclick="random2DData()" style="padding:8px;background:#f0fdf4;color:#059669;border:2px solid #bbf7d0;border-radius:9px;font-weight:700;cursor:pointer;font-size:.82rem;">🎲 랜덤 데이터</button>
+                <button onclick="clear2DData()" style="padding:8px;background:#f9fafb;color:#ef4444;border:2px solid #fecdd3;border-radius:9px;font-weight:700;cursor:pointer;font-size:.82rem;">🗑️ 초기화</button>
+            </div>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:16px;">
+        <!-- 캔버스 -->
+        <div>
+            <p style="font-weight:700;font-size:.88rem;color:#374151;margin-bottom:8px;">📍 좌표 공간 (클릭하여 데이터 추가)</p>
+            <div style="background:#f8fafc;border-radius:14px;padding:8px;border:2px solid #e2e8f0;display:flex;justify-content:center;">
+                <canvas id="canvas2d" width="440" height="380" style="cursor:crosshair;border-radius:10px;display:block;"></canvas>
+            </div>
+        </div>
+        <!-- 트리 -->
+        <div>
+            <p style="font-weight:700;font-size:.88rem;color:#374151;margin-bottom:8px;">🌳 생성된 결정 트리</p>
+            <div style="position:relative;">
+                    <button onclick="if(network2D)network2D.fit({animation:{duration:300}})" style="position:absolute;top:8px;right:8px;z-index:10;padding:4px 12px;background:white;border:1px solid #e2e8f0;border-radius:8px;font-size:.75rem;font-weight:700;color:#64748b;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.08);">⊞ 맞춤</button>
+                <div id="network-2d" style="height:460px;background:#f8fafc;border-radius:14px;border:2px solid #e2e8f0;overflow:hidden;"></div></div>
+        </div>
+    </div>
+
+    <!-- 학습 완료 후 정보 패널 -->
+    <div id="treeInfo" style="display:none;margin-top:4px;">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:12px;">
+            <div style="background:#fff7ed;border-radius:12px;padding:14px;border:1px solid #fed7aa;">
+                <h4 style="font-weight:800;color:#c2410c;margin-bottom:6px;font-size:.9rem;">📊 트리 정보</h4>
+                <div style="font-size:.82rem;color:#374151;display:flex;flex-direction:column;gap:4px;">
+                    <div style="display:flex;justify-content:space-between;"><span>전체 노드:</span><span id="infoNodes" style="font-weight:700;color:#f97316;">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span>리프 노드:</span><span id="infoLeaves" style="font-weight:700;color:#10b981;">-</span></div>
+                    <div style="display:flex;justify-content:space-between;"><span>실제 깊이:</span><span id="infoDepth" style="font-weight:700;color:#7c3aed;">-</span></div>
+                </div>
+            </div>
+            <div style="background:#eff6ff;border-radius:12px;padding:14px;border:1px solid #bfdbfe;">
+                <h4 style="font-weight:800;color:#1e40af;margin-bottom:6px;font-size:.9rem;">❓ 어떻게 작동하나요?</h4>
+                <p style="font-size:.8rem;color:#1e40af;line-height:1.6;">의사결정 트리는 X·Y 좌표값을 기준으로 데이터를 나누는 수직·수평선을 찾습니다. 색칠된 영역은 해당 클래스로 분류되는 구역입니다.</p>
+            </div>
+            <div style="background:#fff1f2;border-radius:12px;padding:14px;border:1px solid #fecdd3;">
+                <h4 style="font-weight:800;color:#be123c;margin-bottom:6px;font-size:.9rem;">⚠️ 과적합 주의!</h4>
+                <p style="font-size:.8rem;color:#be123c;line-height:1.6;">최대 깊이를 늘리면 트리가 훈련 데이터에 완벽히 맞지만, 새로운 데이터에는 잘 작동하지 않을 수 있습니다. 최대 깊이를 줄이거나 최소 샘플을 늘려보세요!</p>
+            </div>
+            <div style="background:#f0fdf4;border-radius:12px;padding:14px;border:1px solid #bbf7d0;">
+                <h4 style="font-weight:800;color:#14532d;margin-bottom:6px;font-size:.9rem;">🎨 영역 구분</h4>
+                <div style="display:flex;flex-direction:column;gap:4px;font-size:.8rem;">
+                    <div style="display:flex;align-items:center;gap:6px;"><div style="width:14px;height:14px;background:rgba(239,68,68,.3);border-radius:3px;"></div><span style="color:#374151;">빨강 구역 → 빨강 클래스</span></div>
+                    <div style="display:flex;align-items:center;gap:6px;"><div style="width:14px;height:14px;background:rgba(59,130,246,.3);border-radius:3px;"></div><span style="color:#374151;">파랑 구역 → 파랑 클래스</span></div>
+                    <div style="display:flex;align-items:center;gap:6px;"><div style="width:14px;height:14px;background:rgba(16,185,129,.3);border-radius:3px;"></div><span style="color:#374151;">초록 구역 → 초록 클래스</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- S4: 파라미터 -->
+<section id="params" style="scroll-margin-top:80px;" class="section-card">
+    <div style="text-align:center;margin-bottom:28px;">
+        <span style="color:#f97316;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Parameters</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:8px;">⚙️ 파라미터가 트리에 미치는 영향</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;">
+        <div style="background:#f5f3ff;border-radius:1.25rem;padding:18px;border:2px solid #ddd6fe;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">📏</div>
+            <h4 style="font-weight:900;color:#4c1d95;margin-bottom:8px;">최대 깊이<br><code style="font-size:.8rem;background:#ede9fe;padding:2px 6px;border-radius:4px;">max_depth</code></h4>
+            <p style="font-size:.84rem;color:#5b21b6;line-height:1.6;">트리가 얼마나 깊이 질문을 할 수 있는지 제한합니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;border:1px solid #ddd6fe;font-size:.78rem;display:flex;flex-direction:column;gap:4px;">
+                <div><strong>작게:</strong> 단순한 트리, 과소적합 위험</div>
+                <div><strong>크게:</strong> 복잡한 트리, 과적합 위험 ⚠️</div>
+            </div>
+        </div>
+        <div style="background:#ecfdf5;border-radius:1.25rem;padding:18px;border:2px solid #a7f3d0;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">🌿</div>
+            <h4 style="font-weight:900;color:#065f46;margin-bottom:8px;">리프 최소 샘플<br><code style="font-size:.8rem;background:#d1fae5;padding:2px 6px;border-radius:4px;">min_samples_leaf</code></h4>
+            <p style="font-size:.84rem;color:#047857;line-height:1.6;">리프(최종 결과) 노드에 최소 몇 개의 데이터가 있어야 하는지 지정합니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;border:1px solid #a7f3d0;font-size:.78rem;display:flex;flex-direction:column;gap:4px;">
+                <div><strong>작게:</strong> 더 세밀한 분류, 과적합 위험</div>
+                <div><strong>크게:</strong> 더 단순한 분류, 안정적</div>
+            </div>
+        </div>
+        <div style="background:#fff7ed;border-radius:1.25rem;padding:18px;border:2px solid #fed7aa;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">✂️</div>
+            <h4 style="font-weight:900;color:#92400e;margin-bottom:8px;">가지치기<br><code style="font-size:.8rem;background:#fef3c7;padding:2px 6px;border-radius:4px;">Pruning</code></h4>
+            <p style="font-size:.84rem;color:#b45309;line-height:1.6;">과적합을 방지하기 위해 성능 향상에 도움이 되지 않는 가지를 제거합니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;border:1px solid #fed7aa;font-size:.78rem;display:flex;flex-direction:column;gap:4px;">
+                <div><strong>사전 가지치기:</strong> 학습 중 조기 중단</div>
+                <div><strong>사후 가지치기:</strong> 학습 후 가지 제거</div>
+            </div>
+        </div>
+        <div style="background:#eff6ff;border-radius:1.25rem;padding:18px;border:2px solid #bfdbfe;">
+            <div style="font-size:1.8rem;margin-bottom:8px;">📊</div>
+            <h4 style="font-weight:900;color:#1e40af;margin-bottom:8px;">불순도 기준<br><code style="font-size:.8rem;background:#dbeafe;padding:2px 6px;border-radius:4px;">criterion</code></h4>
+            <p style="font-size:.84rem;color:#1d4ed8;line-height:1.6;">분할 기준으로 사용하는 지표입니다. 일반적으로 Gini 계수를 사용합니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;border:1px solid #bfdbfe;font-size:.78rem;display:flex;flex-direction:column;gap:4px;">
+                <div><strong>Gini:</strong> 0(순수) ~ 1(불순) — 빠름</div>
+                <div><strong>Entropy:</strong> 정보이득 기반 — 정확</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- S5: 장단점 -->
+<section id="proscons" style="scroll-margin-top:80px;" class="section-card">
+    <div style="text-align:center;margin-bottom:28px;">
+        <span style="color:#f97316;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Pros & Cons</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:8px;">⚖️ 의사결정 트리의 장점과 단점</h2>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:22px;">
+        <div style="background:#f0fdf4;border-radius:1.5rem;padding:22px;border:2px solid #86efac;">
+            <h3 style="font-weight:900;color:#14532d;margin-bottom:14px;font-size:1.05rem;">✅ 장점</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="background:white;border-radius:10px;padding:12px;border:1px solid #bbf7d0;"><div style="font-weight:800;color:#15803d;font-size:.88rem;margin-bottom:4px;">🎯 직관적·시각적</div><p style="font-size:.82rem;color:#166534;line-height:1.5;">트리 구조를 그림으로 보여주므로 복잡한 문제도 그 과정이 명확하게 드러납니다.</p></div>
+                <div style="background:white;border-radius:10px;padding:12px;border:1px solid #bbf7d0;"><div style="font-weight:800;color:#15803d;font-size:.88rem;margin-bottom:4px;">📋 설명 가능</div><p style="font-size:.82rem;color:#166534;line-height:1.5;">어떤 기준으로 분류했는지 규칙을 명확히 설명할 수 있어 해석이 쉽습니다.</p></div>
+                <div style="background:white;border-radius:10px;padding:12px;border:1px solid #bbf7d0;"><div style="font-weight:800;color:#15803d;font-size:.88rem;margin-bottom:4px;">🔧 전처리 최소화</div><p style="font-size:.82rem;color:#166534;line-height:1.5;">데이터 정규화/표준화 없이도 작동하며 수치형·범주형 데이터 모두 처리 가능합니다.</p></div>
+            </div>
+        </div>
+        <div style="background:#fff1f2;border-radius:1.5rem;padding:22px;border:2px solid #fca5a5;">
+            <h3 style="font-weight:900;color:#9f1239;margin-bottom:14px;font-size:1.05rem;">❌ 단점</h3>
+            <div style="display:flex;flex-direction:column;gap:10px;">
+                <div style="background:white;border-radius:10px;padding:12px;border:1px solid #fecdd3;"><div style="font-weight:800;color:#be123c;font-size:.88rem;margin-bottom:4px;">⚠️ 과적합(Overfitting)</div><p style="font-size:.82rem;color:#9f1239;line-height:1.5;">트리가 훈련 데이터에 너무 맞추어지면 새로운 데이터에 잘 작동하지 않습니다. 가지치기나 깊이 제한이 필요합니다.</p></div>
+                <div style="background:white;border-radius:10px;padding:12px;border:1px solid #fecdd3;"><div style="font-weight:800;color:#be123c;font-size:.88rem;margin-bottom:4px;">📊 데이터 변화에 민감</div><p style="font-size:.82rem;color:#9f1239;line-height:1.5;">데이터가 조금만 바뀌어도 트리 구조가 크게 달라질 수 있습니다.</p></div>
+                <div style="background:white;border-radius:10px;padding:12px;border:1px solid #fecdd3;"><div style="font-weight:800;color:#be123c;font-size:.88rem;margin-bottom:4px;">📏 직선 경계만 가능</div><p style="font-size:.82rem;color:#9f1239;line-height:1.5;">X·Y 축에 평행한 선으로만 분류하므로 대각선 경계가 필요한 문제에서 성능이 떨어집니다.</p></div>
+            </div>
+        </div>
+    </div>
+    <div style="background:#fef3c7;border-radius:1.25rem;padding:16px;border:1px solid #fde68a;display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div><p style="font-size:.85rem;color:#92400e;font-weight:700;margin-bottom:6px;">🌲 과적합 방지 방법</p><ul style="font-size:.82rem;color:#92400e;line-height:1.9;list-style:disc;padding-left:14px;"><li>최대 깊이(max_depth) 제한</li><li>리프 노드 최소 샘플 수 증가</li><li>가지치기(Pruning) 적용</li><li>앙상블(Random Forest) 사용</li></ul></div>
+        <div><p style="font-size:.85rem;color:#92400e;font-weight:700;margin-bottom:6px;">🚀 의사결정 트리의 발전형</p><ul style="font-size:.82rem;color:#92400e;line-height:1.9;list-style:disc;padding-left:14px;"><li><strong>랜덤 포레스트:</strong> 여러 트리 결합</li><li><strong>Gradient Boosting:</strong> 오류 순차 개선</li><li><strong>XGBoost:</strong> 현재 가장 많이 사용</li></ul></div>
+    </div>
+</section>
+
+<!-- S6: 퀴즈 -->
+<section id="quiz" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:36px;">
+        <span style="background:#ffedd5;color:#c2410c;padding:6px 18px;border-radius:999px;font-weight:700;font-size:.85rem;">CHECK-UP</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:12px;">✏️ 의사결정 트리 퀴즈</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:.95rem;">학습한 내용을 확인해봅시다!</p>
+    </div>
+
+    <div style="margin-bottom:24px;">
+        <h3 style="font-weight:900;font-size:1.05rem;margin-bottom:14px;">📝 객관식</h3>
+        <div style="display:flex;flex-direction:column;gap:20px;">
+            <div style="background:white;border-radius:1.25rem;padding:20px;border:1px solid #ffedd5;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <p style="font-weight:700;margin-bottom:12px;font-size:.95rem;">Q1. 의사결정 트리에서 '루트 노드'란 무엇인가요?</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button onclick="checkMC(this,false,'루트 노드는 가장 위의 첫 번째 질문입니다.')" class="mc-btn">A. 최종 분류 결과가 담긴 가장 마지막 노드</button>
+                    <button onclick="checkMC(this,true,'정답! 루트 노드는 맨 처음 질문으로, 데이터 전체를 가장 잘 나누는 기준이 선택됩니다.')" class="mc-btn">B. 트리의 가장 위에 있는 첫 번째 질문 노드</button>
+                    <button onclick="checkMC(this,false,'가지치기는 과적합을 방지하기 위한 기법입니다.')" class="mc-btn">C. 과적합을 방지하기 위해 제거하는 불필요한 가지</button>
+                </div>
+            </div>
+            <div style="background:white;border-radius:1.25rem;padding:20px;border:1px solid #ffedd5;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <p style="font-weight:700;margin-bottom:12px;font-size:.95rem;">Q2. Gini 불순도(Gini Impurity)가 0에 가까울수록 의미하는 것은?</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button onclick="checkMC(this,true,'정답! Gini=0은 한 클래스만 있는 완전히 순수한 상태입니다.')" class="mc-btn">A. 한 클래스만 남아 있는 순수한 상태</button>
+                    <button onclick="checkMC(this,false,'0에 가까울수록 더 순수합니다.')" class="mc-btn">B. 여러 클래스가 균등하게 섞여 있는 상태</button>
+                    <button onclick="checkMC(this,false,'Gini는 데이터 수와 관계없습니다.')" class="mc-btn">C. 데이터 수가 매우 많다는 의미</button>
+                </div>
+            </div>
+            <div style="background:white;border-radius:1.25rem;padding:20px;border:1px solid #ffedd5;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <p style="font-weight:700;margin-bottom:12px;font-size:.95rem;">Q3. 의사결정 트리에서 '과적합(Overfitting)'을 방지하는 방법으로 올바른 것은?</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button onclick="checkMC(this,false,'더 많은 특성을 추가하면 오히려 과적합이 심해질 수 있습니다.')" class="mc-btn">A. 특성(Feature)의 수를 늘린다</button>
+                    <button onclick="checkMC(this,false,'훈련 데이터를 늘리는 것이 항상 과적합을 방지하지는 않습니다.')" class="mc-btn">B. 훈련 데이터를 더 많이 추가한다</button>
+                    <button onclick="checkMC(this,true,'정답! 최대 깊이 제한과 가지치기는 대표적인 과적합 방지 방법입니다.')" class="mc-btn">C. 트리의 최대 깊이를 제한하거나 가지치기를 한다</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <h3 style="font-weight:900;font-size:1.05rem;margin-bottom:14px;">📖 서술형</h3>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #fde68a;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <div style="width:34px;height:34px;background:#fef3c7;color:#d97706;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">4</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">의사결정 트리에서 루트 노드에 어떤 특성을 배치해야 하는지 이유와 함께 설명하세요.</p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:10px;background:#fefce8;border-left:4px solid #facc15;padding:12px;border-radius:8px;font-size:.88rem;color:#92400e;line-height:1.8;">
+                            루트 노드에는 <strong>데이터 전체를 가장 잘 구분하는 특성</strong>을 배치해야 합니다.<br>
+                            기준: Gini 불순도를 가장 많이 감소시키는 특성이나 질문을 루트 노드로 선택합니다.<br>
+                            예시: 교과서 그림 II-80에서 색상이 루트 노드인 이유는, 색상을 기준으로 전체 데이터를 나누면 노란색(기린+호랑이), 회색(코끼리), 갈색(원숭이)으로 잘 나누어지기 때문입니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #fde68a;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <div style="width:34px;height:34px;background:#fef3c7;color:#d97706;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">5</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">의사결정 트리가 스무고개와 유사한 점과 다른 점을 각각 설명하세요.</p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:10px;background:#fefce8;border-left:4px solid #facc15;padding:12px;border-radius:8px;font-size:.88rem;color:#92400e;line-height:1.8;">
+                            <strong>유사한 점:</strong> 한 번에 하나씩 예/아니오 질문을 하며 답을 좁혀나가는 방식이 동일합니다.<br>
+                            <strong>다른 점:</strong><br>
+                            ① 스무고개는 사람이 질문을 선택하지만, 의사결정 트리는 <strong>데이터를 가장 잘 나누는 질문을 자동으로 선택</strong>합니다.<br>
+                            ② 스무고개는 최대 20번의 질문이 있지만, 의사결정 트리는 Gini 불순도를 기준으로 필요한 만큼만 질문합니다.<br>
+                            ③ 의사결정 트리는 대량의 데이터에서 패턴을 학습할 수 있습니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top:36px;background:linear-gradient(135deg,#c2410c,#f97316);color:white;border-radius:2rem;padding:36px;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+        <h3 style="font-size:1.5rem;font-weight:900;margin-bottom:8px;">의사결정 트리 학습 완료!</h3>
+        <p style="opacity:.9;margin-bottom:20px;font-size:.95rem;">루트 노드, Gini 불순도, 과적합, 가지치기까지 모두 배웠습니다!</p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;">
+            <a href="index.html" style="background:white;color:#c2410c;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">← 목록으로</a>
+            <a href="knn.html" style="background:rgba(255,255,255,.2);color:white;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">KNN 복습</a>
+            <a href="svm.html" style="background:rgba(255,255,255,.2);color:white;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">SVM 보기</a>
+            <a href="#top" style="background:rgba(255,255,255,.2);color:white;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">↑ 처음으로</a>
+        </div>
+    </div>
+</section>
+</main>
+
+<footer style="background:#1c1917;color:#fed7aa;text-align:center;padding:28px;margin-top:48px;font-size:.88rem;">
+    <p style="font-weight:700;color:white;margin-bottom:4px;">능동고등학교 인공지능기초 학습자료</p>
+    <p>made by 정보교사 송세영 &nbsp;|&nbsp; © 2026 All rights reserved</p>
+</footer>
+
+
+<script>
+// ================================================================
+// 전역 변수
+// ================================================================
+let networkEx0=null, networkEx2=null;
+let networkCat=null, nodesDataCat=null, isPredictingCat=false;
+let network2D=null;
+
+// ================================================================
+// 예시 탭 전환
+// ================================================================
+function switchExample(idx, btn) {
+    [0,1,2].forEach(i => {
+        document.getElementById('ex'+i).style.display = i===idx ? 'block' : 'none';
+    });
+    document.querySelectorAll('.ex-tab').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    if(idx===0 && !networkEx0) buildExampleTree0();
+    if(idx===2 && !networkEx2) buildExampleTree2();
+}
+
+// ================================================================
+// 예시 0: 동물 분류 (색상·키)
+// ================================================================
+let datasetAnimal=[], treeAnimal=null, nodesDataAnimal=null, isPredAnimal=false;
+
+function initAnimalData(){
+    isPredAnimal=false;
+    datasetAnimal=[
+        {id:1,name:'기린 🦒',color:'노란색',height:320},
+        {id:2,name:'기린 🦒',color:'노란색',height:340},
+        {id:3,name:'기린 🦒',color:'노란색',height:330},
+        {id:4,name:'코끼리 🐘',color:'회색',height:220},
+        {id:5,name:'코끼리 🐘',color:'회색',height:240},
+        {id:6,name:'호랑이 🐯',color:'노란색',height:120},
+        {id:7,name:'호랑이 🐯',color:'노란색',height:125},
+        {id:8,name:'원숭이 🐒',color:'갈색',height:90},
+    ];
+    treeAnimal=null; renderAnimalTable(); renderAnimalTree();
+    const r=document.getElementById('animalPredResult'); if(r) r.style.display='none';
+}
+
+function addAnimalData(){
+    if(isPredAnimal) return;
+    const name=document.getElementById('animalName').value.trim();
+    if(!name){alert('이름을 입력하세요!');return;}
+    const id=datasetAnimal.length?Math.max(...datasetAnimal.map(d=>d.id))+1:1;
+    datasetAnimal.push({id,name,color:document.getElementById('animalColor').value,
+        height:parseInt(document.getElementById('animalHeight').value)||100});
+    document.getElementById('animalName').value='';
+    treeAnimal=null; renderAnimalTable(); renderAnimalTree();
+}
+
+function removeAnimalData(id){ datasetAnimal=datasetAnimal.filter(d=>d.id!==id); treeAnimal=null; renderAnimalTable(); renderAnimalTree(); }
+
+function renderAnimalTable(){
+    const tb=document.getElementById('animalTableBody'); if(!tb) return; tb.innerHTML='';
+    datasetAnimal.forEach(d=>{
+        tb.innerHTML+=`<tr><td style="padding:5px 8px;font-weight:700;">${d.name}</td><td style="padding:5px 8px;text-align:center;">${d.color}</td><td style="padding:5px 8px;text-align:center;">${d.height}</td><td style="padding:5px 8px;text-align:center;"><button onclick="removeAnimalData(${d.id})" style="color:#ef4444;border:none;background:none;cursor:pointer;">✕</button></td></tr>`;
+    });
+}
+
+function calcGiniAnimal(data){ if(!data.length)return 0; let cnt={}; data.forEach(d=>cnt[d.name]=(cnt[d.name]||0)+1); let g=1; for(let k in cnt){let p=cnt[k]/data.length;g-=p*p;} return g; }
+
+function buildTreeAnimal(data,usedColor,depth){
+    if(!data.length) return null;
+    if(data.every(d=>d.name===data[0].name)) return{isLeaf:true,result:data[0].name};
+    if(depth>=6){let cnt={}; data.forEach(d=>cnt[d.name]=(cnt[d.name]||0)+1); return{isLeaf:true,result:Object.keys(cnt).reduce((a,b)=>cnt[a]>cnt[b]?a:b)};}
+    let bestG=Infinity,bestF=null,bestV=null,bestS=null;
+    if(!usedColor){
+        [...new Set(data.map(d=>d.color))].forEach(v=>{
+            const L=data.filter(d=>d.color===v),R=data.filter(d=>d.color!==v);
+            if(!L.length||!R.length) return;
+            const wG=(L.length/data.length)*calcGiniAnimal(L)+(R.length/data.length)*calcGiniAnimal(R);
+            if(wG<bestG){bestG=wG;bestF='color';bestV=v;bestS={L,R};}
+        });
+    }
+    const sorted=[...data].sort((a,b)=>a.height-b.height);
+    for(let i=0;i<sorted.length-1;i++){
+        if(sorted[i].name===sorted[i+1].name) continue;
+        const v=(sorted[i].height+sorted[i+1].height)/2;
+        const L=data.filter(d=>d.height>=v),R=data.filter(d=>d.height<v);
+        if(!L.length||!R.length) continue;
+        const wG=(L.length/data.length)*calcGiniAnimal(L)+(R.length/data.length)*calcGiniAnimal(R);
+        if(wG<bestG){bestG=wG;bestF='height';bestV=v;bestS={L,R};}
+    }
+    if(!bestF){let cnt={}; data.forEach(d=>cnt[d.name]=(cnt[d.name]||0)+1); return{isLeaf:true,result:Object.keys(cnt).reduce((a,b)=>cnt[a]>cnt[b]?a:b)};}
+    const nextUsedColor=usedColor||(bestF==='color');
+    return{isLeaf:false,feature:bestF,value:bestV,gini:bestG,
+        left:buildTreeAnimal(bestS.L,nextUsedColor,depth+1),
+        right:buildTreeAnimal(bestS.R,bestF==='color'?false:nextUsedColor,depth+1)};
+}
+
+function runAnimalTraining(){
+    if(isPredAnimal||!datasetAnimal.length) return;
+    treeAnimal=buildTreeAnimal(datasetAnimal,false,0); renderAnimalTree();
+}
+
+function renderAnimalTree(){
+    const container=document.getElementById('network-ex0');
+    if(networkEx0){networkEx0.destroy();networkEx0=null;}
+    if(!treeAnimal){container.innerHTML='<div style="display:flex;height:100%;min-height:360px;align-items:center;justify-content:center;color:#94a3b8;font-size:.88rem;font-weight:700;">트리 생성 버튼을 눌러주세요</div>';return;}
+    let na=[],ea=[],nid=1;
+    function traverse(node,pid,lbl){
+        if(!node)return; const cid=nid++; node.visId=cid;
+        if(!node.isLeaf){
+            const lbl2=node.feature==='color'?`색상이 '${node.value}'?`:`키 >= ${Math.round(node.value)}cm?`;
+            na.push({id:cid,label:lbl2,shape:'box',color:{background:'#fff7ed',border:'#f97316'},font:{color:'#7c2d12',bold:true,size:13},borderWidth:2});
+            if(pid!=null)ea.push({from:pid,to:cid,label:lbl,font:{color:'#334155',bold:true,size:13},color:{color:'#cbd5e1'}});
+            traverse(node.left,cid,'예'); traverse(node.right,cid,'아니오');
+        } else {
+            na.push({id:cid,label:`결과:\n${node.result}`,shape:'ellipse',color:{background:'#10b981',border:'#059669'},font:{color:'white',bold:true,size:13}});
+            if(pid!=null)ea.push({from:pid,to:cid,label:lbl,font:{color:'#334155',bold:true,size:13},color:{color:'#cbd5e1'}});
+        }
+    }
+    traverse(treeAnimal,null,'');
+    nodesDataAnimal=new vis.DataSet(na);
+    networkEx0=new vis.Network(container,{nodes:nodesDataAnimal,edges:ea},{
+        layout:{hierarchical:{direction:'UD',sortMethod:'directed',levelSeparation:100,nodeSpacing:150}},
+        physics:false,interaction:{dragNodes:false,zoomView:true,dragView:true},
+        edges:{arrows:{to:{enabled:true,scaleFactor:.5}},smooth:{type:'cubicBezier'}}
+    });
+    setTimeout(()=>networkEx0&&networkEx0.fit({animation:{duration:400}}),150);
+}
+
+async function runAnimalPrediction(){
+    if(!treeAnimal){alert('먼저 트리를 생성하세요!');return;}
+    if(isPredAnimal) return; isPredAnimal=true;
+    const td={color:document.getElementById('testAnimalColor').value,height:parseInt(document.getElementById('testAnimalHeight').value)||100};
+    const res=document.getElementById('animalPredResult');
+    res.style.display='block'; res.style.background='#fffbeb'; res.style.color='#92400e'; res.textContent='탐색 중...';
+    if(nodesDataAnimal){nodesDataAnimal.forEach(n=>nodesDataAnimal.update({id:n.id,color:n.shape==='box'?{background:'#fff7ed',border:'#f97316'}:{background:'#10b981',border:'#059669'},borderWidth:n.shape==='box'?2:1}));}
+    let cur=treeAnimal; const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    while(cur){
+        if(!networkEx0||!nodesDataAnimal) break;
+        nodesDataAnimal.update({id:cur.visId,color:{background:'#fef08a',border:'#eab308'},borderWidth:4});
+        networkEx0.focus(cur.visId,{scale:1.2,animation:{duration:400}});
+        await sleep(900); if(!isPredAnimal) break;
+        if(cur.isLeaf) break;
+        nodesDataAnimal.update({id:cur.visId,color:{background:'#dcfce7',border:'#22c55e'},borderWidth:2});
+        if(cur.feature==='color') cur=td.color===cur.value?cur.left:cur.right;
+        else cur=td.height>=cur.value?cur.left:cur.right;
+    }
+    if(cur&&nodesDataAnimal){
+        nodesDataAnimal.update({id:cur.visId,color:{background:'#f97316',border:'#c2410c'},borderWidth:4});
+        res.style.background='#fff7ed'; res.style.color='#c2410c'; res.style.border='2px solid #fed7aa';
+        res.innerHTML=`<strong>${cur.result}</strong>(으)로 분류되었습니다!`;
+        networkEx0&&networkEx0.fit({animation:{duration:600}});
+    }
+    isPredAnimal=false;
+}
+
+function buildExampleTree0(){ initAnimalData(); }
+
+// ================================================================
+// 예시 2: 날개/비행/지느러미
+// ================================================================
+const BIRD_FEATS=['wing','fly','fin'];
+const BIRD_FEAT_NAME={wing:'날개',fly:'비행',fin:'지느러미'};
+let datasetBird=[], treeBird=null, nodesDataBird=null, isPredBird=false;
+
+function initBirdData(){
+    isPredBird=false;
+    datasetBird=[
+        {id:1,name:'매 🦅',wing:'T',fly:'T',fin:'F'},
+        {id:2,name:'펭귄 🐧',wing:'T',fly:'F',fin:'F'},
+        {id:3,name:'돌고래 🐬',wing:'F',fly:'F',fin:'T'},
+        {id:4,name:'곰 🐻',wing:'F',fly:'F',fin:'F'},
+    ];
+    treeBird=null; renderBirdTable(); renderBirdTree();
+    const r=document.getElementById('birdPredResult'); if(r) r.style.display='none';
+}
+
+function addBirdData(){
+    if(isPredBird) return;
+    const name=document.getElementById('birdName').value.trim();
+    if(!name){alert('이름을 입력하세요!');return;}
+    const id=datasetBird.length?Math.max(...datasetBird.map(d=>d.id))+1:1;
+    datasetBird.push({id,name,wing:document.getElementById('birdWing').value,fly:document.getElementById('birdFly').value,fin:document.getElementById('birdFin').value});
+    document.getElementById('birdName').value=''; treeBird=null; renderBirdTable(); renderBirdTree();
+}
+
+function removeBirdData(id){ datasetBird=datasetBird.filter(d=>d.id!==id); treeBird=null; renderBirdTable(); renderBirdTree(); }
+
+function renderBirdTable(){
+    const tb=document.getElementById('birdTableBody'); if(!tb) return; tb.innerHTML='';
+    datasetBird.forEach(d=>{
+        const tf=v=>`<span style="color:${v==='T'?'#16a34a':'#dc2626'};font-weight:700;">${v}</span>`;
+        tb.innerHTML+=`<tr><td style="padding:5px 8px;font-weight:700;">${d.name}</td><td style="padding:5px 8px;text-align:center;">${tf(d.wing)}</td><td style="padding:5px 8px;text-align:center;">${tf(d.fly)}</td><td style="padding:5px 8px;text-align:center;">${tf(d.fin)}</td><td style="padding:5px 8px;text-align:center;"><button onclick="removeBirdData(${d.id})" style="color:#ef4444;border:none;background:none;cursor:pointer;">✕</button></td></tr>`;
+    });
+}
+
+function runBirdTraining(){ if(!isPredBird&&datasetBird.length) renderBirdTree(); }
+
+function renderBirdTree(){
+    const container=document.getElementById('network-ex2');
+    if(networkEx2){networkEx2.destroy();networkEx2=null;}
+    if(!datasetBird.length){container.innerHTML='<div style="display:flex;height:100%;min-height:360px;align-items:center;justify-content:center;color:#94a3b8;font-size:.88rem;font-weight:700;">트리 생성 버튼을 눌러주세요</div>';return;}
+    const withWing=datasetBird.filter(d=>d.wing==='T'),withoutWing=datasetBird.filter(d=>d.wing==='F');
+    const canFly=withWing.filter(d=>d.fly==='T'),cannotFly=withWing.filter(d=>d.fly==='F');
+    const hasFin=withoutWing.filter(d=>d.fin==='T'),noFin=withoutWing.filter(d=>d.fin==='F');
+    function leafLabel(group){ if(!group.length)return '(없음)'; let cnt={}; group.forEach(d=>cnt[d.name]=(cnt[d.name]||0)+1); return Object.keys(cnt).reduce((a,b)=>cnt[a]>cnt[b]?a:b); }
+    const qN=(id,lbl)=>({id,label:lbl,shape:'box',color:{background:'#fff7ed',border:'#f97316'},font:{color:'#7c2d12',bold:true,size:14},borderWidth:2});
+    const lN=(id,lbl)=>({id,label:`결과:\n${lbl}`,shape:'ellipse',color:{background:'#10b981',border:'#059669'},font:{color:'white',bold:true,size:14}});
+    const ed=(from,to,lbl)=>({from,to,label:lbl,font:{color:'#334155',bold:true,size:13},color:{color:'#cbd5e1'}});
+    const na=[qN(1,'날개가\n있나요?'),qN(2,'날 수\n있나요?'),qN(3,'지느러미가\n있나요?'),
+              lN(4,leafLabel(canFly)||'매 🦅'),lN(5,leafLabel(cannotFly)||'펭귄 🐧'),
+              lN(6,leafLabel(hasFin)||'돌고래 🐬'),lN(7,leafLabel(noFin)||'곰 🐻')];
+    const ea=[ed(1,2,'예'),ed(1,3,'아니오'),ed(2,4,'예'),ed(2,5,'아니오'),ed(3,6,'예'),ed(3,7,'아니오')];
+    treeBird={isLeaf:false,feature:'wing',value:'T',visId:1,
+        left:{isLeaf:false,feature:'fly',value:'T',visId:2,
+              left:{isLeaf:true,result:leafLabel(canFly)||'매 🦅',visId:4},
+              right:{isLeaf:true,result:leafLabel(cannotFly)||'펭귄 🐧',visId:5}},
+        right:{isLeaf:false,feature:'fin',value:'T',visId:3,
+               left:{isLeaf:true,result:leafLabel(hasFin)||'돌고래 🐬',visId:6},
+               right:{isLeaf:true,result:leafLabel(noFin)||'곰 🐻',visId:7}}};
+    nodesDataBird=new vis.DataSet(na);
+    networkEx2=new vis.Network(container,{nodes:nodesDataBird,edges:ea},{
+        layout:{hierarchical:{direction:'UD',sortMethod:'directed',levelSeparation:100,nodeSpacing:160}},
+        physics:false,interaction:{dragNodes:false,zoomView:true,dragView:true},
+        edges:{arrows:{to:{enabled:true,scaleFactor:.6}},smooth:{type:'cubicBezier'}}
+    });
+    setTimeout(()=>networkEx2&&networkEx2.fit({animation:{duration:400}}),150);
+}
+
+async function runBirdPrediction(){
+    if(!treeBird){alert('먼저 트리를 생성하세요!');return;}
+    if(isPredBird) return; isPredBird=true;
+    const td={wing:document.getElementById('testBirdWing').value,fly:document.getElementById('testBirdFly').value,fin:document.getElementById('testBirdFin').value};
+    const res=document.getElementById('birdPredResult');
+    res.style.display='block'; res.style.background='#fffbeb'; res.style.color='#92400e'; res.textContent='탐색 중...';
+    if(nodesDataBird){nodesDataBird.forEach(n=>nodesDataBird.update({id:n.id,color:n.shape==='box'?{background:'#fff7ed',border:'#f97316'}:{background:'#10b981',border:'#059669'},borderWidth:n.shape==='box'?2:1}));}
+    let cur=treeBird; const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    while(cur){
+        if(!networkEx2||!nodesDataBird) break;
+        nodesDataBird.update({id:cur.visId,color:{background:'#fef08a',border:'#eab308'},borderWidth:4});
+        networkEx2.focus(cur.visId,{scale:1.2,animation:{duration:400}});
+        await sleep(900); if(!isPredBird) break;
+        if(cur.isLeaf) break;
+        nodesDataBird.update({id:cur.visId,color:{background:'#dcfce7',border:'#22c55e'},borderWidth:2});
+        cur=td[cur.feature]==='T'?cur.left:cur.right;
+    }
+    if(cur&&nodesDataBird){
+        nodesDataBird.update({id:cur.visId,color:{background:'#f97316',border:'#c2410c'},borderWidth:4});
+        res.style.background='#fff7ed'; res.style.color='#c2410c'; res.style.border='2px solid #fed7aa';
+        res.innerHTML=`<strong>${cur.result}</strong>(으)로 분류되었습니다!`;
+        networkEx2&&networkEx2.fit({animation:{duration:600}});
+    }
+    isPredBird=false;
+}
+
+function buildExampleTree2(){ initBirdData(); }
+
+// ================================================================
+// 예시 1: 과일 맞히기
+// ================================================================
+const FEATURES=['color','size','shape'];
+const FEAT_NAME={color:'색깔',size:'크기',shape:'모양'};
+let datasetCat=[], treeCat=null;
+
+function initCatData(){
+    isPredictingCat=false;
+    datasetCat=[
+        {id:1,name:'사과',color:'빨강',size:'큼',shape:'둥긂'},
+        {id:2,name:'딸기',color:'빨강',size:'작음',shape:'길쭉함'},
+        {id:3,name:'바나나',color:'노랑',size:'큼',shape:'길쭉함'},
+        {id:4,name:'레몬',color:'노랑',size:'작음',shape:'둥긂'},
+        {id:5,name:'수박',color:'초록',size:'큼',shape:'둥긂'},
+        {id:6,name:'포도',color:'보라',size:'작음',shape:'둥긂'}
+    ];
+    treeCat=null; renderFruitTable(); renderCatTree();
+    const r=document.getElementById('predResult'); if(r) r.style.display='none';
+}
+
+function addCatData(){
+    if(isPredictingCat) return;
+    const name=document.getElementById('catName').value.trim();
+    if(!name){alert('이름을 입력하세요!');return;}
+    const id=datasetCat.length?Math.max(...datasetCat.map(d=>d.id))+1:1;
+    datasetCat.push({id,name,color:document.getElementById('catColor').value,
+        size:document.getElementById('catSize').value,shape:document.getElementById('catShape').value});
+    document.getElementById('catName').value='';
+    treeCat=null; renderFruitTable(); renderCatTree();
+}
+
+function calcGiniCat(data){ if(!data.length)return 0; let cnt={}; data.forEach(d=>cnt[d.name]=(cnt[d.name]||0)+1); let g=1; for(let k in cnt){let p=cnt[k]/data.length;g-=p*p;} return g; }
+
+function buildTreeCat(data,used,depth){
+    if(!data.length) return null;
+    if(data.every(d=>d.name===data[0].name)) return{isLeaf:true,result:data[0].name};
+    if(used.length===FEATURES.length||depth>=6){let cnt={}; data.forEach(d=>cnt[d.name]=(cnt[d.name]||0)+1); return{isLeaf:true,result:Object.keys(cnt).reduce((a,b)=>cnt[a]>cnt[b]?a:b)};}
+    let bestG=Infinity,bestF=null,bestV=null,bestS=null;
+    FEATURES.forEach(f=>{
+        if(used.includes(f)) return;
+        [...new Set(data.map(d=>d[f]))].forEach(v=>{
+            const L=data.filter(d=>d[f]===v),R=data.filter(d=>d[f]!==v);
+            const wG=(L.length/data.length)*calcGiniCat(L)+(R.length/data.length)*calcGiniCat(R);
+            if(wG<bestG){bestG=wG;bestF=f;bestV=v;bestS={L,R};}
+        });
+    });
+    if(!bestF){let cnt={}; data.forEach(d=>cnt[d.name]=(cnt[d.name]||0)+1); return{isLeaf:true,result:Object.keys(cnt).reduce((a,b)=>cnt[a]>cnt[b]?a:b)};}
+    return{isLeaf:false,feature:bestF,value:bestV,gini:bestG,
+        left:buildTreeCat(bestS.L,[...used,bestF],depth+1),
+        right:buildTreeCat(bestS.R,[...used],depth+1)};
+}
+
+function runCatTraining(){
+    if(isPredictingCat||!datasetCat.length) return;
+    treeCat=buildTreeCat(datasetCat,[],0); renderCatTree();
+}
+
+function renderFruitTable(){
+    const tb=document.getElementById('fruitTableBody'); if(!tb) return; tb.innerHTML='';
+    datasetCat.forEach(d=>{
+        tb.innerHTML+=`<tr><td style="padding:5px 8px;font-weight:700;">${d.name}</td><td style="padding:5px 8px;text-align:center;">${d.color}</td><td style="padding:5px 8px;text-align:center;">${d.size}</td><td style="padding:5px 8px;text-align:center;">${d.shape}</td></tr>`;
+    });
+}
+
+function renderCatTree(){
+    const container=document.getElementById('network-cat');
+    if(networkCat){networkCat.destroy();networkCat=null;}
+    if(!treeCat){container.innerHTML='<div style="display:flex;height:100%;min-height:360px;align-items:center;justify-content:center;color:#94a3b8;font-size:.88rem;font-weight:700;">트리 생성 버튼을 눌러주세요</div>';return;}
+    let na=[],ea=[],nid=1;
+    function traverse(node,pid,lbl){
+        if(!node)return; const cid=nid++; node.visId=cid;
+        if(!node.isLeaf){
+            na.push({id:cid,label:`${FEAT_NAME[node.feature]}이(가)\n'${node.value}'?`,shape:'box',color:{background:'#fff7ed',border:'#f97316'},font:{color:'#7c2d12',bold:true,size:13},borderWidth:2});
+            if(pid!=null)ea.push({from:pid,to:cid,label:lbl,font:{color:'#334155',bold:true,size:13},color:{color:'#cbd5e1'}});
+            traverse(node.left,cid,'예'); traverse(node.right,cid,'아니오');
+        } else {
+            na.push({id:cid,label:`결과:\n${node.result}`,shape:'ellipse',color:{background:'#10b981',border:'#059669'},font:{color:'white',bold:true,size:13}});
+            if(pid!=null)ea.push({from:pid,to:cid,label:lbl,font:{color:'#334155',bold:true,size:13},color:{color:'#cbd5e1'}});
+        }
+    }
+    traverse(treeCat,null,'');
+    nodesDataCat=new vis.DataSet(na);
+    networkCat=new vis.Network(container,{nodes:nodesDataCat,edges:ea},{
+        layout:{hierarchical:{direction:'UD',sortMethod:'directed',levelSeparation:100,nodeSpacing:150}},
+        physics:false,interaction:{dragNodes:false,zoomView:true,dragView:true},
+        edges:{arrows:{to:{enabled:true,scaleFactor:.5}},smooth:{type:'cubicBezier'}}
+    });
+    setTimeout(()=>networkCat&&networkCat.fit({animation:{duration:400}}),150);
+}
+
+async function runCatPrediction(){
+    if(!treeCat){alert('먼저 트리를 생성하세요!');return;}
+    if(isPredictingCat) return; isPredictingCat=true;
+    const res=document.getElementById('predResult');
+    res.style.display='block'; res.style.background='#fffbeb'; res.style.color='#92400e'; res.textContent='탐색 중...';
+    const td={color:document.getElementById('testColor').value,size:document.getElementById('testSize').value,shape:document.getElementById('testShape').value};
+    if(nodesDataCat){nodesDataCat.forEach(n=>nodesDataCat.update({id:n.id,color:n.shape==='box'?{background:'#fff7ed',border:'#f97316'}:{background:'#10b981',border:'#059669'},borderWidth:n.shape==='box'?2:1}));}
+    let cur=treeCat; const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+    while(cur){
+        if(!networkCat||!nodesDataCat) break;
+        nodesDataCat.update({id:cur.visId,color:{background:'#fef08a',border:'#eab308'},borderWidth:4});
+        networkCat.focus(cur.visId,{scale:1.2,animation:{duration:400}});
+        await sleep(900); if(!isPredictingCat) break;
+        if(cur.isLeaf) break;
+        nodesDataCat.update({id:cur.visId,color:{background:'#dcfce7',border:'#22c55e'},borderWidth:2});
+        cur=td[cur.feature]===cur.value?cur.left:cur.right;
+    }
+    if(cur&&nodesDataCat){
+        nodesDataCat.update({id:cur.visId,color:{background:'#f97316',border:'#c2410c'},borderWidth:4});
+        res.style.background='#fff7ed'; res.style.color='#c2410c'; res.style.border='2px solid #fed7aa';
+        res.innerHTML=`<strong>${cur.result}</strong>(으)로 분류되었습니다!`;
+        networkCat&&networkCat.fit({animation:{duration:600}});
+    }
+    isPredictingCat=false;
+}
+
+// ================================================================
+// 2D 분류 시뮬레이터
+// ================================================================
+const canvas2d=document.getElementById('canvas2d');
+const ctx2d=canvas2d.getContext('2d');
+let points2D=[], currentClass2D=1, tree2D=null;
+const W2D=440, H2D=380, PAD=40, DATA_MAX_X=600, DATA_MAX_Y=500;
+const colors2D={1:{base:'#ef4444',light:'rgba(239,68,68,0.18)',text:'빨강'},2:{base:'#3b82f6',light:'rgba(59,130,246,0.18)',text:'파랑'},3:{base:'#10b981',light:'rgba(16,185,129,0.18)',text:'초록'}};
+
+function toCanvasX(dx){ return PAD+(dx/DATA_MAX_X)*(W2D-2*PAD); }
+function toCanvasY(dy){ return PAD+(dy/DATA_MAX_Y)*(H2D-2*PAD); }
+function toDataX(cx){ return ((cx-PAD)/(W2D-2*PAD))*DATA_MAX_X; }
+function toDataY(cy){ return ((cy-PAD)/(H2D-2*PAD))*DATA_MAX_Y; }
+
+function set2DClass(cls){
+    currentClass2D=cls;
+    [1,2,3].forEach(c=>{
+        const btn=document.getElementById('btnClass'+c);
+        const col=c===1?'#ef4444':c===2?'#3b82f6':'#10b981';
+        btn.style.background=cls===c?col:'white';
+        btn.style.color=cls===c?'white':col;
+        btn.style.border=cls===c?'none':`2px solid ${col}`;
+    });
+}
+
+function drawGrid(){
+    ctx2d.strokeStyle='#e0e7ff'; ctx2d.lineWidth=1;
+    for(let i=0;i<=6;i++){
+        const x=PAD+i/6*(W2D-2*PAD);
+        ctx2d.beginPath(); ctx2d.moveTo(x,PAD); ctx2d.lineTo(x,H2D-PAD); ctx2d.stroke();
+        ctx2d.fillStyle='#6b7280'; ctx2d.font='11px Pretendard'; ctx2d.textAlign='center'; ctx2d.textBaseline='top';
+        ctx2d.fillText(Math.round(i/6*DATA_MAX_X),x,H2D-PAD+4);
+    }
+    for(let i=0;i<=5;i++){
+        const y=PAD+i/5*(H2D-2*PAD);
+        ctx2d.beginPath(); ctx2d.moveTo(PAD,y); ctx2d.lineTo(W2D-PAD,y); ctx2d.stroke();
+        ctx2d.fillStyle='#6b7280'; ctx2d.font='11px Pretendard'; ctx2d.textAlign='right'; ctx2d.textBaseline='middle';
+        ctx2d.fillText(Math.round(i/5*DATA_MAX_Y),PAD-5,y);
+    }
+    ctx2d.strokeStyle='#94a3b8'; ctx2d.lineWidth=1.5;
+    ctx2d.strokeRect(PAD,PAD,W2D-2*PAD,H2D-2*PAD);
+    ctx2d.fillStyle='#374151'; ctx2d.font='bold 12px Pretendard'; ctx2d.textAlign='center'; ctx2d.textBaseline='alphabetic';
+    ctx2d.fillText('X',W2D/2,H2D-2);
+    ctx2d.save(); ctx2d.translate(12,H2D/2); ctx2d.rotate(-Math.PI/2); ctx2d.fillText('Y',0,0); ctx2d.restore();
+}
+
+function drawBoundary(node,xMin,xMax,yMin,yMax){
+    if(node.isLeaf){
+        ctx2d.fillStyle=colors2D[node.cls].light;
+        ctx2d.fillRect(toCanvasX(xMin),toCanvasY(yMin),toCanvasX(xMax)-toCanvasX(xMin),toCanvasY(yMax)-toCanvasY(yMin));
+        return;
+    }
+    if(node.feature==='x'){
+        drawBoundary(node.left,xMin,node.value,yMin,yMax);
+        drawBoundary(node.right,node.value,xMax,yMin,yMax);
+        const cx=toCanvasX(node.value);
+        ctx2d.beginPath(); ctx2d.moveTo(cx,toCanvasY(yMin)); ctx2d.lineTo(cx,toCanvasY(yMax));
+        ctx2d.strokeStyle='#475569'; ctx2d.lineWidth=2; ctx2d.stroke();
+        ctx2d.fillStyle='#374151'; ctx2d.font='bold 10px Pretendard'; ctx2d.textAlign='center'; ctx2d.textBaseline='alphabetic';
+        ctx2d.fillText(`X≤${Math.round(node.value)}`,cx,toCanvasY(yMin)-4);
+    } else {
+        drawBoundary(node.left,xMin,xMax,yMin,node.value);
+        drawBoundary(node.right,xMin,xMax,node.value,yMax);
+        const cy=toCanvasY(node.value);
+        ctx2d.beginPath(); ctx2d.moveTo(toCanvasX(xMin),cy); ctx2d.lineTo(toCanvasX(xMax),cy);
+        ctx2d.strokeStyle='#475569'; ctx2d.lineWidth=2; ctx2d.stroke();
+        ctx2d.fillStyle='#374151'; ctx2d.font='bold 10px Pretendard'; ctx2d.textAlign='right'; ctx2d.textBaseline='alphabetic';
+        ctx2d.fillText(`Y≤${Math.round(node.value)}`,toCanvasX(xMax),cy-4);
+    }
+}
+
+function draw2DCanvas(){
+    ctx2d.clearRect(0,0,W2D,H2D);
+    if(tree2D) drawBoundary(tree2D,0,DATA_MAX_X,0,DATA_MAX_Y);
+    drawGrid();
+    points2D.forEach(p=>{
+        ctx2d.beginPath(); ctx2d.arc(toCanvasX(p.x),toCanvasY(p.y),7,0,Math.PI*2);
+        ctx2d.fillStyle=colors2D[p.cls].base; ctx2d.fill();
+        ctx2d.strokeStyle='#fff'; ctx2d.lineWidth=2; ctx2d.stroke();
+    });
+}
+
+canvas2d.addEventListener('mousedown',e=>{
+    const rect=canvas2d.getBoundingClientRect();
+    const sx=W2D/rect.width,sy=H2D/rect.height;
+    const cx=(e.clientX-rect.left)*sx,cy=(e.clientY-rect.top)*sy;
+    const dx=toDataX(cx),dy=toDataY(cy);
+    if(dx<0||dx>DATA_MAX_X||dy<0||dy>DATA_MAX_Y) return;
+    points2D.push({x:dx,y:dy,cls:currentClass2D});
+    if(tree2D) run2DTraining(); else draw2DCanvas();
+});
+
+function calcGini2D(data){ if(!data.length)return 0; let cnt={1:0,2:0,3:0}; data.forEach(d=>cnt[d.cls]++); let g=1; for(let k in cnt){let p=cnt[k]/data.length;g-=p*p;} return g; }
+
+function buildTree2D(data,depth,maxD,minL){
+    if(!data.length) return null;
+    let cnt={1:0,2:0,3:0}; data.forEach(d=>cnt[d.cls]++);
+    let best=1,mx=-1; for(let k in cnt){if(cnt[k]>mx){mx=cnt[k];best=parseInt(k);}}
+    if(depth>=maxD||data.length<=minL||calcGini2D(data)===0) return{isLeaf:true,cls:best,size:data.length};
+    let bestG=Infinity,bestF=null,bestV=null,bestS=null;
+    ['x','y'].forEach(f=>{
+        let sorted=[...data].sort((a,b)=>a[f]-b[f]);
+        for(let i=0;i<sorted.length-1;i++){
+            if(sorted[i].cls===sorted[i+1].cls) continue;
+            const v=(sorted[i][f]+sorted[i+1][f])/2;
+            const L=data.filter(d=>d[f]<=v),R=data.filter(d=>d[f]>v);
+            if(L.length<Math.max(1,minL/2)||R.length<Math.max(1,minL/2)) continue;
+            const wG=(L.length/data.length)*calcGini2D(L)+(R.length/data.length)*calcGini2D(R);
+            if(wG<bestG){bestG=wG;bestF=f;bestV=v;bestS={L,R};}
+        }
+    });
+    if(!bestF) return{isLeaf:true,cls:best,size:data.length};
+    return{isLeaf:false,feature:bestF,value:bestV,gini:bestG,
+        left:buildTree2D(bestS.L,depth+1,maxD,minL),right:buildTree2D(bestS.R,depth+1,maxD,minL)};
+}
+
+function countStats(node){ if(!node)return{nodes:0,leaves:0,maxDepth:0}; if(node.isLeaf)return{nodes:1,leaves:1,maxDepth:0}; const l=countStats(node.left),r=countStats(node.right); return{nodes:1+l.nodes+r.nodes,leaves:l.leaves+r.leaves,maxDepth:1+Math.max(l.maxDepth,r.maxDepth)}; }
+
+function run2DTraining(){
+    if(!points2D.length){alert('데이터가 없습니다!');return;}
+    const maxD=parseInt(document.getElementById('paramDepth2D').value);
+    const minL=parseInt(document.getElementById('paramMinLeaf2D').value);
+    tree2D=buildTree2D(points2D,0,maxD,minL);
+    draw2DCanvas(); render2DTree();
+    const st=countStats(tree2D);
+    document.getElementById('infoNodes').textContent=st.nodes+'개';
+    document.getElementById('infoLeaves').textContent=st.leaves+'개';
+    document.getElementById('infoDepth').textContent=st.maxDepth;
+    document.getElementById('treeInfo').style.display='block';
+}
+
+function render2DTree(){
+    const container=document.getElementById('network-2d');
+    if(network2D){network2D.destroy();network2D=null;}
+    if(!tree2D) return;
+    let na=[],ea=[],nid=1;
+    function traverse(node,pid,lbl){
+        if(!node)return; const cid=nid++;
+        if(!node.isLeaf){
+            na.push({id:cid,label:`${node.feature.toUpperCase()}축 값이\n${Math.round(node.value)} 이하?`,shape:'box',color:{background:'#fff7ed',border:'#f97316'},font:{color:'#7c2d12',bold:true,size:13},borderWidth:2});
+            if(pid!=null)ea.push({from:pid,to:cid,label:lbl,font:{color:'#334155',bold:true,size:13},color:{color:'#cbd5e1'}});
+            traverse(node.left,cid,'예'); traverse(node.right,cid,'아니오');
+        } else {
+            na.push({id:cid,label:`결과:\n${colors2D[node.cls].text}`,shape:'ellipse',color:{background:colors2D[node.cls].base,border:'#fff'},font:{color:'white',bold:true,size:13}});
+            if(pid!=null)ea.push({from:pid,to:cid,label:lbl,font:{color:'#334155',bold:true,size:13},color:{color:'#cbd5e1'}});
+        }
+    }
+    traverse(tree2D,null,'');
+    network2D=new vis.Network(container,{nodes:na,edges:ea},{
+        layout:{hierarchical:{direction:'UD',sortMethod:'directed',levelSeparation:100,nodeSpacing:150}},
+        physics:false,interaction:{dragNodes:false,zoomView:true,dragView:true},
+        edges:{arrows:{to:{enabled:true,scaleFactor:.5}},smooth:{type:'cubicBezier'}}
+    });
+    setTimeout(()=>network2D&&network2D.fit({animation:{duration:400}}),150);
+}
+
+function random2DData(){
+    points2D=[];
+    const groups=[{cx:100,sx:80,cy:80,sy:80,cls:1},{cx:420,sx:80,cy:180,sy:80,cls:2},{cx:100,sx:100,cy:340,sy:80,cls:3}];
+    groups.forEach(g=>{
+        for(let i=0;i<8;i++){
+            const x=Math.max(10,Math.min(DATA_MAX_X-10,g.cx+(Math.random()-.5)*g.sx));
+            const y=Math.max(10,Math.min(DATA_MAX_Y-10,g.cy+(Math.random()-.5)*g.sy));
+            points2D.push({x,y,cls:g.cls});
+        }
+    });
+    tree2D=null; draw2DCanvas();
+    document.getElementById('treeInfo').style.display='none';
+    if(network2D){network2D.destroy();network2D=null;}
+    document.getElementById('network-2d').innerHTML='';
+}
+
+function clear2DData(){
+    points2D=[]; tree2D=null;
+    if(network2D){network2D.destroy();network2D=null;}
+    document.getElementById('network-2d').innerHTML='';
+    document.getElementById('treeInfo').style.display='none';
+    draw2DCanvas();
+}
+
+function update2DParams(){ if(tree2D) run2DTraining(); }
+
+// ================================================================
+// 퀴즈
+// ================================================================
+function checkMC(btn,ok,msg){
+    const btns=btn.parentElement.querySelectorAll('.mc-btn');
+    btns.forEach(b=>b.classList.add('disabled'));
+    btn.classList.add(ok?'correct':'wrong');
+    showToast(msg,ok?'success':'error');
+    setTimeout(()=>{btns.forEach(b=>b.classList.remove('correct','wrong','disabled'));},3000);
+}
+
+function showToast(msg,type){
+    const t=document.createElement('div');
+    t.style.cssText=`position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(80px);padding:14px 28px;border-radius:16px;color:white;font-weight:700;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:9999;transition:transform .3s;font-size:.9rem;background:${type==='success'?'#f97316':'#e11d48'};max-width:90vw;text-align:center;`;
+    t.textContent=msg; document.body.appendChild(t);
+    setTimeout(()=>t.style.transform='translateX(-50%) translateY(0)',10);
+    setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400);},2500);
+}
+
+function toggleQ(btn){
+    const a=btn.nextElementSibling; a.classList.toggle('open');
+    btn.textContent=a.classList.contains('open')?'▲ 정답 숨기기':'▼ 정답 확인';
+}
+
+// ================================================================
+// 초기화
+// ================================================================
+window.addEventListener('load',()=>{
+    if(typeof vis==='undefined'){
+        document.querySelectorAll('#network-ex0,#network-ex2,#network-cat,#network-2d').forEach(el=>{
+            el.innerHTML='<div style="padding:20px;color:#ef4444;font-weight:700;">⚠️ vis-network를 불러올 수 없습니다. 인터넷 연결을 확인해주세요.</div>';
+        });
+        return;
+    }
+    buildExampleTree0();
+    buildExampleTree2();
+    initCatData();
+    random2DData();
+    draw2DCanvas();
+});
+</script>
+</body>
+</html>
