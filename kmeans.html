@@ -1,0 +1,1133 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K-평균 군집화(K-Means) - 능동고등학교 인공지능기초</title>
+    <style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+        *, *::before, *::after { box-sizing:border-box; margin:0; padding:0; }
+        html { scroll-behavior:smooth; }
+        body { font-family:"Pretendard Variable",Pretendard,"Malgun Gothic",sans-serif; background:#f0fdf4; color:#052e16; line-height:1.6; }
+        .hero-gradient { background:linear-gradient(135deg,#065f46 0%,#10b981 50%,#34d399 100%); }
+        .sticky-nav { position:sticky;top:0;z-index:100;backdrop-filter:blur(14px);background:rgba(255,255,255,.93);border-bottom:1px solid rgba(167,243,208,.5);box-shadow:0 2px 12px rgba(16,185,129,.08);padding-top:14px;padding-bottom:14px; }
+        .section-card { background:white;padding:2.5rem;border-radius:2rem;box-shadow:0 4px 20px rgba(16,185,129,.07);border:1px solid #d1fae5; }
+        .step-card { background:white;border-radius:1.5rem;padding:1.5rem;border:1px solid #e5e7eb;box-shadow:0 4px 12px rgba(0,0,0,.05);display:flex;flex-direction:column;align-items:center;text-align:center;transition:transform .2s,box-shadow .2s; }
+        .step-card:hover { transform:translateY(-4px);box-shadow:0 8px 24px rgba(16,185,129,.13); }
+        .quiz-answer { display:none;animation:fadeIn .25s ease; }
+        .quiz-answer.open { display:block; }
+        @keyframes fadeIn { from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);} }
+        .quiz-toggle { display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:#059669;font-weight:700;font-size:.88rem;margin-top:10px;border:2px solid #a7f3d0;border-radius:999px;padding:4px 16px;transition:all .2s;background:none; }
+        .quiz-toggle:hover { background:#ecfdf5; }
+        .mc-btn { width:100%;padding:11px 16px;text-align:left;border-radius:12px;border:2px solid #e5e7eb;background:#f9fafb;font-weight:600;color:#374151;transition:all .25s;cursor:pointer;font-size:.88rem; }
+        .mc-btn:hover { background:#ecfdf5;border-color:#6ee7b7; }
+        .mc-btn.correct { background:#10b981;color:white;border-color:#10b981; }
+        .mc-btn.wrong { background:#f43f5e;color:white;border-color:#f43f5e; }
+        .mc-btn.disabled { opacity:.5;pointer-events:none; }
+        canvas { display:block; }
+        ::-webkit-scrollbar { width:7px; }
+        ::-webkit-scrollbar-track { background:#ecfdf5;border-radius:10px; }
+        ::-webkit-scrollbar-thumb { background:#6ee7b7;border-radius:10px; }
+        @media(max-width:768px){ .section-card{padding:1.5rem;} }
+    </style>
+</head>
+<body>
+
+<!-- HERO -->
+<header id="top" class="hero-gradient text-white px-6" style="padding-top:44px;padding-bottom:44px;">
+    <div style="max-width:860px;margin:0 auto;text-align:center;display:flex;flex-direction:column;align-items:center;">
+        <a href="index.html" style="display:inline-flex;align-items:center;gap:6px;padding:6px 18px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.45);border-radius:999px;font-weight:700;font-size:.82rem;text-decoration:none;color:#fff;margin-bottom:12px;">← 목록으로 돌아가기</a>
+        <div style="padding:5px 18px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.38);border-radius:999px;font-weight:700;font-size:.82rem;color:#fff;margin-bottom:18px;">능동고등학교 인공지능기초 | made by 정보교사 송세영</div>
+        <h1 style="font-size:clamp(2.2rem,6vw,3.6rem);font-weight:900;line-height:1.18;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.12);margin-bottom:16px;">
+            비슷한 것끼리 모아라,<br><span style="color:#bbf7d0;">K-평균 군집화</span>
+        </h1>
+        <p style="font-size:1.05rem;color:rgba(255,255,255,.92);max-width:580px;line-height:1.7;margin-bottom:22px;">
+            정답 없이 데이터를 스스로 k개 그룹으로 나누는 비지도학습 알고리즘.<br>기린·호랑이·코끼리 데이터로 군집화 과정을 직접 체험하세요!
+        </p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:8px;">
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">🔵 비지도학습</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">📍 중심점 이동</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">🦒 동물 데이터 체험</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">🔬 시뮬레이터</span>
+            <span style="padding:6px 16px;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);border-radius:999px;font-size:.83rem;font-weight:700;color:#fff;">✏️ 퀴즈</span>
+        </div>
+    </div>
+</header>
+
+<!-- NAV -->
+<nav class="sticky-nav px-6">
+    <div style="max-width:1100px;margin:0 auto;display:flex;justify-content:space-between;align-items:center;">
+        <div style="display:flex;align-items:center;gap:8px;">
+            <div style="width:32px;height:32px;background:#10b981;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:1rem;">🔵</div>
+            <span style="font-weight:900;font-size:1.1rem;color:#065f46;">K-평균 군집화</span>
+        </div>
+        <div style="display:flex;gap:14px;font-weight:700;font-size:.85rem;flex-wrap:wrap;">
+            <a href="#concept"  style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">개념</a>
+            <a href="#animal"   style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">동물 데이터</a>
+            <a href="#steps"    style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">알고리즘 단계</a>
+            <a href="#simulator" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">시뮬레이터</a>
+            <a href="#kvalue"   style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">k값 선택</a>
+            <a href="#quiz"     style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#10b981'" onmouseout="this.style.color='#64748b'">퀴즈</a>
+        </div>
+        <a href="index.html" style="padding:8px 18px;background:#10b981;color:white;border-radius:10px;font-weight:700;font-size:.85rem;text-decoration:none;">← 목록</a>
+    </div>
+</nav>
+
+<main style="max-width:1100px;margin:0 auto;padding:48px 16px;display:flex;flex-direction:column;gap:56px;">
+
+<!-- S1: 개념 -->
+<section id="concept" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:36px;">
+        <span style="color:#10b981;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Core Concept</span>
+        <h2 style="font-size:clamp(1.5rem,3.5vw,2.1rem);font-weight:900;margin-top:8px;">K-평균 군집화란 무엇인가요?</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:.95rem;">정답 없이 비슷한 데이터끼리 스스로 묶어내는 <strong>비지도학습</strong> 알고리즘입니다.</p>
+    </div>
+
+    <div class="section-card" style="margin-bottom:24px;">
+        <h3 style="font-weight:900;font-size:1.1rem;margin-bottom:14px;">🔵 K-평균(K-Means) 군집화란?</h3>
+        <p style="font-size:.92rem;color:#374151;line-height:1.8;margin-bottom:14px;">
+            K-평균 알고리즘은 데이터를 <strong>k개의 군집(클러스터)으로 묶는 알고리즘</strong>으로, 각 군집의 중심점(centroid)을 계산하여 데이터를 군집화합니다.
+            KNN과 달리 <strong>정답 레이블 없이</strong> 데이터의 특성만으로 비슷한 것끼리 자동으로 그룹을 만듭니다.
+        </p>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px;">
+            <div style="background:#ecfdf5;border-radius:12px;padding:12px;border:1px solid #a7f3d0;">
+                <p style="font-size:.85rem;color:#14532d;font-weight:700;margin-bottom:6px;">✅ 장점</p>
+                <ul style="font-size:.83rem;color:#15803d;line-height:1.8;list-style:disc;padding-left:14px;">
+                    <li>계산이 간단하고 <strong>수행 속도가 빠름</strong></li>
+                    <li>대용량 데이터에도 효율적으로 적용 가능</li>
+                    <li>알고리즘 구현이 간단하고 직관적</li>
+                </ul>
+            </div>
+            <div style="background:#fff1f2;border-radius:12px;padding:12px;border:1px solid #fecdd3;">
+                <p style="font-size:.85rem;color:#9f1239;font-weight:700;margin-bottom:6px;">⚠️ 단점</p>
+                <ul style="font-size:.83rem;color:#be123c;line-height:1.8;list-style:disc;padding-left:14px;">
+                    <li><strong>초기 중심점 설정</strong>에 따라 결과가 달라질 수 있음</li>
+                    <li>k값을 사전에 지정해야 함 (최적 k 찾기 필요)</li>
+                    <li>구형(원형) 군집에서만 잘 작동</li>
+                </ul>
+            </div>
+        </div>
+        <div style="background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:14px;">
+            <p style="font-size:.88rem;color:#92400e;">💡 <strong>지도학습 vs 비지도학습:</strong> KNN은 각 데이터에 정답(레이블)이 있는 <strong>지도학습</strong>이지만, K-평균은 정답 없이 스스로 그룹을 찾는 <strong>비지도학습</strong>입니다. 학습 데이터에 레이블이 없을 때 유용합니다!</p>
+        </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;">
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#d1fae5;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">📍</div>
+            <span style="background:#d1fae5;color:#059669;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">Step 1</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">k개 중심점 초기화</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">임의의 위치에 k개의 중심점(centroid)을 무작위로 배치합니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#dbeafe;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">📏</div>
+            <span style="background:#dbeafe;color:#2563eb;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">Step 2</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">가장 가까운 군집 배정</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">각 데이터를 가장 가까운 중심점의 군집에 배정합니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#fce7f3;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">🔄</div>
+            <span style="background:#fce7f3;color:#be185d;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">Step 3</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">중심점 재계산</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">각 군집에 속한 데이터들의 평균 위치로 중심점을 이동합니다.</p>
+        </div>
+        <div class="step-card">
+            <div style="width:52px;height:52px;background:#ecfdf5;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:1.6rem;margin-bottom:10px;">✅</div>
+            <span style="background:#ecfdf5;color:#059669;font-weight:700;border-radius:999px;padding:2px 12px;font-size:.78rem;margin-bottom:8px;">Step 4</span>
+            <h3 style="font-size:1rem;font-weight:900;margin-bottom:6px;">수렴까지 반복</h3>
+            <p style="font-size:.82rem;color:#64748b;line-height:1.5;">중심점이 더 이상 이동하지 않을 때까지 Step 2-3을 반복합니다.</p>
+        </div>
+    </div>
+</section>
+
+<!-- S2: 동물 데이터 -->
+<section id="animal" style="scroll-margin-top:80px;" class="section-card">
+    <div style="margin-bottom:24px;">
+        <span style="color:#10b981;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Animal Dataset</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:6px;">🦒 동물 데이터로 이해하기</h2>
+        <p style="color:#64748b;margin-top:6px;font-size:.95rem;">교과서 표 II-11: 색상과 키 두 가지 특성으로 동물을 군집화합니다.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1.5fr;gap:24px;align-items:start;">
+        <div>
+            <h3 style="font-weight:900;color:#065f46;margin-bottom:10px;font-size:1rem;">📊 동물 데이터 (표 II-11)</h3>
+            <div style="overflow-x:auto;border-radius:12px;border:2px solid #a7f3d0;margin-bottom:14px;">
+                <table style="width:100%;border-collapse:collapse;font-size:.85rem;">
+                    <thead><tr style="background:#d1fae5;">
+                        <th style="padding:10px;font-weight:800;color:#065f46;text-align:center;border-bottom:2px solid #a7f3d0;">동물</th>
+                        <th style="padding:10px;font-weight:800;color:#065f46;text-align:center;border-bottom:2px solid #a7f3d0;">색상 코드</th>
+                        <th style="padding:10px;font-weight:800;color:#065f46;text-align:center;border-bottom:2px solid #a7f3d0;">키(cm)</th>
+                        <th style="padding:10px;font-weight:800;color:#065f46;text-align:center;border-bottom:2px solid #a7f3d0;">실제 그룹</th>
+                    </tr></thead>
+                    <tbody>
+                        <tr style="background:#f0fdf4;"><td style="padding:8px;text-align:center;">기린 🦒</td><td style="padding:8px;text-align:center;">1</td><td style="padding:8px;text-align:center;">320</td><td style="padding:8px;text-align:center;"><span style="background:#fde68a;color:#92400e;border-radius:6px;padding:2px 8px;font-weight:700;font-size:.8rem;">기린 군집</span></td></tr>
+                        <tr><td style="padding:8px;text-align:center;">기린 🦒</td><td style="padding:8px;text-align:center;">1</td><td style="padding:8px;text-align:center;">340</td><td style="padding:8px;text-align:center;"><span style="background:#fde68a;color:#92400e;border-radius:6px;padding:2px 8px;font-weight:700;font-size:.8rem;">기린 군집</span></td></tr>
+                        <tr style="background:#f0fdf4;"><td style="padding:8px;text-align:center;">기린 🦒</td><td style="padding:8px;text-align:center;">1</td><td style="padding:8px;text-align:center;">330</td><td style="padding:8px;text-align:center;"><span style="background:#fde68a;color:#92400e;border-radius:6px;padding:2px 8px;font-weight:700;font-size:.8rem;">기린 군집</span></td></tr>
+                        <tr><td style="padding:8px;text-align:center;">코끼리 🐘</td><td style="padding:8px;text-align:center;">2</td><td style="padding:8px;text-align:center;">220</td><td style="padding:8px;text-align:center;"><span style="background:#bfdbfe;color:#1e40af;border-radius:6px;padding:2px 8px;font-weight:700;font-size:.8rem;">코끼리 군집</span></td></tr>
+                        <tr style="background:#f0fdf4;"><td style="padding:8px;text-align:center;">코끼리 🐘</td><td style="padding:8px;text-align:center;">2</td><td style="padding:8px;text-align:center;">240</td><td style="padding:8px;text-align:center;"><span style="background:#bfdbfe;color:#1e40af;border-radius:6px;padding:2px 8px;font-weight:700;font-size:.8rem;">코끼리 군집</span></td></tr>
+                        <tr><td style="padding:8px;text-align:center;">호랑이 🐯</td><td style="padding:8px;text-align:center;">1</td><td style="padding:8px;text-align:center;">120</td><td style="padding:8px;text-align:center;"><span style="background:#fecaca;color:#991b1b;border-radius:6px;padding:2px 8px;font-weight:700;font-size:.8rem;">호랑이 군집</span></td></tr>
+                        <tr style="background:#f0fdf4;"><td style="padding:8px;text-align:center;">호랑이 🐯</td><td style="padding:8px;text-align:center;">1</td><td style="padding:8px;text-align:center;">125</td><td style="padding:8px;text-align:center;"><span style="background:#fecaca;color:#991b1b;border-radius:6px;padding:2px 8px;font-weight:700;font-size:.8rem;">호랑이 군집</span></td></tr>
+                        <tr><td style="padding:8px;text-align:center;">원숭이 🐒</td><td style="padding:8px;text-align:center;">3</td><td style="padding:8px;text-align:center;">90</td><td style="padding:8px;text-align:center;"><span style="background:#e9d5ff;color:#6b21a8;border-radius:6px;padding:2px 8px;font-weight:700;font-size:.8rem;">?</span></td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div style="background:#fef3c7;border-radius:10px;padding:12px;border:1px solid #fde68a;font-size:.83rem;color:#92400e;line-height:1.6;">
+                💡 <strong>색상 코드:</strong> 1=노란색, 2=회색, 3=갈색<br>
+                K-평균은 이 두 특성(색상, 키)만으로 정답 없이 그룹을 찾아냅니다.<br>
+                k=3으로 설정하면 원숭이가 어느 군집에 속할까요?
+            </div>
+        </div>
+        <div>
+            <h3 style="font-weight:900;color:#065f46;margin-bottom:10px;font-size:1rem;">📈 데이터 분포 (그림 II-85)</h3>
+            <div style="background:#f8fafc;border-radius:14px;padding:12px;border:2px solid #d1fae5;display:flex;justify-content:center;">
+                <canvas id="animalCanvas" width="380" height="320" style="border-radius:10px;"></canvas>
+            </div>
+            <p style="font-size:.75rem;color:#94a3b8;margin-top:6px;text-align:center;">x축: 키(cm), y축: 색상 코드 | 이모지로 동물 위치 표시</p>
+        </div>
+    </div>
+</section>
+
+<!-- S3: 알고리즘 단계별 체험 -->
+<section id="steps" style="scroll-margin-top:80px;" class="section-card">
+    <div style="margin-bottom:24px;">
+        <span style="color:#10b981;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Step by Step</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:6px;">🔄 K-평균 알고리즘 단계 체험 (그림 II-86)</h2>
+        <p style="color:#64748b;margin-top:6px;font-size:.95rem;">k=3으로 설정하여 동물 데이터가 군집화되는 과정을 단계별로 확인해보세요.</p>
+    </div>
+    <!-- 단계 탭 -->
+    <div style="display:flex;gap:8px;margin-bottom:20px;flex-wrap:wrap;">
+        <button class="step-tab active" onclick="showStep(0,this)" style="padding:8px 18px;border-radius:999px;font-weight:700;font-size:.83rem;cursor:pointer;border:2px solid #10b981;background:#10b981;color:white;transition:all .2s;">(a) 초기 단계</button>
+        <button class="step-tab" onclick="showStep(1,this)" style="padding:8px 18px;border-radius:999px;font-weight:700;font-size:.83rem;cursor:pointer;border:2px solid #d1d5db;background:white;color:#6b7280;transition:all .2s;">(b) 중간 단계</button>
+        <button class="step-tab" onclick="showStep(2,this)" style="padding:8px 18px;border-radius:999px;font-weight:700;font-size:.83rem;cursor:pointer;border:2px solid #d1d5db;background:white;color:#6b7280;transition:all .2s;">(c) 종료</button>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;align-items:start;">
+        <div>
+            <canvas id="stepCanvas" width="420" height="340" style="border-radius:14px;border:2px solid #d1fae5;background:#f8fafc;width:100%;max-width:420px;"></canvas>
+        </div>
+        <div id="stepDesc" style="background:#f0fdf4;border-radius:14px;padding:20px;border:1px solid #a7f3d0;"></div>
+    </div>
+    <div style="margin-top:16px;display:flex;gap:10px;justify-content:center;">
+        <button onclick="prevStep()" style="padding:9px 22px;background:white;color:#059669;border:2px solid #6ee7b7;border-radius:10px;font-weight:700;cursor:pointer;">◀ 이전</button>
+        <button onclick="nextStep()" style="padding:9px 22px;background:#10b981;color:white;border:none;border-radius:10px;font-weight:700;cursor:pointer;">다음 ▶</button>
+    </div>
+</section>
+
+<!-- S4: 시뮬레이터 -->
+<section id="simulator" style="scroll-margin-top:80px;">
+    <div class="section-card" style="overflow:hidden;">
+        <div style="margin-bottom:24px;">
+            <span style="color:#10b981;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">Interactive Simulator</span>
+            <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:6px;">🔬 K-평균 클러스터링 시뮬레이터</h2>
+            <p style="color:#64748b;margin-top:6px;font-size:.95rem;">데이터를 만들고 중심점을 배치한 뒤, Step / Run 버튼으로 군집화 과정을 단계별로 관찰해 보세요.</p>
+        </div>
+
+        <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:stretch;">
+
+            <!-- 캔버스 영역 (65%) -->
+            <div style="flex:1.8;min-width:280px;display:flex;flex-direction:column;gap:12px;">
+
+                <!-- 캔버스 -->
+                <div style="position:relative;width:100%;background:#f1f5f9;border-radius:1.25rem;overflow:hidden;border:2px solid #cbd5e1;box-shadow:inset 0 2px 8px rgba(0,0,0,.06);flex:1;min-height:380px;">
+                    <canvas id="kmeansCanvas" style="position:absolute;top:0;left:0;width:100%;height:100%;cursor:crosshair;"></canvas>
+                </div>
+
+                <!-- 데이터 퍼짐 + 랜덤/지우기 -->
+                <div style="background:white;padding:14px 16px;border-radius:1.25rem;border:2px solid #e2e8f0;display:flex;flex-wrap:wrap;gap:12px;align-items:center;">
+                    <div style="flex:1;min-width:160px;">
+                        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+                            <label style="font-weight:700;font-size:.82rem;color:#475569;">📏 데이터 퍼짐 정도</label>
+                            <span style="font-size:.82rem;font-weight:700;color:#10b981;" id="spreadLabel">적당함</span>
+                        </div>
+                        <input type="range" id="spreadSlider" min="10" max="150" value="60" style="width:100%;accent-color:#10b981;cursor:pointer;">
+                    </div>
+                    <div style="display:flex;gap:8px;flex-shrink:0;">
+                        <button id="btnRandomData" style="padding:9px 16px;background:#ecfdf5;color:#065f46;border:2px solid #a7f3d0;border-radius:10px;font-weight:700;font-size:.82rem;cursor:pointer;">🎲 랜덤 생성</button>
+                        <button id="btnClearData" style="padding:9px 16px;background:white;color:#e11d48;border:2px solid #fecdd3;border-radius:10px;font-weight:700;font-size:.82rem;cursor:pointer;">🗑️ 지우기</button>
+                    </div>
+                </div>
+
+                <!-- 상태 메시지 바 -->
+                <div id="statusMessageBar" style="background:#f1f5f9;border:2px solid #cbd5e1;border-radius:12px;padding:14px 20px;font-weight:700;font-size:.92rem;color:#475569;display:flex;align-items:center;gap:10px;min-height:60px;transition:all .3s;">
+                    <span id="statusMessageIcon" style="font-size:1.3rem;">👆</span>
+                    <span id="statusMessageText">캔버스를 클릭하거나 랜덤 생성으로 데이터를 만들어보세요.</span>
+                </div>
+
+                <!-- K 슬라이더 + 버튼 -->
+                <div style="background:#ecfdf5;border:2px solid #a7f3d0;border-radius:1.25rem;padding:14px 16px;display:flex;flex-wrap:wrap;gap:12px;align-items:stretch;">
+                    <div style="background:white;padding:12px 14px;border-radius:10px;border:1px solid #d1fae5;flex:1;min-width:160px;display:flex;flex-direction:column;justify-content:center;">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                            <label style="font-weight:700;font-size:.85rem;color:#374151;">K (클러스터 개수)</label>
+                            <span id="kValueDisplay" style="font-weight:900;font-size:1.8rem;color:#10b981;">3</span>
+                        </div>
+                        <input type="range" id="kSlider" min="2" max="7" value="3" style="width:100%;accent-color:#10b981;cursor:pointer;margin-bottom:10px;">
+                        <button id="btnInitCentroids" style="width:100%;padding:10px;background:#1e293b;color:white;border:none;border-radius:9px;font-weight:700;font-size:.85rem;cursor:pointer;">📍 중심점 생성</button>
+                    </div>
+                    <div style="display:flex;flex-direction:column;gap:8px;flex:1;min-width:160px;justify-content:center;">
+                        <div style="display:flex;gap:8px;">
+                            <button id="btnStep" disabled style="flex:1;padding:13px 8px;background:#3b82f6;color:white;border:none;border-radius:10px;font-weight:800;font-size:.95rem;cursor:pointer;opacity:.5;transition:all .2s;">👣 Step</button>
+                            <button id="btnRun"  disabled style="flex:1;padding:13px 8px;background:#10b981;color:white;border:none;border-radius:10px;font-weight:800;font-size:.95rem;cursor:pointer;opacity:.5;transition:all .2s;">▶ Run</button>
+                        </div>
+                        <button id="btnResetAlg" disabled style="width:100%;padding:10px;background:white;color:#475569;border:2px solid #cbd5e1;border-radius:10px;font-weight:700;font-size:.82rem;cursor:pointer;opacity:.5;">↺ 알고리즘 초기화</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 진행 상황 패널 (35%) -->
+            <div style="flex:1;min-width:200px;display:flex;flex-direction:column;gap:12px;">
+                <div style="background:#f8fafc;border-radius:1.25rem;padding:16px;border:1px solid #e2e8f0;flex:1;">
+                    <h4 style="font-weight:800;color:#1e293b;margin-bottom:14px;font-size:.95rem;">📋 알고리즘 진행 상황</h4>
+
+                    <div style="display:flex;flex-direction:column;gap:8px;position:relative;">
+                        <!-- 수직선 -->
+                        <div style="position:absolute;left:22px;top:32px;bottom:32px;width:2px;background:#e2e8f0;border-radius:2px;z-index:0;"></div>
+
+                        <div id="flow-IDLE" class="flow-box" style="position:relative;z-index:1;background:white;border:2px solid #10b981;border-radius:10px;padding:10px 12px;transition:all .3s;transform:scale(1.02);">
+                            <span id="badge-IDLE" style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:.72rem;font-weight:800;background:#d1fae5;color:#065f46;margin-bottom:4px;">Step 0</span>
+                            <div style="font-weight:700;font-size:.85rem;color:#065f46;">🌱 데이터 및 중심점 준비</div>
+                        </div>
+
+                        <div id="flow-ASSIGN" class="flow-box" style="position:relative;z-index:1;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:10px 12px;transition:all .3s;opacity:.45;">
+                            <span id="badge-ASSIGN" style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:.72rem;font-weight:800;background:#e2e8f0;color:#64748b;margin-bottom:4px;">Step 1</span>
+                            <div style="font-weight:700;font-size:.85rem;color:#64748b;">🔀 가장 가까운 그룹에 할당</div>
+                        </div>
+
+                        <div id="flow-UPDATE" class="flow-box" style="position:relative;z-index:1;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:10px 12px;transition:all .3s;opacity:.45;">
+                            <span id="badge-UPDATE" style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:.72rem;font-weight:800;background:#e2e8f0;color:#64748b;margin-bottom:4px;">Step 2</span>
+                            <div style="font-weight:700;font-size:.85rem;color:#64748b;">📍 평균 위치로 중심점 이동</div>
+                        </div>
+
+                        <div id="flow-DONE" class="flow-box" style="position:relative;z-index:1;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:10px 12px;transition:all .3s;opacity:.45;">
+                            <span id="badge-DONE" style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:.72rem;font-weight:800;background:#e2e8f0;color:#64748b;margin-bottom:4px;">Step 3</span>
+                            <div style="font-weight:700;font-size:.85rem;color:#64748b;">🏁 알고리즘 수렴 (완료)</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 동물 데이터 불러오기 -->
+                <div style="background:#fef3c7;border-radius:12px;padding:12px;border:1px solid #fde68a;">
+                    <p style="font-weight:700;font-size:.82rem;color:#92400e;margin-bottom:8px;">🦒 교과서 동물 데이터 체험</p>
+                    <button onclick="loadAnimalDataToSim()" style="width:100%;padding:9px;background:#d97706;color:white;border:none;border-radius:9px;font-weight:700;font-size:.82rem;cursor:pointer;">동물 데이터 불러오기</button>
+                    <p style="font-size:.72rem;color:#92400e;margin-top:6px;">불러온 후 k=3으로 학습해보세요!</p>
+                </div>
+
+                <!-- 초기 중심점 힌트 -->
+                <div style="background:#eff6ff;border-radius:12px;padding:12px;border:1px solid #bfdbfe;font-size:.78rem;color:#1e40af;line-height:1.6;">
+                    💡 <strong>학습 시작 버튼을 여러 번</strong> 눌러보세요. 초기 중심점이 매번 다르게 설정되어 결과가 달라질 수 있습니다!
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- S5: k값 선택의 중요성 -->
+<section id="kvalue" style="scroll-margin-top:80px;" class="section-card">
+    <div style="text-align:center;margin-bottom:28px;">
+        <span style="color:#10b981;font-weight:700;letter-spacing:.1em;font-size:.85rem;text-transform:uppercase;">K Value</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:8px;">⚙️ k값 선택의 중요성</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:.95rem;">k값은 K-평균에서 가장 중요한 하이퍼파라미터입니다.</p>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:22px;">
+        <div style="background:#fff1f2;border-radius:1.25rem;padding:18px;border:2px solid #fecdd3;text-align:center;">
+            <div style="font-size:2rem;margin-bottom:8px;">🔴</div>
+            <h4 style="font-weight:900;color:#be123c;margin-bottom:8px;">k가 너무 작을 때</h4>
+            <p style="font-size:.83rem;color:#9f1239;line-height:1.6;">데이터가 <strong>과도하게 단순화</strong>됩니다. 서로 다른 그룹이 하나로 묶여 의미 있는 패턴을 놓칠 수 있습니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;font-size:.78rem;color:#be123c;border:1px solid #fecdd3;">예: k=1이면 모든 동물이 1개 군집</div>
+        </div>
+        <div style="background:#ecfdf5;border-radius:1.25rem;padding:18px;border:2px solid #6ee7b7;text-align:center;">
+            <div style="font-size:2rem;margin-bottom:8px;">🟢</div>
+            <h4 style="font-weight:900;color:#065f46;margin-bottom:8px;">k가 적절할 때</h4>
+            <p style="font-size:.83rem;color:#15803d;line-height:1.6;">데이터의 <strong>자연스러운 군집 구조</strong>를 잘 반영합니다. 각 군집이 의미 있는 특성을 가집니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;font-size:.78rem;color:#065f46;border:1px solid #6ee7b7;">예: k=3이면 기린/코끼리/호랑이+원숭이</div>
+        </div>
+        <div style="background:#eff6ff;border-radius:1.25rem;padding:18px;border:2px solid #bfdbfe;text-align:center;">
+            <div style="font-size:2rem;margin-bottom:8px;">🔵</div>
+            <h4 style="font-weight:900;color:#1e40af;margin-bottom:8px;">k가 너무 클 때</h4>
+            <p style="font-size:.83rem;color:#1d4ed8;line-height:1.6;">군집이 <strong>지나치게 세분화</strong>됩니다. 각 데이터포인트가 자신만의 군집을 가질 수 있습니다.</p>
+            <div style="margin-top:10px;background:white;border-radius:8px;padding:8px;font-size:.78rem;color:#1e40af;border:1px solid #bfdbfe;">예: k=8이면 데이터보다 군집이 많아짐</div>
+        </div>
+    </div>
+    <div style="background:#f0fdf4;border-radius:1.25rem;padding:18px;border:1px solid #a7f3d0;">
+        <h4 style="font-weight:800;color:#065f46;margin-bottom:10px;">💡 최적 k 찾기 — 엘보우(Elbow) 방법</h4>
+        <p style="font-size:.88rem;color:#374151;line-height:1.7;margin-bottom:12px;">
+            k를 1부터 늘려가며 각 군집 내 분산(오차)을 계산합니다. 오차가 급격히 감소하다가 완만해지는 "팔꿈치(Elbow)" 지점의 k를 최적값으로 선택합니다.
+        </p>
+        <canvas id="elbowCanvas" width="500" height="160" style="width:100%;max-width:500px;display:block;margin:0 auto;border-radius:10px;border:1px solid #d1fae5;background:white;"></canvas>
+    </div>
+</section>
+
+<!-- S6: 퀴즈 -->
+<section id="quiz" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:36px;">
+        <span style="background:#d1fae5;color:#065f46;padding:6px 18px;border-radius:999px;font-weight:700;font-size:.85rem;">CHECK-UP</span>
+        <h2 style="font-size:clamp(1.4rem,3vw,2rem);font-weight:900;margin-top:12px;">✏️ K-평균 군집화 퀴즈</h2>
+    </div>
+
+    <div style="margin-bottom:24px;">
+        <h3 style="font-weight:900;font-size:1.05rem;margin-bottom:14px;">📝 객관식</h3>
+        <div style="display:flex;flex-direction:column;gap:20px;">
+            <div style="background:white;border-radius:1.25rem;padding:20px;border:1px solid #d1fae5;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <p style="font-weight:700;margin-bottom:12px;font-size:.95rem;">Q1. K-평균 알고리즘이 KNN과 다른 가장 큰 차이점은 무엇인가요?</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button onclick="checkMC(this,false,'K-평균은 거리 계산을 사용하지만, 목적이 다릅니다.')" class="mc-btn">A. K-평균은 거리를 계산하지 않는다</button>
+                    <button onclick="checkMC(this,true,'정답! K-평균은 정답(레이블) 없이 스스로 그룹을 찾는 비지도학습입니다.')" class="mc-btn">B. K-평균은 정답 없이 스스로 그룹을 찾는 비지도학습이다</button>
+                    <button onclick="checkMC(this,false,'K-평균은 k개의 군집 수를 미리 지정해야 합니다.')" class="mc-btn">C. K-평균은 k값을 지정하지 않아도 된다</button>
+                </div>
+            </div>
+            
+            <div style="background:white;border-radius:1.25rem;padding:20px;border:1px solid #d1fae5;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <p style="font-weight:700;margin-bottom:12px;font-size:.95rem;">Q2. K-평균 알고리즘에서 '중심점 재계산'이란 무엇인가요?</p>
+                <div style="display:flex;flex-direction:column;gap:8px;">
+                    <button onclick="checkMC(this,false,'중심점은 가장 가까운 점이 아닌 평균 위치로 이동합니다.')" class="mc-btn">A. 각 군집에서 가장 가까운 데이터 위치로 이동</button>
+                    <button onclick="checkMC(this,false,'무작위 이동은 초기 설정 시에만 사용됩니다.')" class="mc-btn">B. 무작위로 새로운 위치 선택</button>
+                    <button onclick="checkMC(this,true,'정답! 각 군집에 속한 모든 데이터의 좌표 평균값으로 중심점을 이동합니다.')" class="mc-btn">C. 각 군집에 속한 데이터들의 평균 위치로 이동</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div>
+        <h3 style="font-weight:900;font-size:1.05rem;margin-bottom:14px;">📖 서술형</h3>
+        <div style="display:flex;flex-direction:column;gap:14px;">
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #fde68a;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <div style="width:34px;height:34px;background:#fef3c7;color:#d97706;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">4</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">교과서에서 k=3으로 설정했을 때 원숭이가 코끼리와 같은 군집으로 묶인 이유를 설명하세요.</p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:10px;background:#fefce8;border-left:4px solid #facc15;padding:12px;border-radius:8px;font-size:.88rem;color:#92400e;line-height:1.8;">
+                            k=3으로 설정하면 알고리즘은 반드시 3개 군집을 만듭니다. 원숭이(색상=3, 키=90)는 색상 코드가 높고 키가 작아 초기 중심점에 따라 코끼리(색상=2, 키=220~240)와 같은 군집으로 배정될 수 있습니다. 이처럼 K-평균은 초기 중심점 설정에 따라 수렴 결과가 달라지며, 원래 의도와 다르게 새로운 패턴을 찾는다는 점이 특징이자 한계입니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div style="background:white;border-radius:1.25rem;padding:22px;border:1px solid #bbf7d0;box-shadow:0 2px 10px rgba(0,0,0,.04);">
+                <div style="display:flex;align-items:flex-start;gap:12px;">
+                    <div style="width:34px;height:34px;background:#d1fae5;color:#059669;border-radius:9px;display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;">5</div>
+                    <div style="flex:1;">
+                        <p style="font-weight:700;">K-평균이 지도학습이 아닌 비지도학습으로 분류되는 이유와, 이로 인한 장단점을 설명하세요.</p>
+                        <button class="quiz-toggle" onclick="toggleQ(this)">▼ 정답 확인</button>
+                        <div class="quiz-answer" style="margin-top:10px;background:#f0fdf4;border-left:4px solid #22c55e;padding:12px;border-radius:8px;font-size:.88rem;color:#166534;line-height:1.8;">
+                            <strong>비지도학습인 이유:</strong> K-평균은 학습 데이터에 정답(레이블)이 없어도 동작합니다. 데이터 간의 거리만을 이용하여 스스로 패턴을 발견합니다.<br><br>
+                            <strong>장점:</strong> 레이블 작업에 드는 비용과 시간이 절약됩니다. 예상치 못한 새로운 패턴을 발견할 수 있습니다.<br><br>
+                            <strong>단점:</strong> 결과 해석이 어렵고, 어떤 군집이 실제로 의미 있는 그룹인지 판단하기 어렵습니다. 또한 초기 중심점에 따라 결과가 달라질 수 있습니다.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div style="margin-top:36px;background:linear-gradient(135deg,#065f46,#10b981);color:white;border-radius:2rem;padding:36px;text-align:center;">
+        <div style="font-size:3rem;margin-bottom:12px;">🎉</div>
+        <h3 style="font-size:1.5rem;font-weight:900;margin-bottom:8px;">K-평균 군집화 학습 완료!</h3>
+        <p style="opacity:.9;margin-bottom:20px;font-size:.95rem;">비지도학습, 중심점 이동, k값의 중요성까지 모두 배웠습니다!</p>
+        <div style="display:flex;flex-wrap:wrap;justify-content:center;gap:12px;">
+            <a href="index.html" style="background:white;color:#065f46;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">← 목록으로</a>
+            <a href="knn.html" style="background:rgba(255,255,255,.2);color:white;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">KNN 복습</a>
+            <a href="#top" style="background:rgba(255,255,255,.2);color:white;padding:10px 24px;border-radius:12px;font-weight:900;text-decoration:none;">↑ 처음으로</a>
+        </div>
+    </div>
+</section>
+</main>
+
+<footer style="background:#052e16;color:#6ee7b7;text-align:center;padding:28px;margin-top:48px;font-size:.88rem;">
+    <p style="font-weight:700;color:white;margin-bottom:4px;">능동고등학교 인공지능기초 학습자료</p>
+    <p>made by 정보교사 송세영 &nbsp;|&nbsp; © 2026 All rights reserved</p>
+</footer>
+
+<script>
+// ================================================================
+// 동물 데이터 (교과서 표 II-11)
+// ================================================================
+const ANIMALS = [
+    {name:'기린 🦒', color:1, height:320},
+    {name:'기린 🦒', color:1, height:340},
+    {name:'기린 🦒', color:1, height:330},
+    {name:'코끼리 🐘', color:2, height:220},
+    {name:'코끼리 🐘', color:2, height:240},
+    {name:'호랑이 🐯', color:1, height:120},
+    {name:'호랑이 🐯', color:1, height:125},
+    {name:'원숭이 🐒', color:3, height:90},
+];
+
+// ================================================================
+// 동물 데이터 캔버스 (그림 II-85)
+// ================================================================
+function drawAnimalCanvas() {
+    const canvas = document.getElementById('animalCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = {l:48, r:20, t:20, b:48};
+    const X_MAX = 400, Y_MAX = 3.5;
+
+    ctx.clearRect(0,0,W,H);
+
+    // 배경
+    ctx.fillStyle = '#f8fafc'; ctx.fillRect(0,0,W,H);
+
+    // 격자
+    ctx.strokeStyle = '#e0e7ff'; ctx.lineWidth = 1;
+    [0,100,200,300,400].forEach(x => {
+        const cx = PAD.l + x/X_MAX*(W-PAD.l-PAD.r);
+        ctx.beginPath(); ctx.moveTo(cx, PAD.t); ctx.lineTo(cx, H-PAD.b); ctx.stroke();
+        ctx.fillStyle='#6b7280'; ctx.font='11px Pretendard'; ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText(x, cx, H-PAD.b+4);
+    });
+    [1,2,3].forEach(y => {
+        const cy = H - PAD.b - (y-0.5)/Y_MAX*(H-PAD.t-PAD.b);
+        ctx.beginPath(); ctx.moveTo(PAD.l, cy); ctx.lineTo(W-PAD.r, cy); ctx.stroke();
+        ctx.fillStyle='#6b7280'; ctx.font='11px Pretendard'; ctx.textAlign='right'; ctx.textBaseline='middle';
+        ctx.fillText(y, PAD.l-5, cy);
+    });
+
+    // 축
+    ctx.strokeStyle='#374151'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(PAD.l,PAD.t); ctx.lineTo(PAD.l,H-PAD.b); ctx.lineTo(W-PAD.r,H-PAD.b); ctx.stroke();
+    ctx.fillStyle='#374151'; ctx.font='bold 12px Pretendard';
+    ctx.textAlign='center'; ctx.fillText('키(cm)', W/2, H-4);
+    ctx.save(); ctx.translate(14, H/2); ctx.rotate(-Math.PI/2); ctx.fillText('색상',0,0); ctx.restore();
+
+    // 데이터 포인트 (이모지) — 겹침 방지용 개별 오프셋 적용
+    const OFFSETS = [
+        [ 0, -22],  // 기린 320 → 위
+        [+8, +18],  // 기린 340 → 아래
+        [-8,   0],  // 기린 330 → 중간
+        [-12, -18], // 코끼리 220 → 왼쪽 위
+        [+10, +16], // 코끼리 240 → 오른쪽 아래
+        [ -6, -18], // 호랑이 120 → 위
+        [ +6, +18], // 호랑이 125 → 아래
+        [  0,   0], // 원숭이 90
+    ];
+    const EMOJI = {'기린 🦒':'🦒','코끼리 🐘':'🐘','호랑이 🐯':'🐯','원숭이 🐒':'🐒'};
+    ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+    ANIMALS.forEach((a, i) => {
+        const baseCx = PAD.l + a.height/X_MAX*(W-PAD.l-PAD.r);
+        const baseCy = H - PAD.b - (a.color-0.5)/Y_MAX*(H-PAD.t-PAD.b);
+        const cx = baseCx + OFFSETS[i][0];
+        const cy = baseCy + OFFSETS[i][1];
+        ctx.font = '24px serif';
+        ctx.fillText(EMOJI[a.name], cx, cy);
+    });
+}
+
+// ================================================================
+// 단계별 체험 (그림 II-86)
+// ================================================================
+const STEP_DATA = [
+    {
+        title: '(a) 초기 단계 — 3개 중심점 랜덤 배치',
+        desc: `<p style="font-weight:700;color:#065f46;margin-bottom:10px;">🔵 초기 설정</p>
+<ul style="font-size:.85rem;color:#374151;line-height:1.9;list-style:disc;padding-left:16px;">
+<li>k=3으로 설정</li>
+<li>■ <span style="color:#ef4444">빨강</span>, ■ <span style="color:#3b82f6">파랑</span>, ■ <span style="color:#10b981">초록</span> 3개 중심점을 <strong>무작위 배치</strong></li>
+<li>각 중심점은 임의의 위치에 배치됩니다</li>
+<li>아직 데이터 배정이 되지 않은 상태입니다</li>
+</ul>
+<div style="margin-top:12px;background:#fef3c7;border-radius:8px;padding:10px;font-size:.82rem;color:#92400e;">💡 초기 중심점의 위치에 따라 최종 군집 결과가 달라질 수 있습니다!</div>`,
+        centroids: [{x:120,y:120},{x:250,y:210},{x:350,y:130}],
+        phase: 'init'
+    },
+    {
+        title: '(b) 중간 단계 — 거리 계산 후 배정 & 중심점 이동',
+        desc: `<p style="font-weight:700;color:#065f46;margin-bottom:10px;">🔄 반복 진행 중</p>
+<ul style="font-size:.85rem;color:#374151;line-height:1.9;list-style:disc;padding-left:16px;">
+<li>각 데이터 → 가장 가까운 중심점의 군집 배정</li>
+<li>군집별 데이터의 <strong>평균 위치</strong>로 중심점 이동 (화살표)</li>
+<li>기린(🦒)은 오른쪽 상단 군집으로 이동 중</li>
+<li>호랑이(🐯)·원숭이(🐒)는 왼쪽 하단 군집으로 수렴 중</li>
+</ul>
+<div style="margin-top:12px;background:#dbeafe;border-radius:8px;padding:10px;font-size:.82rem;color:#1e40af;">📏 중심점 이동 거리가 줄어들수록 수렴에 가까워집니다.</div>`,
+        centroids: [{x:80,y:200},{x:200,y:180},{x:310,y:100}],
+        phase: 'mid'
+    },
+    {
+        title: '(c) 종료 — 수렴 완료',
+        desc: `<p style="font-weight:700;color:#065f46;margin-bottom:10px;">✅ 군집화 완료</p>
+<ul style="font-size:.85rem;color:#374151;line-height:1.9;list-style:disc;padding-left:16px;">
+<li>중심점이 더 이상 이동하지 않아 수렴 완료</li>
+<li>🔴 빨강: <strong>호랑이+원숭이</strong> 군집 (키 작음)</li>
+<li>🔵 파랑: <strong>코끼리+원숭이</strong> 군집 (색상 높음)</li>
+<li>🟢 초록: <strong>기린</strong> 군집 (키 큼)</li>
+</ul>
+<div style="margin-top:12px;background:#d1fae5;border-radius:8px;padding:10px;font-size:.82rem;color:#065f46;">💡 k=3이므로 원숭이는 코끼리와 같은 군집이 됩니다. 이처럼 K-평균은 새로운 패턴을 찾기도 합니다!</div>`,
+        centroids: [{x:65,y:225},{x:165,y:160},{x:295,y:95}],
+        phase: 'done'
+    }
+];
+
+// 동물 좌표 (그래프에서 x=키, y=색상)
+const STEP_ANIMALS = [
+    {emoji:'🦒',x:320,y:1,cluster:2},{emoji:'🦒',x:340,y:1,cluster:2},{emoji:'🦒',x:330,y:1,cluster:2},
+    {emoji:'🐘',x:220,y:2,cluster:1},{emoji:'🐘',x:240,y:2,cluster:1},
+    {emoji:'🐯',x:120,y:1,cluster:0},{emoji:'🐯',x:125,y:1,cluster:0},
+    {emoji:'🐒',x:90,y:3,cluster:1}
+];
+
+let currentStep = 0;
+const CLUSTER_COLORS = ['#ef4444','#3b82f6','#10b981'];
+
+function drawStepCanvas(stepIdx) {
+    const canvas = document.getElementById('stepCanvas');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height;
+    const PAD = {l:44,r:16,t:16,b:44};
+    const X_MIN=60, X_MAX=380, Y_MIN=0.5, Y_MAX=3.5;
+
+    function toX(v){ return PAD.l + (v-X_MIN)/(X_MAX-X_MIN)*(W-PAD.l-PAD.r); }
+    function toY(v){ return H-PAD.b - (v-Y_MIN)/(Y_MAX-Y_MIN)*(H-PAD.t-PAD.b); }
+
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#f8fafc'; ctx.fillRect(0,0,W,H);
+
+    // 격자
+    ctx.strokeStyle='#e0e7ff'; ctx.lineWidth=1;
+    [100,200,300,400].forEach(x=>{
+        ctx.beginPath(); ctx.moveTo(toX(x),PAD.t); ctx.lineTo(toX(x),H-PAD.b); ctx.stroke();
+        ctx.fillStyle='#6b7280'; ctx.font='10px Pretendard'; ctx.textAlign='center'; ctx.textBaseline='top';
+        ctx.fillText(x, toX(x), H-PAD.b+3);
+    });
+    [1,2,3].forEach(y=>{
+        ctx.beginPath(); ctx.moveTo(PAD.l,toY(y)); ctx.lineTo(W-PAD.r,toY(y)); ctx.stroke();
+        ctx.fillStyle='#6b7280'; ctx.font='10px Pretendard'; ctx.textAlign='right'; ctx.textBaseline='middle';
+        ctx.fillText(y, PAD.l-3, toY(y));
+    });
+
+    // 축
+    ctx.strokeStyle='#374151'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(PAD.l,PAD.t); ctx.lineTo(PAD.l,H-PAD.b); ctx.lineTo(W-PAD.r,H-PAD.b); ctx.stroke();
+    ctx.fillStyle='#374151'; ctx.font='bold 10px Pretendard';
+    ctx.textAlign='center'; ctx.fillText('키',W/2,H-2);
+    ctx.save(); ctx.translate(12,H/2); ctx.rotate(-Math.PI/2); ctx.fillText('색상',0,0); ctx.restore();
+
+    const step = STEP_DATA[stepIdx];
+
+    // 종료 단계에서 군집 영역 채우기
+    if(step.phase === 'done'){
+        const regions = [
+            {points:[{x:60,y:0.5},{x:60,y:2.5},{x:200,y:2.5},{x:200,y:0.5}], color:'rgba(239,68,68,0.1)'},
+            {points:[{x:60,y:2.5},{x:60,y:3.5},{x:280,y:3.5},{x:280,y:2.5}], color:'rgba(59,130,246,0.1)'},
+            {points:[{x:200,y:0.5},{x:200,y:2.0},{x:380,y:2.0},{x:380,y:0.5}], color:'rgba(16,185,129,0.1)'},
+        ];
+        regions.forEach(r=>{
+            ctx.beginPath(); ctx.moveTo(toX(r.points[0].x),toY(r.points[0].y));
+            r.points.slice(1).forEach(p=>ctx.lineTo(toX(p.x),toY(p.y)));
+            ctx.closePath(); ctx.fillStyle=r.color; ctx.fill();
+        });
+    }
+
+    // 데이터 포인트 (이모지) — 겹침 방지용 동일 오프셋
+    const STEP_OFFSETS = [
+        [ 0, -20],  // 기린 320
+        [+8, +18],  // 기린 340
+        [-8,   0],  // 기린 330
+        [-12,-16],  // 코끼리 220
+        [+10,+15],  // 코끼리 240
+        [ -6,-18],  // 호랑이 120
+        [ +6,+18],  // 호랑이 125
+        [  0,   0], // 원숭이 90
+    ];
+    ctx.textBaseline='middle'; ctx.textAlign='center';
+    STEP_ANIMALS.forEach((a,i)=>{
+        const baseCx=toX(a.x), baseCy=toY(a.y);
+        const cx=baseCx+STEP_OFFSETS[i][0], cy=baseCy+STEP_OFFSETS[i][1];
+        // 종료 단계에서 군집색 원
+        if(step.phase==='done'||step.phase==='mid'){
+            ctx.beginPath(); ctx.arc(cx,cy,16,0,Math.PI*2);
+            ctx.fillStyle=CLUSTER_COLORS[a.cluster]+'33'; ctx.fill();
+            ctx.strokeStyle=CLUSTER_COLORS[a.cluster]; ctx.lineWidth=2; ctx.stroke();
+        }
+        ctx.font='20px serif'; ctx.fillText(a.emoji, cx, cy);
+    });
+
+    // 중심점 (■ 사각형)
+    step.centroids.forEach((c,i)=>{
+        const cx=c.x*(W-PAD.l-PAD.r)/(W)+PAD.l/2;
+        const cy=c.y;
+        // 실제 데이터 좌표로 중심점 표시
+        // 군집 중심점 실제 좌표 (각 단계별)
+        // 군집0=호랑이(122.5,1.0), 군집1=코끼리+원숭이(183,2.33), 군집2=기린(330,1.0)
+        const realCentroids = [
+            // (a) 초기: 무작위 중심점
+            [{x:150,y:2.2},{x:270,y:2.8},{x:280,y:1.1}],
+            // (b) 중간: 이동 중
+            [{x:122,y:1.2},{x:210,y:2.5},{x:310,y:1.1}],
+            // (c) 종료: 수렴 완료
+            [{x:122.5,y:1.0},{x:183,y:2.33},{x:330,y:1.0}],
+        ];
+        const rc = realCentroids[stepIdx][i];
+        const ccx=toX(rc.x), ccy=toY(rc.y);
+
+        // 중간 단계: 화살표 이동 표시 (초기→중간)
+        if(step.phase==='mid' && stepIdx>0){
+            const prev = [
+                {x:150,y:2.2},{x:270,y:2.8},{x:280,y:1.1}
+            ][i];
+            const pcx=toX(prev.x), pcy=toY(prev.y);
+            ctx.strokeStyle=CLUSTER_COLORS[i]; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+            ctx.beginPath(); ctx.moveTo(pcx,pcy); ctx.lineTo(ccx,ccy); ctx.stroke();
+            ctx.setLineDash([]);
+            // 화살표 머리
+            const angle=Math.atan2(ccy-pcy,ccx-pcx);
+            ctx.fillStyle=CLUSTER_COLORS[i];
+            ctx.beginPath(); ctx.moveTo(ccx,ccy);
+            ctx.lineTo(ccx-10*Math.cos(angle-0.4),ccy-10*Math.sin(angle-0.4));
+            ctx.lineTo(ccx-10*Math.cos(angle+0.4),ccy-10*Math.sin(angle+0.4));
+            ctx.closePath(); ctx.fill();
+        }
+
+        // 중심점 사각형
+        ctx.fillStyle=CLUSTER_COLORS[i]; ctx.strokeStyle='white'; ctx.lineWidth=2;
+        ctx.fillRect(ccx-9,ccy-9,18,18);
+        ctx.strokeRect(ccx-9,ccy-9,18,18);
+    });
+}
+
+function showStep(idx, btn) {
+    currentStep = idx;
+    document.querySelectorAll('.step-tab').forEach(b=>{
+        b.style.background='white'; b.style.color='#6b7280'; b.style.borderColor='#d1d5db';
+    });
+    btn.style.background='#10b981'; btn.style.color='white'; btn.style.borderColor='#10b981';
+    drawStepCanvas(currentStep);
+    document.getElementById('stepDesc').innerHTML =
+        `<h4 style="font-weight:900;color:#065f46;margin-bottom:12px;font-size:.92rem;">${STEP_DATA[currentStep].title}</h4>${STEP_DATA[currentStep].desc}`;
+}
+
+function nextStep(){
+    if(currentStep < STEP_DATA.length-1){
+        currentStep++;
+        const tabs = document.querySelectorAll('.step-tab');
+        tabs.forEach((b,i)=>{
+            b.style.background = i===currentStep?'#10b981':'white';
+            b.style.color = i===currentStep?'white':'#6b7280';
+            b.style.borderColor = i===currentStep?'#10b981':'#d1d5db';
+        });
+        drawStepCanvas(currentStep);
+        document.getElementById('stepDesc').innerHTML =
+            `<h4 style="font-weight:900;color:#065f46;margin-bottom:12px;font-size:.92rem;">${STEP_DATA[currentStep].title}</h4>${STEP_DATA[currentStep].desc}`;
+    }
+}
+
+function prevStep(){
+    if(currentStep > 0){
+        currentStep--;
+        const tabs = document.querySelectorAll('.step-tab');
+        tabs.forEach((b,i)=>{
+            b.style.background = i===currentStep?'#10b981':'white';
+            b.style.color = i===currentStep?'white':'#6b7280';
+            b.style.borderColor = i===currentStep?'#10b981':'#d1d5db';
+        });
+        drawStepCanvas(currentStep);
+        document.getElementById('stepDesc').innerHTML =
+            `<h4 style="font-weight:900;color:#065f46;margin-bottom:12px;font-size:.92rem;">${STEP_DATA[currentStep].title}</h4>${STEP_DATA[currentStep].desc}`;
+    }
+}
+
+// ================================================================
+// K-평균 시뮬레이터 (Class 기반, 애니메이션 포함)
+// ================================================================
+const KM_COLORS = ['#94a3b8','#f43f5e','#3b82f6','#10b981','#f59e0b','#8b5cf6','#06b6d4','#ec4899'];
+
+class KMDataManager {
+    constructor(){ this.points=[]; }
+    addPoint(x,y){ this.points.push({x,y,cluster:-1}); }
+    clear(){ this.points=[]; }
+    resetAssignments(){ this.points.forEach(p=>p.cluster=-1); }
+    generateRandom(W,H,count,spread){
+        this.clear();
+        const numBlobs=Math.floor(Math.random()*3)+3;
+        const blobs=[];
+        for(let i=0;i<numBlobs;i++) blobs.push({cx:Math.random()*(W-120)+60,cy:Math.random()*(H-120)+60,r:spread});
+        for(let i=0;i<count;i++){
+            const b=blobs[Math.floor(Math.random()*blobs.length)];
+            const angle=Math.random()*Math.PI*2, r=Math.random()*b.r;
+            this.addPoint(Math.max(10,Math.min(W-10,b.cx+Math.cos(angle)*r)),Math.max(10,Math.min(H-10,b.cy+Math.sin(angle)*r)));
+        }
+    }
+}
+
+class KMAlgorithm {
+    constructor(dm){ this.data=dm; this.centroids=[]; this.k=3; }
+    initCentroids(k){
+        this.k=k; this.centroids=[]; this.data.resetAssignments();
+        let avail=[...this.data.points], actualK=Math.min(k,avail.length);
+        for(let i=0;i<actualK;i++){
+            const ri=Math.floor(Math.random()*avail.length);
+            const pt=avail.splice(ri,1)[0];
+            this.centroids.push({x:pt.x,y:pt.y,targetX:pt.x,targetY:pt.y,clusterId:i+1});
+        }
+    }
+    assignPoints(){
+        let changed=false;
+        this.data.points.forEach(pt=>{
+            let minD=Infinity,best=-1;
+            this.centroids.forEach(c=>{
+                const d=Math.hypot(pt.x-c.x,pt.y-c.y);
+                if(d<minD){minD=d;best=c.clusterId;}
+            });
+            if(pt.cluster!==best){pt.cluster=best;changed=true;}
+        });
+        return changed;
+    }
+    calcNewCentroids(){
+        const sums={},counts={};
+        this.centroids.forEach(c=>{sums[c.clusterId]={x:0,y:0};counts[c.clusterId]=0;});
+        this.data.points.forEach(p=>{
+            if(p.cluster!==-1){sums[p.cluster].x+=p.x;sums[p.cluster].y+=p.y;counts[p.cluster]++;}
+        });
+        this.centroids.forEach(c=>{
+            if(counts[c.clusterId]>0){
+                c.targetX=sums[c.clusterId].x/counts[c.clusterId];
+                c.targetY=sums[c.clusterId].y/counts[c.clusterId];
+            }
+        });
+    }
+}
+
+class KMRenderer {
+    constructor(canvas,dm,alg){
+        this.canvas=canvas; this.ctx=canvas.getContext('2d');
+        this.dm=dm; this.alg=alg;
+        this.isAnimating=false; this.needsDraw=true;
+        this.W=0; this.H=0;
+        this.resize();
+        window.addEventListener('resize',()=>this.resize());
+        this.loop=this.loop.bind(this);
+        requestAnimationFrame(this.loop);
+    }
+    resize(){
+        const rect=this.canvas.parentElement.getBoundingClientRect();
+        const dpr=window.devicePixelRatio||1;
+        this.canvas.style.width=rect.width+'px';
+        this.canvas.style.height=rect.height+'px';
+        this.canvas.width=rect.width*dpr;
+        this.canvas.height=rect.height*dpr;
+        this.ctx.setTransform(dpr,0,0,dpr,0,0);
+        this.W=rect.width; this.H=rect.height;
+        this.needsDraw=true;
+    }
+    requestDraw(){ this.needsDraw=true; }
+    updateAnim(){
+        let moving=false;
+        this.alg.centroids.forEach(c=>{
+            const dx=c.targetX-c.x, dy=c.targetY-c.y;
+            if(Math.abs(dx)>0.5||Math.abs(dy)>0.5){ c.x+=dx*.12; c.y+=dy*.12; moving=true; this.needsDraw=true; }
+            else{ if(c.x!==c.targetX||c.y!==c.targetY) this.needsDraw=true; c.x=c.targetX; c.y=c.targetY; }
+        });
+        this.isAnimating=moving;
+    }
+    loop(){
+        this.updateAnim();
+        if(this.needsDraw){ this.draw(); this.needsDraw=false; }
+        requestAnimationFrame(this.loop);
+    }
+    draw(){
+        const ctx=this.ctx; ctx.clearRect(0,0,this.W,this.H);
+
+        // ASSIGN 단계: 연결선
+        if(window.kmPhase==='ASSIGN'){
+            this.dm.points.forEach(p=>{
+                if(p.cluster===-1) return;
+                const c=this.alg.centroids.find(cc=>cc.clusterId===p.cluster);
+                if(!c) return;
+                ctx.beginPath(); ctx.moveTo(p.x,p.y); ctx.lineTo(c.x,c.y);
+                ctx.strokeStyle=KM_COLORS[p.cluster]+'50'; ctx.lineWidth=1.5;
+                ctx.setLineDash([4,4]); ctx.stroke(); ctx.setLineDash([]);
+            });
+        }
+
+        // 데이터 포인트
+        this.dm.points.forEach(p=>{
+            ctx.beginPath(); ctx.arc(p.x,p.y,6,0,Math.PI*2);
+            ctx.fillStyle=p.cluster===-1?KM_COLORS[0]:KM_COLORS[p.cluster];
+            ctx.fill(); ctx.strokeStyle='white'; ctx.lineWidth=1.5; ctx.stroke();
+        });
+
+        // 중심점 (원 + 십자)
+        this.alg.centroids.forEach(c=>{
+            ctx.beginPath(); ctx.arc(c.x,c.y,14,0,Math.PI*2);
+            ctx.fillStyle=KM_COLORS[c.clusterId]; ctx.fill();
+            ctx.strokeStyle='#1e293b'; ctx.lineWidth=3; ctx.stroke();
+            ctx.beginPath();
+            ctx.moveTo(c.x-5,c.y-5); ctx.lineTo(c.x+5,c.y+5);
+            ctx.moveTo(c.x+5,c.y-5); ctx.lineTo(c.x-5,c.y+5);
+            ctx.strokeStyle='white'; ctx.lineWidth=2.5; ctx.stroke();
+        });
+    }
+}
+
+// ── 인스턴스 ──────────────────────────────────────────────────────
+const kmDM = new KMDataManager();
+const kmAlg = new KMAlgorithm(kmDM);
+const kmCanvas = document.getElementById('kmeansCanvas');
+const kmRend = new KMRenderer(kmCanvas, kmDM, kmAlg);
+
+window.kmPhase = 'IDLE';
+let kmAutoTimer = null;
+
+// ── UI 테마 ────────────────────────────────────────────────────────
+const KM_THEMES = {
+    IDLE:   { bar:'#f1f5f9', barBorder:'#cbd5e1', barText:'#475569', boxBg:'white',   boxBorder:'#10b981', badgeBg:'#d1fae5', badgeText:'#065f46', titleColor:'#065f46' },
+    ASSIGN: { bar:'#eff6ff', barBorder:'#93c5fd', barText:'#1e40af', boxBg:'#eff6ff', boxBorder:'#3b82f6', badgeBg:'#bfdbfe', badgeText:'#1e40af', titleColor:'#1e40af' },
+    UPDATE: { bar:'#f5f3ff', barBorder:'#c4b5fd', barText:'#4c1d95', boxBg:'#f5f3ff', boxBorder:'#8b5cf6', badgeBg:'#ddd6fe', badgeText:'#4c1d95', titleColor:'#4c1d95' },
+    DONE:   { bar:'#ecfdf5', barBorder:'#6ee7b7', barText:'#065f46', boxBg:'#ecfdf5', boxBorder:'#10b981', badgeBg:'#a7f3d0', badgeText:'#065f46', titleColor:'#065f46' },
+};
+
+function kmSetPhase(phase){ window.kmPhase=phase; kmRend.requestDraw(); }
+
+function kmUpdateUI(phase, msg, icon){
+    kmSetPhase(phase);
+    const t=KM_THEMES[phase];
+    const bar=document.getElementById('statusMessageBar');
+    bar.style.background=t.bar; bar.style.borderColor=t.barBorder; bar.style.color=t.barText;
+    document.getElementById('statusMessageIcon').textContent=icon;
+    document.getElementById('statusMessageText').textContent=msg;
+
+    ['IDLE','ASSIGN','UPDATE','DONE'].forEach(p=>{
+        const box=document.getElementById('flow-'+p);
+        const badge=document.getElementById('badge-'+p);
+        const tm=KM_THEMES[p];
+        if(p===phase){
+            box.style.opacity='1'; box.style.transform='scale(1.02)';
+            box.style.background=tm.boxBg; box.style.borderColor=tm.boxBorder;
+            badge.style.background=tm.badgeBg; badge.style.color=tm.badgeText;
+            box.querySelector('div').style.color=tm.titleColor;
+        } else {
+            box.style.opacity='.4'; box.style.transform='scale(1)';
+            box.style.background='#f8fafc'; box.style.borderColor='#e2e8f0';
+            badge.style.background='#e2e8f0'; badge.style.color='#94a3b8';
+            box.querySelector('div').style.color='#94a3b8';
+        }
+    });
+}
+
+function kmToggleCtrl(on){
+    ['btnStep','btnRun','btnResetAlg'].forEach(id=>{
+        const b=document.getElementById(id);
+        b.disabled=!on; b.style.opacity=on?'1':'.5';
+    });
+}
+
+function kmStep(){
+    if(kmRend.isAnimating) return;
+    if(window.kmPhase==='IDLE'||window.kmPhase==='UPDATE'){
+        const changed=kmAlg.assignPoints();
+        if(!changed&&window.kmPhase==='UPDATE'){
+            kmUpdateUI('DONE','🏁 수렴 완료! 데이터 소속이 더 이상 변하지 않아 알고리즘이 종료됩니다.','🏁');
+            kmStopAuto();
+            document.getElementById('btnStep').disabled=true; document.getElementById('btnStep').style.opacity='.5';
+            document.getElementById('btnRun').disabled=true;  document.getElementById('btnRun').style.opacity='.5';
+        } else {
+            kmUpdateUI('ASSIGN','✅ Step 1: 포인트를 가장 가까운 중심점 그룹으로 할당했습니다.','✅');
+        }
+    } else if(window.kmPhase==='ASSIGN'){
+        kmAlg.calcNewCentroids();
+        kmUpdateUI('UPDATE','📍 Step 2: 중심점을 소속 데이터들의 평균 위치로 이동시킵니다.','📍');
+    }
+}
+
+function kmRunLoop(){
+    if(!kmAutoTimer) return;
+    if(window.kmPhase==='DONE'){ kmStopAuto(); return; }
+    if(!kmRend.isAnimating){ kmStep(); kmAutoTimer=setTimeout(kmRunLoop,800); }
+    else{ kmAutoTimer=setTimeout(kmRunLoop,100); }
+}
+
+function kmStopAuto(){
+    if(kmAutoTimer){ clearTimeout(kmAutoTimer); kmAutoTimer=null;
+        const b=document.getElementById('btnRun');
+        b.textContent='▶ Run';
+        const s=document.getElementById('btnStep');
+        s.disabled=window.kmPhase==='DONE'; s.style.opacity=window.kmPhase==='DONE'?'.5':'1';
+    }
+}
+
+function kmReset(){
+    kmStopAuto(); kmAlg.centroids=[]; kmDM.resetAssignments();
+    kmSetPhase('IDLE'); kmToggleCtrl(false); kmRend.requestDraw();
+}
+
+function loadAnimalDataToSim(){
+    // 교과서 동물 데이터를 캔버스 좌표로 변환
+    // x=키(90~340) → 0~W, y=색상(1~3) → 0~H
+    const W=kmRend.W||460, H=kmRend.H||380;
+    const mapX=h=>50+(h-80)/(360-80)*(W-100);
+    const mapY=c=>H-50-(c-0.5)/3*(H-100);
+    kmDM.clear();
+    const data=[
+        {h:320,c:1},{h:340,c:1},{h:330,c:1},
+        {h:220,c:2},{h:240,c:2},
+        {h:120,c:1},{h:125,c:1},
+        {h:90, c:3}
+    ];
+    data.forEach(d=>kmDM.addPoint(mapX(d.h),mapY(d.c)));
+    kmReset();
+    kmUpdateUI('IDLE','🦒 동물 데이터 불러오기 완료! k=3으로 [중심점 생성] → [Step] 또는 [Run]을 눌러보세요.','🦒');
+    kmRend.requestDraw();
+}
+
+// ── 이벤트 ────────────────────────────────────────────────────────
+kmCanvas.addEventListener('click',e=>{
+    const rect=kmCanvas.getBoundingClientRect();
+    kmDM.addPoint(e.clientX-rect.left,e.clientY-rect.top);
+    if(kmAlg.centroids.length>0){ kmReset(); kmUpdateUI('IDLE','↩️ 데이터가 변경되어 초기화했습니다. [중심점 생성]을 눌러주세요.','↩️'); }
+    else{ kmUpdateUI('IDLE','📍 데이터가 추가되었습니다. [중심점 생성] 버튼을 누르세요.','📍'); kmRend.requestDraw(); }
+});
+
+document.getElementById('spreadSlider').addEventListener('input',e=>{
+    const v=parseInt(e.target.value);
+    document.getElementById('spreadLabel').textContent=v<40?'조밀함':v<90?'적당함':'넓게 흩어짐';
+});
+
+document.getElementById('btnRandomData').addEventListener('click',()=>{
+    const sp=parseInt(document.getElementById('spreadSlider').value);
+    kmDM.generateRandom(kmRend.W,kmRend.H,100,sp);
+    kmReset();
+    kmUpdateUI('IDLE','🎲 랜덤 데이터가 생성되었습니다. [중심점 생성] 버튼을 누르세요.','🎲');
+    kmRend.requestDraw();
+});
+
+document.getElementById('btnClearData').addEventListener('click',()=>{
+    kmDM.clear(); kmAlg.centroids=[]; kmSetPhase('IDLE'); kmToggleCtrl(false);
+    kmUpdateUI('IDLE','🗑️ 초기화되었습니다. 캔버스를 클릭해 데이터를 추가하세요.','🗑️');
+    kmRend.requestDraw();
+});
+
+document.getElementById('kSlider').addEventListener('input',e=>{ document.getElementById('kValueDisplay').textContent=e.target.value; });
+document.getElementById('kSlider').addEventListener('change',()=>{
+    if(kmAlg.centroids.length>0||kmDM.points.some(p=>p.cluster!==-1)){
+        kmReset(); kmUpdateUI('IDLE','⚙️ K값이 변경되어 초기화했습니다. [중심점 생성]을 다시 누르세요.','⚙️');
+    }
+});
+
+document.getElementById('btnInitCentroids').addEventListener('click',()=>{
+    if(!kmDM.points.length){ alert('먼저 데이터를 생성해주세요!'); return; }
+    kmStopAuto();
+    kmAlg.initCentroids(parseInt(document.getElementById('kSlider').value));
+    kmSetPhase('IDLE'); kmToggleCtrl(true);
+    kmUpdateUI('IDLE','📍 Step 0: 초기 중심점이 생성되었습니다. [Step]으로 단계별, [Run]으로 자동 실행해보세요.','📍');
+    kmRend.requestDraw();
+});
+
+document.getElementById('btnStep').addEventListener('click', kmStep);
+
+document.getElementById('btnRun').addEventListener('click',()=>{
+    if(kmAutoTimer){ kmStopAuto(); }
+    else{
+        if(window.kmPhase==='DONE') return;
+        document.getElementById('btnRun').textContent='⏸ Pause';
+        document.getElementById('btnStep').disabled=true; document.getElementById('btnStep').style.opacity='.5';
+        kmAutoTimer=setTimeout(kmRunLoop,100);
+    }
+});
+
+document.getElementById('btnResetAlg').addEventListener('click',()=>{
+    kmReset();
+    kmUpdateUI('IDLE','↺ 초기화했습니다. [중심점 생성] 버튼을 눌러 다시 시작하세요.','↺');
+});
+
+// 초기 랜덤 데이터 생성
+window.addEventListener('load',()=>{
+    setTimeout(()=>{
+        kmDM.generateRandom(kmRend.W||460,kmRend.H||380,100,65);
+        kmUpdateUI('IDLE','🎲 랜덤 데이터가 준비되었습니다. [중심점 생성]을 눌러보세요!','🎲');
+        kmRend.requestDraw();
+    },200);
+});
+
+// ================================================================
+// 엘보우 차트
+// ================================================================
+function drawElbow(){
+    const canvas=document.getElementById('elbowCanvas');
+    const ctx=canvas.getContext('2d');
+    const W=canvas.width, H=canvas.height;
+    const PAD={l:40,r:20,t:14,b:34};
+
+    const ks=[1,2,3,4,5,6,7];
+    const wcss=[480,210,85,70,55,45,40];
+    const maxW=Math.max(...wcss);
+
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='white'; ctx.fillRect(0,0,W,H);
+
+    // 격자
+    ctx.strokeStyle='#f1f5f9'; ctx.lineWidth=1;
+    [0,0.25,0.5,0.75,1].forEach(t=>{
+        const y=PAD.t+t*(H-PAD.t-PAD.b);
+        ctx.beginPath(); ctx.moveTo(PAD.l,y); ctx.lineTo(W-PAD.r,y); ctx.stroke();
+    });
+
+    // 축
+    ctx.strokeStyle='#374151'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(PAD.l,PAD.t); ctx.lineTo(PAD.l,H-PAD.b); ctx.lineTo(W-PAD.r,H-PAD.b); ctx.stroke();
+    ctx.fillStyle='#374151'; ctx.font='11px Pretendard'; ctx.textAlign='center';
+    ctx.fillText('k (군집 수)',W/2,H-2);
+    ctx.save(); ctx.translate(12,(PAD.t+H-PAD.b)/2); ctx.rotate(-Math.PI/2);
+    ctx.fillText('오차(WCSS)',0,0); ctx.restore();
+
+    // 꺾은선
+    ctx.strokeStyle='#10b981'; ctx.lineWidth=2.5; ctx.beginPath();
+    ks.forEach((k,i)=>{
+        const x=PAD.l+(i/(ks.length-1))*(W-PAD.l-PAD.r);
+        const y=PAD.t+(1-wcss[i]/maxW)*(H-PAD.t-PAD.b);
+        if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.stroke();
+
+    // 점
+    ks.forEach((k,i)=>{
+        const x=PAD.l+(i/(ks.length-1))*(W-PAD.l-PAD.r);
+        const y=PAD.t+(1-wcss[i]/maxW)*(H-PAD.t-PAD.b);
+        ctx.beginPath(); ctx.arc(x,y,5,0,Math.PI*2);
+        ctx.fillStyle=i===2?'#f97316':'#10b981'; ctx.fill();
+        ctx.strokeStyle='white'; ctx.lineWidth=2; ctx.stroke();
+        ctx.fillStyle='#374151'; ctx.font='10px Pretendard'; ctx.textAlign='center';
+        ctx.fillText(k,x,H-PAD.b+12);
+    });
+
+    // 엘보우 표시
+    const ex=PAD.l+(2/(ks.length-1))*(W-PAD.l-PAD.r);
+    const ey=PAD.t+(1-wcss[2]/maxW)*(H-PAD.t-PAD.b);
+    ctx.strokeStyle='#f97316'; ctx.lineWidth=1.5; ctx.setLineDash([4,3]);
+    ctx.beginPath(); ctx.moveTo(ex,ey); ctx.lineTo(ex,H-PAD.b); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='#f97316'; ctx.font='bold 10px Pretendard'; ctx.textAlign='center';
+    ctx.fillText('최적 k=3 (Elbow)',ex,ey-8);
+}
+
+// ================================================================
+// 퀴즈
+// ================================================================
+function checkMC(btn,ok,msg){
+    const btns=btn.parentElement.querySelectorAll('.mc-btn');
+    btns.forEach(b=>b.classList.add('disabled'));
+    btn.classList.add(ok?'correct':'wrong');
+    showToast(msg,ok?'success':'error');
+    setTimeout(()=>{btns.forEach(b=>b.classList.remove('correct','wrong','disabled'));},3000);
+}
+
+function showToast(msg,type){
+    const t=document.createElement('div');
+    t.style.cssText=`position:fixed;bottom:40px;left:50%;transform:translateX(-50%) translateY(80px);padding:14px 28px;border-radius:16px;color:white;font-weight:700;box-shadow:0 8px 32px rgba(0,0,0,.2);z-index:9999;transition:transform .3s;font-size:.9rem;background:${type==='success'?'#10b981':'#e11d48'};max-width:90vw;text-align:center;`;
+    t.textContent=msg; document.body.appendChild(t);
+    setTimeout(()=>t.style.transform='translateX(-50%) translateY(0)',10);
+    setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400);},2500);
+}
+
+function toggleQ(btn){
+    const a=btn.nextElementSibling; a.classList.toggle('open');
+    btn.textContent=a.classList.contains('open')?'▲ 정답 숨기기':'▼ 정답 확인';
+}
+
+// ================================================================
+// 초기화
+// ================================================================
+window.addEventListener('load',()=>{
+    drawAnimalCanvas();
+    drawStepCanvas(0);
+    document.getElementById('stepDesc').innerHTML=
+        `<h4 style="font-weight:900;color:#065f46;margin-bottom:12px;font-size:.92rem;">${STEP_DATA[0].title}</h4>${STEP_DATA[0].desc}`;
+    drawElbow();
+});
+</script>
+</body>
+</html>
