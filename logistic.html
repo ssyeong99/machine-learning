@@ -141,6 +141,7 @@
             <a href="#simulator" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#6366f1'" onmouseout="this.style.color='#64748b'">시뮬레이터</a>
             <a href="#chart-demo" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#6366f1'" onmouseout="this.style.color='#64748b'">데이터 실습</a>
             <a href="#limits" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#6366f1'" onmouseout="this.style.color='#64748b'">한계</a>
+            <a href="#metrics" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#be185d'" onmouseout="this.style.color='#64748b'">성능평가</a>
             <a href="#quiz" style="color:#64748b;text-decoration:none;" onmouseover="this.style.color='#6366f1'" onmouseout="this.style.color='#64748b'">퀴즈</a>
         </div>
         <a href="index.html" style="padding:8px 18px;background:#6366f1;color:white;border-radius:10px;font-weight:700;font-size:0.85rem;text-decoration:none;">← 목록</a>
@@ -490,7 +491,252 @@
     </div>
 </section>
 
-<!-- ═══════════════════ SECTION 6: 퀴즈 ═══════════════════ -->
+<!-- ═══════════════════ SECTION 6: 성능 평가 지표 ═══════════════════ -->
+<section id="metrics" style="scroll-margin-top:80px;">
+    <div style="text-align:center;margin-bottom:36px;">
+        <span style="background:#fce7f3;color:#be185d;padding:6px 18px;border-radius:999px;font-weight:700;font-size:.85rem;">Performance Metrics</span>
+        <h2 style="font-size:clamp(1.5rem,3.5vw,2.2rem);font-weight:900;margin-top:12px;">📊 분류 모델의 성능 평가 지표</h2>
+        <p style="color:#64748b;margin-top:8px;font-size:.95rem;">모델을 만들었다면, 얼마나 잘 작동하는지 <strong>수치로 평가</strong>해야 합니다.</p>
+    </div>
+
+    <!-- ① 혼동행렬 -->
+    <div style="background:white;border-radius:2rem;padding:2rem;border:1px solid #fce7f3;box-shadow:0 4px 20px rgba(190,24,93,.06);margin-bottom:24px;">
+        <h3 style="font-weight:900;font-size:1.1rem;margin-bottom:6px;">① 혼동 행렬 (Confusion Matrix)</h3>
+        <p style="font-size:.88rem;color:#64748b;margin-bottom:18px;">예측값이 실제 관측값을 얼마나 정확히 예측했는지 보여주는 행렬입니다. 분류 결과를 4가지 칸으로 정리합니다.</p>
+
+        <div style="overflow-x:auto;margin-bottom:18px;">
+            <table style="margin:0 auto;border-collapse:separate;border-spacing:6px;font-size:.88rem;min-width:420px;">
+                <thead>
+                    <tr>
+                        <th style="padding:10px 14px;"></th>
+                        <th style="padding:10px 14px;"></th>
+                        <th colspan="2" style="padding:10px 20px;background:#e0e7ff;color:#3730a3;border-radius:10px;font-weight:800;text-align:center;">모델의 예측</th>
+                    </tr>
+                    <tr>
+                        <th style="padding:8px;"></th>
+                        <th style="padding:8px;"></th>
+                        <th style="padding:10px 18px;background:#c7d2fe;color:#3730a3;border-radius:8px;font-weight:700;text-align:center;">예측 = 양성 (Positive)</th>
+                        <th style="padding:10px 18px;background:#c7d2fe;color:#3730a3;border-radius:8px;font-weight:700;text-align:center;">예측 = 음성 (Negative)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td rowspan="2" style="padding:10px 14px;background:#fce7f3;color:#9d174d;border-radius:10px;font-weight:800;text-align:center;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:.08em;">실제 값</td>
+                        <td style="padding:10px 14px;background:#fce7f3;color:#9d174d;border-radius:8px;font-weight:700;text-align:center;white-space:nowrap;">실제 = 양성</td>
+                        <td style="padding:14px 20px;background:#dcfce7;border-radius:10px;text-align:center;border:2px solid #86efac;">
+                            <div style="font-weight:900;font-size:1rem;color:#15803d;">TP</div>
+                            <div style="font-weight:800;font-size:.82rem;color:#166534;">True Positive</div>
+                            <div style="font-size:.75rem;color:#16a34a;margin-top:4px;">✅ 양성을 양성으로 정확히 예측</div>
+                        </td>
+                        <td style="padding:14px 20px;background:#fef9c3;border-radius:10px;text-align:center;border:2px solid #fde047;">
+                            <div style="font-weight:900;font-size:1rem;color:#854d0e;">FN</div>
+                            <div style="font-weight:800;font-size:.82rem;color:#92400e;">False Negative</div>
+                            <div style="font-size:.75rem;color:#a16207;margin-top:4px;">⚠️ 양성인데 음성으로 잘못 예측</div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:10px 14px;background:#fce7f3;color:#9d174d;border-radius:8px;font-weight:700;text-align:center;white-space:nowrap;">실제 = 음성</td>
+                        <td style="padding:14px 20px;background:#fef9c3;border-radius:10px;text-align:center;border:2px solid #fde047;">
+                            <div style="font-weight:900;font-size:1rem;color:#854d0e;">FP</div>
+                            <div style="font-weight:800;font-size:.82rem;color:#92400e;">False Positive</div>
+                            <div style="font-size:.75rem;color:#a16207;margin-top:4px;">⚠️ 음성인데 양성으로 잘못 예측</div>
+                        </td>
+                        <td style="padding:14px 20px;background:#dcfce7;border-radius:10px;text-align:center;border:2px solid #86efac;">
+                            <div style="font-weight:900;font-size:1rem;color:#15803d;">TN</div>
+                            <div style="font-weight:800;font-size:.82rem;color:#166534;">True Negative</div>
+                            <div style="font-size:.75rem;color:#16a34a;margin-top:4px;">✅ 음성을 음성으로 정확히 예측</div>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div style="background:#f0fdf4;border-radius:12px;padding:14px;border:1px solid #bbf7d0;font-size:.85rem;color:#14532d;line-height:1.7;">
+            💡 <strong>T(True)/F(False)</strong>: 예측이 맞았는지(T), 틀렸는지(F) / <strong>P(Positive)/N(Negative)</strong>: 모델이 예측한 값이 양성(P)인지, 음성(N)인지
+        </div>
+
+        <!-- 스팸 메일 계산 실습 -->
+        <div style="margin-top:20px;background:#fdf4ff;border-radius:1.25rem;padding:20px;border:2px solid #e9d5ff;">
+            <h4 style="font-weight:900;font-size:1rem;margin-bottom:4px;color:#6b21a8;">🧮 실습 — 스팸 메일 분류기로 직접 계산해보기</h4>
+            <p style="font-size:.83rem;color:#7e22ce;margin-bottom:14px;">스팸 분류 모델이 아래와 같은 결과를 냈습니다. 혼동 행렬에 값을 입력하고 각 지표를 계산해보세요!</p>
+
+            <!-- 상황 설명 -->
+            <div style="background:white;border-radius:10px;padding:14px;border:1px solid #ddd6fe;margin-bottom:14px;font-size:.85rem;color:#374151;line-height:1.8;">
+                📧 <strong>상황:</strong> 이메일 100개 중 실제 스팸은 40개, 정상 메일은 60개입니다.<br>
+                모델이 예측한 결과: 스팸을 스팸으로 맞힌 것 <strong>30개</strong> / 스팸인데 정상으로 잘못 예측 <strong>10개</strong><br>
+                정상인데 스팸으로 잘못 예측 <strong>5개</strong> / 정상을 정상으로 맞힌 것 <strong>55개</strong>
+            </div>
+
+            <!-- 혼동 행렬 입력 -->
+            <p style="font-size:.82rem;font-weight:700;color:#6b21a8;margin-bottom:8px;">📝 혼동 행렬에 값을 채워보세요</p>
+            <div style="overflow-x:auto;margin-bottom:16px;">
+                <table style="margin:0 auto;border-collapse:separate;border-spacing:6px;font-size:.85rem;min-width:380px;">
+                    <thead>
+                        <tr>
+                            <th style="padding:8px;"></th>
+                            <th style="padding:8px;"></th>
+                            <th style="padding:8px 16px;background:#dbeafe;color:#1e40af;border-radius:8px;text-align:center;font-weight:700;">예측 = 스팸</th>
+                            <th style="padding:8px 16px;background:#dbeafe;color:#1e40af;border-radius:8px;text-align:center;font-weight:700;">예측 = 정상</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td rowspan="2" style="background:#fce7f3;color:#9d174d;border-radius:8px;font-weight:800;text-align:center;writing-mode:vertical-rl;transform:rotate(180deg);padding:10px 8px;letter-spacing:.08em;">실제 값</td>
+                            <td style="background:#fce7f3;color:#9d174d;border-radius:8px;font-weight:700;text-align:center;padding:8px 12px;white-space:nowrap;">실제 = 스팸</td>
+                            <td style="padding:10px;text-align:center;">
+                                <input id="inp-TP" type="number" min="0" max="999" placeholder="?" style="width:70px;padding:8px;border:2px solid #ddd6fe;border-radius:8px;text-align:center;font-size:1rem;font-weight:700;outline:none;" oninput="checkSpamInputs()">
+                                <div style="font-size:.72rem;color:#7c3aed;margin-top:3px;font-weight:600;">TP</div>
+                            </td>
+                            <td style="padding:10px;text-align:center;">
+                                <input id="inp-FN" type="number" min="0" max="999" placeholder="?" style="width:70px;padding:8px;border:2px solid #ddd6fe;border-radius:8px;text-align:center;font-size:1rem;font-weight:700;outline:none;" oninput="checkSpamInputs()">
+                                <div style="font-size:.72rem;color:#7c3aed;margin-top:3px;font-weight:600;">FN</div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="background:#fce7f3;color:#9d174d;border-radius:8px;font-weight:700;text-align:center;padding:8px 12px;white-space:nowrap;">실제 = 정상</td>
+                            <td style="padding:10px;text-align:center;">
+                                <input id="inp-FP" type="number" min="0" max="999" placeholder="?" style="width:70px;padding:8px;border:2px solid #ddd6fe;border-radius:8px;text-align:center;font-size:1rem;font-weight:700;outline:none;" oninput="checkSpamInputs()">
+                                <div style="font-size:.72rem;color:#7c3aed;margin-top:3px;font-weight:600;">FP</div>
+                            </td>
+                            <td style="padding:10px;text-align:center;">
+                                <input id="inp-TN" type="number" min="0" max="999" placeholder="?" style="width:70px;padding:8px;border:2px solid #ddd6fe;border-radius:8px;text-align:center;font-size:1rem;font-weight:700;outline:none;" oninput="checkSpamInputs()">
+                                <div style="font-size:.72rem;color:#7c3aed;margin-top:3px;font-weight:600;">TN</div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div id="spam-matrix-feedback" style="display:none;margin-bottom:14px;padding:10px 14px;border-radius:10px;font-size:.84rem;font-weight:700;"></div>
+
+            <!-- 지표 자동 계산 결과 -->
+            <p style="font-size:.82rem;font-weight:700;color:#6b21a8;margin-bottom:10px;">📊 혼동 행렬 값을 입력하면 지표가 자동으로 계산됩니다</p>
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:10px;margin-bottom:14px;">
+                <div style="background:white;border-radius:10px;padding:14px;border:2px solid #bfdbfe;">
+                    <p style="font-weight:700;font-size:.82rem;color:#1e40af;margin-bottom:4px;">🎯 정확도 (Accuracy)</p>
+                    <p style="font-size:.73rem;color:#94a3b8;margin-bottom:8px;">(TP+TN) ÷ 전체</p>
+                    <div id="val-acc" style="font-size:1.8rem;font-weight:900;color:#c7d2fe;text-align:center;">—</div>
+                </div>
+                <div style="background:white;border-radius:10px;padding:14px;border:2px solid #ddd6fe;">
+                    <p style="font-weight:700;font-size:.82rem;color:#5b21b6;margin-bottom:4px;">🔍 정밀도 (Precision)</p>
+                    <p style="font-size:.73rem;color:#94a3b8;margin-bottom:8px;">TP ÷ (TP+FP)</p>
+                    <div id="val-prec" style="font-size:1.8rem;font-weight:900;color:#c7d2fe;text-align:center;">—</div>
+                </div>
+                <div style="background:white;border-radius:10px;padding:14px;border:2px solid #fde68a;">
+                    <p style="font-weight:700;font-size:.82rem;color:#92400e;margin-bottom:4px;">🔄 재현율 (Recall)</p>
+                    <p style="font-size:.73rem;color:#94a3b8;margin-bottom:8px;">TP ÷ (TP+FN)</p>
+                    <div id="val-rec" style="font-size:1.8rem;font-weight:900;color:#fde68a;text-align:center;">—</div>
+                </div>
+                <div style="background:white;border-radius:10px;padding:14px;border:2px solid #fecdd3;">
+                    <p style="font-weight:700;font-size:.82rem;color:#9f1239;margin-bottom:4px;">⚖️ F1 점수</p>
+                    <p style="font-size:.73rem;color:#94a3b8;margin-bottom:8px;">2×P×R ÷ (P+R)</p>
+                    <div id="val-f1" style="font-size:1.8rem;font-weight:900;color:#fecdd3;text-align:center;">—</div>
+                </div>
+            </div>
+            <div id="spam-calc-result" style="display:none;margin-top:4px;padding:14px;border-radius:12px;"></div>
+        </div>
+    </div>
+
+    <!-- 나머지 지표 -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:16px;margin-bottom:24px;">
+
+        <!-- 정확도 -->
+        <div style="background:white;border-radius:1.5rem;padding:20px;border:2px solid #bfdbfe;box-shadow:0 4px 12px rgba(59,130,246,.07);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <div style="width:42px;height:42px;background:#dbeafe;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">🎯</div>
+                <div>
+                    <p style="font-weight:900;font-size:.95rem;color:#1e40af;">② 정확도 (Accuracy, CA)</p>
+                    <p style="font-size:.72rem;color:#3b82f6;">Classification Accuracy</p>
+                </div>
+            </div>
+            <p style="font-size:.83rem;color:#374151;line-height:1.6;margin-bottom:12px;">모델이 전체 데이터에 대해 얼마나 <strong>정확하게</strong> 예측하는지 나타내는 지표</p>
+            <div style="background:#eff6ff;border-radius:10px;padding:12px;text-align:center;border:1px solid #bfdbfe;">
+                <div style="font-family:'Courier New',monospace;font-size:.95rem;font-weight:700;color:#1e40af;margin-bottom:4px;">
+                    Accuracy = (TP + TN) / 전체
+                </div>
+                <div style="font-size:.75rem;color:#3b82f6;">(맞게 예측한 수) ÷ (전체 데이터 수)</div>
+            </div>
+        </div>
+
+        <!-- 정밀도 -->
+        <div style="background:white;border-radius:1.5rem;padding:20px;border:2px solid #d8b4fe;box-shadow:0 4px 12px rgba(124,58,237,.07);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <div style="width:42px;height:42px;background:#ede9fe;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">🔍</div>
+                <div>
+                    <p style="font-weight:900;font-size:.95rem;color:#5b21b6;">③ 정밀도 (Precision)</p>
+                    <p style="font-size:.72rem;color:#7c3aed;">Positive Predictive Value</p>
+                </div>
+            </div>
+            <p style="font-size:.83rem;color:#374151;line-height:1.6;margin-bottom:12px;">모델이 양성이라고 예측한 것 중에서 실제로 양성인 비율 — 예측이 얼마나 <strong>정확</strong>한가</p>
+            <div style="background:#f5f3ff;border-radius:10px;padding:12px;text-align:center;border:1px solid #ddd6fe;">
+                <div style="font-family:'Courier New',monospace;font-size:.95rem;font-weight:700;color:#5b21b6;margin-bottom:4px;">
+                    Precision = TP / (TP + FP)
+                </div>
+                <div style="font-size:.75rem;color:#7c3aed;">(진짜 양성) ÷ (양성 예측 전체)</div>
+            </div>
+        </div>
+
+        <!-- 재현율 -->
+        <div style="background:white;border-radius:1.5rem;padding:20px;border:2px solid #fde68a;box-shadow:0 4px 12px rgba(245,158,11,.07);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <div style="width:42px;height:42px;background:#fef3c7;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">🔄</div>
+                <div>
+                    <p style="font-weight:900;font-size:.95rem;color:#92400e;">④ 재현율 (Recall)</p>
+                    <p style="font-size:.72rem;color:#d97706;">Sensitivity / 민감도</p>
+                </div>
+            </div>
+            <p style="font-size:.83rem;color:#374151;line-height:1.6;margin-bottom:12px;">실제 양성 중에서 모델이 양성으로 검출한 비율 — 놓치지 않고 얼마나 잘 <strong>찾아내는가</strong></p>
+            <div style="background:#fffbeb;border-radius:10px;padding:12px;text-align:center;border:1px solid #fde68a;">
+                <div style="font-family:'Courier New',monospace;font-size:.95rem;font-weight:700;color:#92400e;margin-bottom:4px;">
+                    Recall = TP / (TP + FN)
+                </div>
+                <div style="font-size:.75rem;color:#b45309;">(진짜 양성) ÷ (실제 양성 전체)</div>
+            </div>
+        </div>
+
+        <!-- F1 Score -->
+        <div style="background:white;border-radius:1.5rem;padding:20px;border:2px solid #fecdd3;box-shadow:0 4px 12px rgba(244,63,94,.07);">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+                <div style="width:42px;height:42px;background:#ffe4e6;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;">⚖️</div>
+                <div>
+                    <p style="font-weight:900;font-size:.95rem;color:#9f1239;">⑤ F1 점수 (F1 Score)</p>
+                    <p style="font-size:.72rem;color:#e11d48;">Precision × Recall 조화평균</p>
+                </div>
+            </div>
+            <p style="font-size:.83rem;color:#374151;line-height:1.6;margin-bottom:12px;">정밀도(Precision)와 재현율(Recall)을 <strong>조화평균</strong>하여 하나의 수치로 나타낸 지표</p>
+            <div style="background:#fff1f2;border-radius:10px;padding:12px;text-align:center;border:1px solid #fecdd3;">
+                <div style="font-family:'Courier New',monospace;font-size:.9rem;font-weight:700;color:#9f1239;margin-bottom:4px;">
+                    F1 = 2 × (P × R) / (P + R)
+                </div>
+                <div style="font-size:.75rem;color:#e11d48;">P=Precision, R=Recall</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 비교 & 적용 예시 -->
+    <div style="background:white;border-radius:1.5rem;padding:22px;border:1px solid #e5e7eb;box-shadow:0 2px 12px rgba(0,0,0,.04);">
+        <h4 style="font-weight:900;font-size:1rem;margin-bottom:14px;">💡 언제 어떤 지표를 쓸까요?</h4>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;font-size:.83rem;">
+            <div style="background:#eff6ff;border-radius:10px;padding:12px;border:1px solid #bfdbfe;">
+                <p style="font-weight:800;color:#1e40af;margin-bottom:6px;">🎯 정확도(Accuracy)</p>
+                <p style="color:#374151;line-height:1.6;">클래스가 균형 잡힌 데이터에 적합.<br>클래스 불균형 시 왜곡 주의!</p>
+            </div>
+            <div style="background:#f5f3ff;border-radius:10px;padding:12px;border:1px solid #ddd6fe;">
+                <p style="font-weight:800;color:#5b21b6;margin-bottom:6px;">🔍 정밀도(Precision)</p>
+                <p style="color:#374151;line-height:1.6;">스팸 메일 필터처럼 오탐(FP)을 줄이는 것이 중요할 때.</p>
+            </div>
+            <div style="background:#fffbeb;border-radius:10px;padding:12px;border:1px solid #fde68a;">
+                <p style="font-weight:800;color:#92400e;margin-bottom:6px;">🔄 재현율(Recall)</p>
+                <p style="color:#374151;line-height:1.6;">암 진단처럼 실제 양성을 놓치는 것(FN)이 치명적일 때.</p>
+            </div>
+            <div style="background:#fff1f2;border-radius:10px;padding:12px;border:1px solid #fecdd3;">
+                <p style="font-weight:800;color:#9f1239;margin-bottom:6px;">⚖️ F1 점수</p>
+                <p style="color:#374151;line-height:1.6;">정밀도와 재현율을 함께 고려해야 할 때 균형 잡힌 지표.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════ SECTION 7: 퀴즈 ═══════════════════ -->
 <section id="quiz" style="scroll-margin-top:80px;">
     <div style="text-align:center;margin-bottom:36px;">
         <span style="background:#eef2ff;color:#4338ca;padding:6px 18px;border-radius:999px;font-weight:700;font-size:0.85rem;">CHECK-UP</span>
@@ -1086,6 +1332,80 @@ window.onload=()=>{
     window.uiController=new UIController();
     uiController.loadExample(1);
 };
+
+// ── 스팸 메일 계산 실습 ────────────────────────────────────────────
+const SPAM_ANS = {TP:30, FN:10, FP:5, TN:55};
+
+function checkSpamInputs(){
+    const vals = {
+        TP: parseInt(document.getElementById('inp-TP').value),
+        FN: parseInt(document.getElementById('inp-FN').value),
+        FP: parseInt(document.getElementById('inp-FP').value),
+        TN: parseInt(document.getElementById('inp-TN').value),
+    };
+    const fb = document.getElementById('spam-matrix-feedback');
+    const all = ['TP','FN','FP','TN'].every(k => !isNaN(vals[k]));
+    if(!all){ fb.style.display='none'; clearMetrics(); return; }
+
+    // 행렬 입력 피드백
+    const allCorrect = Object.keys(SPAM_ANS).every(k => vals[k] === SPAM_ANS[k]);
+    fb.style.display='block';
+    if(allCorrect){
+        fb.style.background='#d1fae5'; fb.style.border='1px solid #6ee7b7'; fb.style.color='#065f46';
+        fb.textContent='✅ 정확합니다! 아래 지표가 자동으로 계산되었습니다.';
+    } else {
+        fb.style.background='#fff1f2'; fb.style.border='1px solid #fecdd3'; fb.style.color='#9f1239';
+        fb.textContent='❌ 다시 확인해보세요. 실제 스팸(40개)=TP+FN, 실제 정상(60개)=FP+TN입니다.';
+    }
+
+    // 지표 자동 계산 (입력값으로 즉시 계산)
+    const {TP, FN, FP, TN} = vals;
+    const total = TP + FN + FP + TN;
+    if(total === 0){ clearMetrics(); return; }
+
+    const acc  = (TP + TN) / total;
+    const prec = (TP + FP) > 0 ? TP / (TP + FP) : 0;
+    const rec  = (TP + FN) > 0 ? TP / (TP + FN) : 0;
+    const f1   = (prec + rec) > 0 ? 2 * prec * rec / (prec + rec) : 0;
+
+    const fmt = v => v.toFixed(2);
+
+    // 값 표시 & 색상 (정답이면 초록, 아니면 일반)
+    const setVal = (id, val, correct, color) => {
+        const el = document.getElementById(id);
+        el.textContent = fmt(val);
+        el.style.color = correct ? '#16a34a' : color;
+        el.style.fontSize = '1.8rem';
+    };
+
+    setVal('val-acc',  acc,  allCorrect, '#1e40af');
+    setVal('val-prec', prec, allCorrect, '#5b21b6');
+    setVal('val-rec',  rec,  allCorrect, '#92400e');
+    setVal('val-f1',   f1,   allCorrect, '#9f1239');
+
+    // 전체 결과 해설 (정답 입력 시)
+    const res = document.getElementById('spam-calc-result');
+    if(allCorrect){
+        res.style.display='block';
+        res.style.background='#d1fae5'; res.style.border='2px solid #6ee7b7';
+        res.innerHTML=`<p style="font-weight:900;color:#065f46;font-size:.92rem;margin-bottom:6px;">🎉 혼동 행렬이 정확합니다!</p>
+<p style="font-size:.83rem;color:#374151;line-height:1.8;">
+정확도 <strong>${fmt(acc)}</strong> | 정밀도 <strong>${fmt(prec)}</strong> | 재현율 <strong>${fmt(rec)}</strong> | F1 <strong>${fmt(f1)}</strong><br>
+💡 정밀도(${fmt(prec)})는 높지만 재현율(${fmt(rec)})은 상대적으로 낮습니다.<br>
+스팸 ${FN}개를 놓쳤지만(FN=${FN}) 정상 메일 ${FP}개를 스팸으로 오분류(FP=${FP})했습니다.
+</p>`;
+    } else {
+        res.style.display='none';
+    }
+}
+
+function clearMetrics(){
+    ['val-acc','val-prec','val-rec','val-f1'].forEach(id=>{
+        const el=document.getElementById(id);
+        if(el){ el.textContent='—'; el.style.color='#c7d2fe'; el.style.fontSize='1.8rem'; }
+    });
+    document.getElementById('spam-calc-result').style.display='none';
+}
 </script>
 </body>
 </html>
