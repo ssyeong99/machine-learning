@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>합성곱 신경망(CNN)과 순환 신경망(RNN)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+        html { scroll-behavior: smooth; }
+        body { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif; background-color: #f8fafc; }
+        .hero-gradient { background: linear-gradient(135deg, #059669 0%, #4f46e5 100%); }
+        .sticky-nav { position: sticky; top: 0; z-index: 100; backdrop-filter: blur(12px); background-color: rgba(255,255,255,0.9); border-bottom: 1px solid rgba(226,232,240,0.8); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+        .section-card { background: white; padding: 2.5rem; border-radius: 2rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05); border: 1px solid #f1f5f9; }
+        .quiz-btn { width: 100%; padding: 1.25rem; text-align: left; border-radius: 1rem; border: 2px solid #e2e8f0; background-color: #f8fafc; font-weight: 500; color: #374151; transition: all 0.25s ease; }
+        .quiz-btn:hover { background: #f0fdfa; border-color: #5eead4; }
+        .quiz-btn.correct { background: #4f46e5; color: white; border-color: #4f46e5; }
+        .quiz-btn.wrong { background: #f43f5e; color: white; border-color: #f43f5e; }
+        .quiz-btn.disabled { opacity: 0.5; pointer-events: none; }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+    </style>
+</head>
+<body class="text-slate-900">
+
+<header class="hero-gradient text-white py-32 px-6 relative overflow-hidden" id="intro">
+    <div class="absolute inset-0 opacity-10 pointer-events-none">
+        <svg class="absolute top-10 left-10 w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        <svg class="absolute bottom-10 right-10 w-48 h-48" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+    </div>
+    <div class="max-w-6xl mx-auto text-center relative z-10">
+        <span class="inline-block px-4 py-1.5 bg-white/20 rounded-full font-bold mb-6 backdrop-blur-sm border border-white/30 text-base">Chapter 02 · 인공지능과 학습</span>
+        <h1 class="text-4xl md:text-6xl font-black mb-6 leading-tight">합성곱 신경망(CNN)과<br>순환 신경망(RNN)</h1>
+        <p class="text-lg md:text-xl opacity-90 font-medium max-w-2xl mx-auto leading-relaxed">심층 신경망을 응용한 두 알고리즘!<br>이미지를 알아보는 <strong>CNN</strong>, 순서를 기억하는 <strong>RNN</strong>의 원리를 알아봅시다.</p>
+    </div>
+</header>
+
+<div class="bg-white border-b border-slate-200 px-6 py-8">
+    <div class="max-w-4xl mx-auto flex items-start gap-4">
+        <div class="w-10 h-10 bg-emerald-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5"><i class="fa-solid fa-bullseye text-emerald-600"></i></div>
+        <div>
+            <p class="font-bold text-slate-700 mb-3 text-base">학습 목표</p>
+            <ol class="space-y-1.5 text-slate-600 text-base">
+                <li>① 합성곱 신경망(CNN)의 구조(합성곱·풀링·완전 연결)와 이미지 인식 과정을 이해한다.</li>
+                <li>② 합성곱·풀링이 이미지의 특징을 어떻게 추출하고 압축하는지 설명할 수 있다.</li>
+                <li>③ 순환 신경망(RNN)이 순차적 데이터를 어떻게 처리하는지 이해한다.</li>
+            </ol>
+        </div>
+    </div>
+</div>
+
+<nav class="sticky-nav px-6 py-4">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-emerald-600 rounded-xl flex items-center justify-center text-white shadow-md"><i class="fa-solid fa-layer-group text-lg"></i></div>
+            <span class="font-black text-xl tracking-tight text-slate-800">CNN과 RNN</span>
+        </div>
+        <div class="hidden md:flex space-x-5 text-base font-bold text-slate-500">
+            <a class="hover:text-emerald-600 transition" href="#cnn">합성곱 신경망</a>
+            <a class="hover:text-emerald-600 transition" href="#conv">합성곱·풀링</a>
+            <a class="hover:text-emerald-600 transition" href="#rnn">순환 신경망</a>
+            <a class="hover:text-emerald-600 transition" href="#quiz">확인질문</a>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-6xl mx-auto px-6 py-20 space-y-24">
+
+    <div class="bg-indigo-50 border border-indigo-200 rounded-3xl p-6 text-center">
+        <p class="text-lg text-indigo-900 leading-relaxed">심층 신경망(DNN)을 응용한 대표적인 알고리즘으로 <strong class="text-emerald-600">합성곱 신경망(CNN)</strong>과 <strong class="text-indigo-600">순환 신경망(RNN)</strong>이 있습니다.</p>
+    </div>
+
+    <section class="scroll-mt-24 space-y-12" id="cnn">
+        <div class="text-center space-y-4">
+            <h2 class="text-3xl font-black text-slate-900">합성곱 신경망(CNN)</h2>
+            <div class="w-20 h-1.5 bg-emerald-500 mx-auto rounded-full"></div>
+            <p class="text-slate-500 mt-2 font-medium text-lg">Convolution Neural Network · 이미지 인식의 핵심</p>
+        </div>
+
+        <div class="section-card space-y-8">
+            <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 text-center">
+                <p class="text-lg md:text-xl text-emerald-900 font-bold leading-relaxed">합성곱 신경망(CNN)은 데이터에서 지식을 추출하는 기존 방식과 달리,<br class="hidden md:block"><strong class="text-emerald-600">데이터의 특징을 추출하여 특징들의 패턴을 파악</strong>하는 구조로 학습이 이루어집니다.</p>
+            </div>
+            <p class="text-lg text-slate-700 leading-relaxed">CNN 알고리즘은 <strong>합성곱 과정</strong>과 <strong>풀링 과정</strong>을 복합적으로 구성해 만들며, 정보 추출·문장 분류·얼굴 인식 등에서 널리 쓰입니다. 아래는 배 사진을 입력해 무엇인지 분류하는 전체 과정입니다.</p>
+
+            <div class="bg-slate-50 rounded-3xl border border-slate-200 p-5 md:p-8">
+                <h3 class="text-center font-black text-lg text-slate-800 mb-6"><i class="fa-solid fa-image text-emerald-500 mr-2"></i>CNN(합성곱 신경망)의 이미지 인식 과정</h3>
+                <div class="overflow-x-auto pb-2">
+      <svg viewBox="0 0 1000 390" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" style="min-width:820px"><rect x="24" y="150" width="128" height="128" rx="6" fill="#7c5c3a"/>
+      <rect x="29" y="155" width="118" height="64.9" fill="#bae6fd"/>
+      <rect x="29" y="219.9" width="118" height="53.1" fill="#38bdf8"/>
+      <polygon points="50.0,219.9 130.0,219.9 118.0,237.9 62.0,237.9" fill="#f8fafc" stroke="#cbd5e1"/>
+      <rect x="50.0" y="215.9" width="80" height="6" fill="#ef4444"/>
+      <polygon points="78.0,197.9 110.0,215.9 78.0,215.9" fill="#e2e8f0" stroke="#cbd5e1"/>
+      <text x="88.0" y="296" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#475569">입력 이미지 (배)</text>
+      <rect x="194.0" y="155.0" width="96" height="96" rx="4" fill="#bce8a0" stroke="#5a9440" stroke-width="1.5"/><rect x="188.0" y="161.0" width="96" height="96" rx="4" fill="#9ed47f" stroke="#5a9440" stroke-width="1.5"/><rect x="182.0" y="167.0" width="96" height="96" rx="4" fill="#86c06c" stroke="#5a9440" stroke-width="1.5"/>
+      <text x="230" y="96" text-anchor="middle" font-size="13" font-weight="bold" fill="#15803d">합성곱</text>
+      <rect x="324.0" y="165.0" width="76" height="76" rx="4" fill="#bce8a0" stroke="#5a9440" stroke-width="1.5"/><rect x="318.0" y="171.0" width="76" height="76" rx="4" fill="#9ed47f" stroke="#5a9440" stroke-width="1.5"/><rect x="312.0" y="177.0" width="76" height="76" rx="4" fill="#86c06c" stroke="#5a9440" stroke-width="1.5"/>
+      <text x="350" y="96" text-anchor="middle" font-size="13" font-weight="bold" fill="#15803d">풀링</text>
+      <rect x="438.0" y="171.0" width="64" height="64" rx="4" fill="#bce8a0" stroke="#5a9440" stroke-width="1.5"/><rect x="432.0" y="177.0" width="64" height="64" rx="4" fill="#9ed47f" stroke="#5a9440" stroke-width="1.5"/><rect x="426.0" y="183.0" width="64" height="64" rx="4" fill="#86c06c" stroke="#5a9440" stroke-width="1.5"/>
+      <text x="458" y="96" text-anchor="middle" font-size="13" font-weight="bold" fill="#15803d">합성곱</text>
+      <rect x="544.0" y="179.0" width="48" height="48" rx="4" fill="#bce8a0" stroke="#5a9440" stroke-width="1.5"/><rect x="538.0" y="185.0" width="48" height="48" rx="4" fill="#9ed47f" stroke="#5a9440" stroke-width="1.5"/><rect x="532.0" y="191.0" width="48" height="48" rx="4" fill="#86c06c" stroke="#5a9440" stroke-width="1.5"/>
+      <text x="556" y="96" text-anchor="middle" font-size="13" font-weight="bold" fill="#15803d">풀링</text>
+      <path d="M152,214 L184,214" stroke="#3b82f6" stroke-width="1.5" stroke-dasharray="4 3"/>
+      <rect x="648" y="125.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="140.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="155.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="170.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="185.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="200.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="215.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="230.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="245.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="260.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="275.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="648" y="290.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/>
+      <text x="656" y="96" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#15803d">완전</text>
+      <text x="656" y="112" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#15803d">연결</text>
+      <rect x="726" y="140.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="726" y="155.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="726" y="170.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="726" y="185.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="726" y="200.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="726" y="215.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="726" y="230.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="726" y="245.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="726" y="260.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/><rect x="726" y="275.0" width="16" height="13" rx="2" fill="#bce8a0" stroke="#5a9440" stroke-width="1"/>
+      <text x="734" y="96" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#15803d">완전</text>
+      <text x="734" y="112" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#15803d">연결</text>
+      <path d="M580,214 L644,214" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <path d="M666,214 L724,214" stroke="#3b82f6" stroke-width="1.2" stroke-dasharray="4 3"/>
+      <text x="880" y="96" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#15803d">출력</text>
+      <text x="880" y="112" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#15803d">예측</text>
+      <path d="M744,214 L820,177" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/>
+      <rect x="824" y="165" width="150" height="26" rx="7" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+      <text x="836" y="183" text-anchor="start" font-size="12.5" font-weight="bold" fill="#475569">개</text>
+      <text x="966" y="183" text-anchor="end" font-size="13" font-weight="bold" fill="#475569">0.01</text>
+      <path d="M744,214 L820,211" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/>
+      <rect x="824" y="199" width="150" height="26" rx="7" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+      <text x="836" y="217" text-anchor="start" font-size="12.5" font-weight="bold" fill="#475569">고양이</text>
+      <text x="966" y="217" text-anchor="end" font-size="13" font-weight="bold" fill="#475569">0.01</text>
+      <path d="M744,214 L820,245" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/>
+      <rect x="824" y="233" width="150" height="26" rx="7" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/>
+      <text x="836" y="251" text-anchor="start" font-size="12.5" font-weight="bold" fill="#15803d">배</text>
+      <text x="966" y="251" text-anchor="end" font-size="13" font-weight="bold" fill="#15803d">0.94</text>
+      <path d="M744,214 L820,279" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/>
+      <rect x="824" y="267" width="150" height="26" rx="7" fill="#f8fafc" stroke="#cbd5e1" stroke-width="1"/>
+      <text x="836" y="285" text-anchor="start" font-size="12.5" font-weight="bold" fill="#475569">새</text>
+      <text x="966" y="285" text-anchor="end" font-size="13" font-weight="bold" fill="#475569">0.04</text>
+      <path d="M180,330 L180,344 L600,344 L600,330" fill="none" stroke="#0d9488" stroke-width="2"/>
+      <text x="390" y="366" text-anchor="middle" font-size="13" font-weight="bold" fill="#0d9488">특징 추출 (합성곱 + 풀링 반복)</text>
+      <path d="M640,330 L640,344 L980,344 L980,330" fill="none" stroke="#7c3aed" stroke-width="2"/>
+      <text x="810" y="366" text-anchor="middle" font-size="13" font-weight="bold" fill="#7c3aed">분류 (완전 연결)</text></svg>
+                </div>
+                <p class="text-center text-sm text-slate-500 mt-5"><i class="fa-solid fa-circle-up text-emerald-500 mr-1"></i><strong>[그림 II-59]</strong> 합성곱·풀링으로 특징을 추출하고, 완전 연결층에서 분류해 '배(0.94)'로 예측합니다.</p>
+            </div>
+        </div>
+
+        <!-- 합성곱 계층 + 풀링 -->
+        <div class="section-card space-y-12" id="conv">
+            <!-- 합성곱 계층 -->
+            <div class="space-y-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-table-cells text-emerald-600 text-lg"></i></div>
+                    <h3 class="text-2xl font-black text-slate-800">① 합성곱 계층 (Convolution layer)</h3>
+                </div>
+                <p class="text-lg text-slate-700 leading-relaxed"><strong>커널(작은 필터)을 이용해 데이터의 특징을 추출</strong>하는 과정으로 새롭게 만들어진 계층을 합성곱 계층이라고 합니다. 여러 개의 커널을 쓰면 합성곱 층도 여러 개 생기며, 이 과정은 파라미터 수를 효과적으로 줄여 주는 압축 과정이기도 합니다. 아래는 4×4 데이터를 3×3 커널로 합성곱하여 2×2로 압축하는 예시입니다.</p>
+                <div class="bg-slate-50 rounded-3xl border border-slate-200 p-5 md:p-8">
+                    <div class="overflow-x-auto pb-2">
+      <svg viewBox="0 0 1010 420" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" style="min-width:760px">
+      <defs>
+        <marker id="cArrow" markerWidth="6" markerHeight="6" refX="4" refY="3" orient="auto"><path d="M0,0 L5,3 L0,6 Z" fill="#2563eb"/></marker>
+        <marker id="gArrowS" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L6,3.5 L0,7 Z" fill="#22c55e"/></marker>
+      </defs>
+      <text x="138" y="56" text-anchor="middle" font-size="14" font-weight="bold" fill="#475569">원본 (4×4)</text>
+      <rect x="70" y="70" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="87.0" y="91.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text><rect x="104" y="70" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="121.0" y="91.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text><rect x="138" y="70" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="155.0" y="91.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">1</text><rect x="172" y="70" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="189.0" y="91.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text><rect x="70" y="104" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="87.0" y="125.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">1</text><rect x="104" y="104" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="121.0" y="125.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">1</text><rect x="138" y="104" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="155.0" y="125.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text><rect x="172" y="104" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="189.0" y="125.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text><rect x="70" y="138" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="87.0" y="159.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text><rect x="104" y="138" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="121.0" y="159.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">1</text><rect x="138" y="138" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="155.0" y="159.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">1</text><rect x="172" y="138" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="189.0" y="159.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text><rect x="70" y="172" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="87.0" y="193.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text><rect x="104" y="172" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="121.0" y="193.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text><rect x="138" y="172" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="155.0" y="193.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">1</text><rect x="172" y="172" width="34" height="34" fill="#fff" stroke="#94a3b8" stroke-width="1"/><text x="189.0" y="193.9" text-anchor="middle" font-size="14" font-weight="bold" fill="#334155">0</text>
+      <text x="351.0" y="76" text-anchor="middle" font-size="14" font-weight="bold" fill="#dc2626">커널 (3×3)</text>
+      <rect x="300" y="90" width="34" height="34" fill="#fcd9a0" stroke="#e0982e" stroke-width="1"/><text x="317.0" y="111.55" text-anchor="middle" font-size="13" font-weight="bold" fill="#b45309">×0</text><rect x="334" y="90" width="34" height="34" fill="#fcd9a0" stroke="#e0982e" stroke-width="1"/><text x="351.0" y="111.55" text-anchor="middle" font-size="13" font-weight="bold" fill="#b45309">×1</text><rect x="368" y="90" width="34" height="34" fill="#fcd9a0" stroke="#e0982e" stroke-width="1"/><text x="385.0" y="111.55" text-anchor="middle" font-size="13" font-weight="bold" fill="#b45309">×1</text><rect x="300" y="124" width="34" height="34" fill="#fcd9a0" stroke="#e0982e" stroke-width="1"/><text x="317.0" y="145.55" text-anchor="middle" font-size="13" font-weight="bold" fill="#b45309">×1</text><rect x="334" y="124" width="34" height="34" fill="#fcd9a0" stroke="#e0982e" stroke-width="1"/><text x="351.0" y="145.55" text-anchor="middle" font-size="13" font-weight="bold" fill="#b45309">×0</text><rect x="368" y="124" width="34" height="34" fill="#fcd9a0" stroke="#e0982e" stroke-width="1"/><text x="385.0" y="145.55" text-anchor="middle" font-size="13" font-weight="bold" fill="#b45309">×1</text><rect x="300" y="158" width="34" height="34" fill="#fcd9a0" stroke="#e0982e" stroke-width="1"/><text x="317.0" y="179.55" text-anchor="middle" font-size="13" font-weight="bold" fill="#b45309">×1</text><rect x="334" y="158" width="34" height="34" fill="#fcd9a0" stroke="#e0982e" stroke-width="1"/><text x="351.0" y="179.55" text-anchor="middle" font-size="13" font-weight="bold" fill="#b45309">×1</text><rect x="368" y="158" width="34" height="34" fill="#fcd9a0" stroke="#e0982e" stroke-width="1"/><text x="385.0" y="179.55" text-anchor="middle" font-size="13" font-weight="bold" fill="#b45309">×0</text>
+      <path d="M427,141.0 L522,141.0" stroke="#2563eb" stroke-width="10" marker-end="url(#cArrow)"/>
+      <text x="474" y="125.0" text-anchor="middle" font-size="15" font-weight="bold" fill="#2563eb">합성곱</text>
+      <text x="594" y="94" text-anchor="middle" font-size="14" font-weight="bold" fill="#15803d">출력 (2×2)</text>
+      <rect x="560" y="108" width="34" height="34" fill="#bbf7d0" stroke="#22c55e" stroke-width="1"/><text x="577.0" y="130.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#15803d">3</text><rect x="594" y="108" width="34" height="34" fill="#bbf7d0" stroke="#22c55e" stroke-width="1"/><text x="611.0" y="130.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#15803d">4</text><rect x="560" y="142" width="34" height="34" fill="#bbf7d0" stroke="#22c55e" stroke-width="1"/><text x="577.0" y="164.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#15803d">2</text><rect x="594" y="142" width="34" height="34" fill="#bbf7d0" stroke="#22c55e" stroke-width="1"/><text x="611.0" y="164.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#15803d">2</text>
+      <text x="330" y="240" text-anchor="middle" font-size="12.5" font-weight="normal" fill="#64748b">커널을 한 칸씩 이동하며, 겹친 부분끼리 (원본값 × 커널 가중치)를 모두 더한 값을 모아 특징 맵을 완성합니다.</text>
+      <text x="95" y="288" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#475569">1단계</text>
+      <rect x="55" y="300" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="65.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="75" y="300" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="85.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="95" y="300" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="105.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="115" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="125.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="55" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="65.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="75" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="85.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="95" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="105.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="115" y="320" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="125.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="55" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="65.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="75" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="85.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="95" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="105.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="115" y="340" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="125.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="55" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="65.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="75" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="85.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="95" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="105.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="115" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="125.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="55" y="300" width="60" height="60" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+      <path d="M141,340 L163,340" stroke="#22c55e" stroke-width="3" marker-end="url(#gArrowS)"/>
+      <rect x="171" y="320" width="20" height="20" fill="#bbf7d0" stroke="#86efac" stroke-width="1"/><text x="181.0" y="334.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">3</text>
+      <rect x="191" y="320" width="20" height="20" fill="#f8fafc" stroke="#86efac" stroke-width="1"/>
+      <rect x="171" y="340" width="20" height="20" fill="#f8fafc" stroke="#86efac" stroke-width="1"/>
+      <rect x="191" y="340" width="20" height="20" fill="#f8fafc" stroke="#86efac" stroke-width="1"/>
+      <text x="263" y="288" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#475569">2단계</text>
+      <rect x="223" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="233.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="243" y="300" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="253.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="263" y="300" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="273.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="283" y="300" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="293.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="223" y="320" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="233.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="243" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="253.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="263" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="273.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="283" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="293.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="223" y="340" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="233.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="243" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="253.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="263" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="273.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="283" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="293.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="223" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="233.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="243" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="253.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="263" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="273.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="283" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="293.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="243" y="300" width="60" height="60" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+      <path d="M309,340 L331,340" stroke="#22c55e" stroke-width="3" marker-end="url(#gArrowS)"/>
+      <rect x="339" y="320" width="20" height="20" fill="#dcfce7" stroke="#86efac" stroke-width="1"/><text x="349.0" y="334.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">3</text>
+      <rect x="359" y="320" width="20" height="20" fill="#bbf7d0" stroke="#86efac" stroke-width="1"/><text x="369.0" y="334.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">4</text>
+      <rect x="339" y="340" width="20" height="20" fill="#f8fafc" stroke="#86efac" stroke-width="1"/>
+      <rect x="359" y="340" width="20" height="20" fill="#f8fafc" stroke="#86efac" stroke-width="1"/>
+      <text x="431" y="288" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#475569">3단계</text>
+      <rect x="391" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="401.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="411" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="421.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="431" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="441.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="451" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="461.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="391" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="401.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="411" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="421.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="431" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="441.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="451" y="320" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="461.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="391" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="401.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="411" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="421.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="431" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="441.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="451" y="340" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="461.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="391" y="360" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="401.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="411" y="360" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="421.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="431" y="360" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="441.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="451" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="461.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="391" y="320" width="60" height="60" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+      <path d="M477,340 L499,340" stroke="#22c55e" stroke-width="3" marker-end="url(#gArrowS)"/>
+      <rect x="507" y="320" width="20" height="20" fill="#dcfce7" stroke="#86efac" stroke-width="1"/><text x="517.0" y="334.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">3</text>
+      <rect x="527" y="320" width="20" height="20" fill="#dcfce7" stroke="#86efac" stroke-width="1"/><text x="537.0" y="334.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">4</text>
+      <rect x="507" y="340" width="20" height="20" fill="#bbf7d0" stroke="#86efac" stroke-width="1"/><text x="517.0" y="354.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">2</text>
+      <rect x="527" y="340" width="20" height="20" fill="#f8fafc" stroke="#86efac" stroke-width="1"/>
+      <text x="599" y="288" text-anchor="middle" font-size="11.5" font-weight="bold" fill="#475569">4단계</text>
+      <rect x="559" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="569.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="579" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="589.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="599" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="609.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="619" y="300" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="629.0" y="313.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="559" y="320" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="569.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="579" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="589.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="599" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="609.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="619" y="320" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="629.0" y="333.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="559" y="340" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="569.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="579" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="589.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="599" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="609.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="619" y="340" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="629.0" y="353.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="559" y="360" width="20" height="20" fill="#fff" stroke="#cbd5e1" stroke-width="1"/><text x="569.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="579" y="360" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="589.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="599" y="360" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="609.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">1</text>
+      <rect x="619" y="360" width="20" height="20" fill="#fde68a" stroke="#cbd5e1" stroke-width="1"/><text x="629.0" y="373.85" text-anchor="middle" font-size="11" font-weight="bold" fill="#334155">0</text>
+      <rect x="579" y="320" width="60" height="60" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+      <path d="M645,340 L667,340" stroke="#22c55e" stroke-width="3" marker-end="url(#gArrowS)"/>
+      <rect x="675" y="320" width="20" height="20" fill="#dcfce7" stroke="#86efac" stroke-width="1"/><text x="685.0" y="334.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">3</text>
+      <rect x="695" y="320" width="20" height="20" fill="#dcfce7" stroke="#86efac" stroke-width="1"/><text x="705.0" y="334.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">4</text>
+      <rect x="675" y="340" width="20" height="20" fill="#dcfce7" stroke="#86efac" stroke-width="1"/><text x="685.0" y="354.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">2</text>
+      <rect x="695" y="340" width="20" height="20" fill="#bbf7d0" stroke="#86efac" stroke-width="1"/><text x="705.0" y="354.2" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">2</text>
+    </svg>
+                    </div>
+                    <p class="text-center text-sm text-slate-500 mt-4"><i class="fa-solid fa-circle-up text-emerald-500 mr-1"></i><strong>[그림 II-60]</strong> 합성곱 과정 예시 — 원본값에 커널 가중치를 곱해 모두 더한 값을 모읍니다.</p>
+                </div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- 풀링 -->
+            <div class="space-y-6">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 bg-emerald-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-compress text-emerald-600 text-lg"></i></div>
+                    <h3 class="text-2xl font-black text-slate-800">② 풀링 층 (Pooling layer)</h3>
+                </div>
+                <p class="text-lg text-slate-700 leading-relaxed">풀링은 합성곱 과정을 거친 레이어의 <strong>크기를 줄여 주는 과정</strong>입니다. 정해진 구역 안에서 최댓값을 뽑는 <strong>최대 풀링</strong>과 평균값을 뽑는 <strong>평균 풀링</strong>이 있습니다. 불필요한 세부 정보를 줄이면서 중요한 특징은 유지해 계산 효율을 높입니다.</p>
+                <div class="bg-slate-50 rounded-3xl border border-slate-200 p-5 md:p-8">
+                    <div class="overflow-x-auto pb-2">
+      <svg viewBox="0 0 800 360" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" style="min-width:620px">
+      <defs>
+        <marker id="rArrow" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L6,3.5 L0,7 Z" fill="#ef4444"/></marker>
+        <marker id="bArrow" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L6,3.5 L0,7 Z" fill="#3b82f6"/></marker>
+      </defs>
+      <text x="144" y="104" text-anchor="middle" font-size="14" font-weight="bold" fill="#475569">입력 (4×4)</text>
+      <rect x="60" y="120" width="42" height="42" fill="#fca5a5" stroke="#94a3b8" stroke-width="1"/><text x="81.0" y="146.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">0</text><rect x="102" y="120" width="42" height="42" fill="#fca5a5" stroke="#94a3b8" stroke-width="1"/><text x="123.0" y="146.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">2</text><rect x="144" y="120" width="42" height="42" fill="#bfdbfe" stroke="#94a3b8" stroke-width="1"/><text x="165.0" y="146.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">1</text><rect x="186" y="120" width="42" height="42" fill="#bfdbfe" stroke="#94a3b8" stroke-width="1"/><text x="207.0" y="146.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">0</text><rect x="60" y="162" width="42" height="42" fill="#fca5a5" stroke="#94a3b8" stroke-width="1"/><text x="81.0" y="188.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">4</text><rect x="102" y="162" width="42" height="42" fill="#fca5a5" stroke="#94a3b8" stroke-width="1"/><text x="123.0" y="188.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">2</text><rect x="144" y="162" width="42" height="42" fill="#bfdbfe" stroke="#94a3b8" stroke-width="1"/><text x="165.0" y="188.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">2</text><rect x="186" y="162" width="42" height="42" fill="#bfdbfe" stroke="#94a3b8" stroke-width="1"/><text x="207.0" y="188.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">1</text><rect x="60" y="204" width="42" height="42" fill="#bbf7d0" stroke="#94a3b8" stroke-width="1"/><text x="81.0" y="230.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">3</text><rect x="102" y="204" width="42" height="42" fill="#bbf7d0" stroke="#94a3b8" stroke-width="1"/><text x="123.0" y="230.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">6</text><rect x="144" y="204" width="42" height="42" fill="#d6bfae" stroke="#94a3b8" stroke-width="1"/><text x="165.0" y="230.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">1</text><rect x="186" y="204" width="42" height="42" fill="#d6bfae" stroke="#94a3b8" stroke-width="1"/><text x="207.0" y="230.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">2</text><rect x="60" y="246" width="42" height="42" fill="#bbf7d0" stroke="#94a3b8" stroke-width="1"/><text x="81.0" y="272.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">0</text><rect x="102" y="246" width="42" height="42" fill="#bbf7d0" stroke="#94a3b8" stroke-width="1"/><text x="123.0" y="272.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">3</text><rect x="144" y="246" width="42" height="42" fill="#d6bfae" stroke="#94a3b8" stroke-width="1"/><text x="165.0" y="272.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">1</text><rect x="186" y="246" width="42" height="42" fill="#d6bfae" stroke="#94a3b8" stroke-width="1"/><text x="207.0" y="272.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">0</text>
+      <text x="662" y="54" text-anchor="middle" font-size="14" font-weight="bold" fill="#dc2626">최대 풀링</text>
+      <rect x="620" y="70" width="42" height="42" fill="#fca5a5" stroke="#ef4444" stroke-width="1"/><text x="641.0" y="96.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">4</text><rect x="662" y="70" width="42" height="42" fill="#bfdbfe" stroke="#ef4444" stroke-width="1"/><text x="683.0" y="96.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">2</text><rect x="620" y="112" width="42" height="42" fill="#bbf7d0" stroke="#ef4444" stroke-width="1"/><text x="641.0" y="138.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">6</text><rect x="662" y="112" width="42" height="42" fill="#d6bfae" stroke="#ef4444" stroke-width="1"/><text x="683.0" y="138.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">2</text>
+      <text x="662" y="234" text-anchor="middle" font-size="14" font-weight="bold" fill="#2563eb">평균 풀링</text>
+      <rect x="620" y="250" width="42" height="42" fill="#fca5a5" stroke="#3b82f6" stroke-width="1"/><text x="641.0" y="276.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">2</text><rect x="662" y="250" width="42" height="42" fill="#bfdbfe" stroke="#3b82f6" stroke-width="1"/><text x="683.0" y="276.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">1</text><rect x="620" y="292" width="42" height="42" fill="#bbf7d0" stroke="#3b82f6" stroke-width="1"/><text x="641.0" y="318.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">3</text><rect x="662" y="292" width="42" height="42" fill="#d6bfae" stroke="#3b82f6" stroke-width="1"/><text x="683.0" y="318.6" text-anchor="middle" font-size="16" font-weight="bold" fill="#1e293b">1</text>
+      <path d="M243,162 L605,112" stroke="#ef4444" stroke-width="3" marker-end="url(#rArrow)"/>
+      <path d="M243,246 L605,292" stroke="#3b82f6" stroke-width="3" marker-end="url(#bArrow)"/>
+      <text x="144" y="318" text-anchor="middle" font-size="12.5" font-weight="normal" fill="#64748b">정해진 구역(2×2)에서 최댓값/평균값을 뽑아 크기를 줄입니다.</text>
+    </svg>
+                    </div>
+                    <p class="text-center text-sm text-slate-500 mt-4"><i class="fa-solid fa-circle-up text-emerald-500 mr-1"></i><strong>[그림 II-61]</strong> 최대 풀링과 평균 풀링</p>
+                </div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- 완전 연결층 -->
+            <div class="space-y-5">
+                <div class="flex items-center gap-3">
+                    <div class="w-11 h-11 bg-indigo-100 rounded-xl flex items-center justify-center"><i class="fa-solid fa-diagram-project text-indigo-600 text-lg"></i></div>
+                    <h3 class="text-2xl font-black text-slate-800">③ 완전 연결층 (Fully connected layer)</h3>
+                </div>
+                <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-6">
+                    <p class="text-lg text-indigo-900 leading-relaxed">합성곱층과 풀링층을 여러 번 통과하여 <strong>추출한 이미지의 특징만 일렬로 만든 후</strong>, 일반적인 신경망인 <strong>완전 연결층</strong>으로 전달합니다. 이를 통해 이미지의 <strong>전역적인 패턴과 특징을 학습</strong>할 수 있게 되어, 어떤 정보를 가진 이미지인지 <strong>분류</strong>합니다.</p>
+                </div>
+            </div>
+
+            <!-- 체험 버튼 -->
+            <a href="https://poloclub.github.io/cnn-explainer/" target="_blank" rel="noopener"
+               class="group block rounded-3xl p-1 shadow-lg hover:shadow-2xl transition-all duration-300"
+               style="background: linear-gradient(135deg, #34d399 0%, #059669 50%, #4f46e5 100%);">
+                <div class="bg-white/10 backdrop-blur-md rounded-[1.4rem] p-8 text-white flex flex-col md:flex-row items-center justify-center gap-5 border border-white/30 text-center md:text-left">
+                    <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center shrink-0 group-hover:bg-white/30 transition-colors"><i class="fa-solid fa-flask-vial text-3xl group-hover:scale-110 transition-transform"></i></div>
+                    <div class="flex-1">
+                        <div class="text-2xl font-black mb-1">CNN 학습 과정 체험하기</div>
+                        <div class="opacity-90 font-medium">CNN Explainer에서 합성곱·풀링·완전 연결이 실제로 어떻게 작동하는지 시각적으로 확인해 보세요. <span class="underline">(새 탭으로 열림)</span></div>
+                    </div>
+                    <i class="fa-solid fa-arrow-up-right-from-square text-2xl opacity-80 group-hover:translate-x-1 transition-transform"></i>
+                </div>
+            </a>
+        </div>
+    </section>
+
+    <section class="scroll-mt-24 space-y-12" id="rnn">
+        <div class="text-center space-y-4">
+            <h2 class="text-3xl font-black text-slate-900">순환 신경망(RNN)</h2>
+            <div class="w-20 h-1.5 bg-indigo-500 mx-auto rounded-full"></div>
+            <p class="text-slate-500 mt-2 font-medium text-lg">Recurrent Neural Network · 순서를 기억하는 신경망</p>
+        </div>
+
+        <div class="section-card space-y-8">
+            <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-6 text-center">
+                <p class="text-lg md:text-xl text-indigo-900 font-bold leading-relaxed">순환 신경망(RNN)은 <strong class="text-indigo-600">순환 구조를 이용해 과거의 학습 결과를 현재 학습에 반영</strong>하여,<br class="hidden md:block">기존의 지속적·반복적·순차적인 데이터 학습의 한계를 해결한 알고리즘입니다.</p>
+            </div>
+            <p class="text-lg text-slate-700 leading-relaxed">RNN은 내부에 <strong>순환 구조</strong>가 있어 현재 입력을 처리할 때 이전에 처리한 입력들을 기억하면서 반영합니다. 아래 그림처럼 하나의 순환 셀(h)을 시간 순서대로 펼치면(unfold) 각 단계가 이전 단계의 정보를 이어받는 것을 볼 수 있습니다. 주로 음성 웨이브폼을 파악하거나 텍스트의 앞뒤 성분을 파악할 때 사용됩니다.</p>
+
+            <div class="bg-slate-50 rounded-3xl border border-slate-200 p-5 md:p-8">
+                <h3 class="text-center font-black text-lg text-slate-800 mb-6"><i class="fa-solid fa-arrows-spin text-indigo-500 mr-2"></i>순환 신경망의 구조</h3>
+                <div class="overflow-x-auto pb-2">
+      <svg viewBox="0 0 850 350" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" style="min-width:720px">
+      <defs>
+        <marker id="rnA" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#475569"/></marker>
+        <marker id="rnB" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L6,3.5 L0,7 Z" fill="#6366f1"/></marker>
+        <marker id="rnBlue" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#2563eb"/></marker>
+      </defs>
+      <circle cx="95" cy="275" r="20" fill="#86c06c" stroke="#5a9440" stroke-width="2"/><text x="95" y="280" text-anchor="middle" font-size="13" font-weight="bold" fill="#1b4332">x</text><rect x="69" y="150" width="52" height="40" rx="8" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/><text x="95" y="176" text-anchor="middle" font-size="15" font-weight="bold" fill="#1e3a8a">h</text><circle cx="95" cy="70" r="20" fill="#f0abfc" stroke="#c026d3" stroke-width="2"/><text x="95" y="75" text-anchor="middle" font-size="13" font-weight="bold" fill="#701a75">o</text><line x1="95" y1="255" x2="95" y2="192" stroke="#475569" stroke-width="2" marker-end="url(#rnA)"/><text x="107" y="226.5" text-anchor="start" font-size="13" font-weight="bold" fill="#475569">u</text><line x1="95" y1="148" x2="95" y2="92" stroke="#475569" stroke-width="2" marker-end="url(#rnA)"/><text x="107" y="124.0" text-anchor="start" font-size="13" font-weight="bold" fill="#475569">w</text>
+      <path d="M69,175 C25,150 25,195 69,168" fill="none" stroke="#475569" stroke-width="2" marker-end="url(#rnA)"/>
+      <text x="29" y="178" text-anchor="middle" font-size="13" font-weight="bold" fill="#475569">v</text>
+      <text x="95" y="330" text-anchor="middle" font-size="12" font-weight="bold" fill="#15803d">나는 주말에 놀이공원에 갔다.</text>
+      <path d="M190,170 L270,170" stroke="#6366f1" stroke-width="8" marker-end="url(#rnB)"/>
+      <text x="230" y="156" text-anchor="middle" font-size="13" font-weight="bold" fill="#6366f1">unfold</text>
+      <circle cx="380" cy="275" r="20" fill="#86c06c" stroke="#5a9440" stroke-width="2"/><text x="380" y="280" text-anchor="middle" font-size="13" font-weight="bold" fill="#1b4332">x</text><rect x="354" y="150" width="52" height="40" rx="8" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/><text x="380" y="176" text-anchor="middle" font-size="15" font-weight="bold" fill="#1e3a8a">h</text><circle cx="380" cy="70" r="20" fill="#f0abfc" stroke="#c026d3" stroke-width="2"/><text x="380" y="75" text-anchor="middle" font-size="13" font-weight="bold" fill="#701a75">o</text><line x1="380" y1="255" x2="380" y2="192" stroke="#475569" stroke-width="2" marker-end="url(#rnA)"/><text x="392" y="226.5" text-anchor="start" font-size="13" font-weight="bold" fill="#475569">u</text><line x1="380" y1="148" x2="380" y2="92" stroke="#475569" stroke-width="2" marker-end="url(#rnA)"/><text x="392" y="124.0" text-anchor="start" font-size="13" font-weight="bold" fill="#475569">w</text><text x="380" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#c026d3">주말에</text><text x="380" y="330" text-anchor="middle" font-size="13" font-weight="bold" fill="#15803d">나는</text>
+      <text x="402" y="76" text-anchor="start" font-size="9" font-weight="normal" fill="#701a75">t-1</text>
+      <text x="407" y="176" text-anchor="start" font-size="9" font-weight="normal" fill="#1e3a8a">t-1</text>
+      <text x="402" y="280" text-anchor="start" font-size="9" font-weight="normal" fill="#1b4332">t-1</text>
+      <circle cx="560" cy="275" r="20" fill="#86c06c" stroke="#5a9440" stroke-width="2"/><text x="560" y="280" text-anchor="middle" font-size="13" font-weight="bold" fill="#1b4332">x</text><rect x="534" y="150" width="52" height="40" rx="8" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/><text x="560" y="176" text-anchor="middle" font-size="15" font-weight="bold" fill="#1e3a8a">h</text><circle cx="560" cy="70" r="20" fill="#f0abfc" stroke="#c026d3" stroke-width="2"/><text x="560" y="75" text-anchor="middle" font-size="13" font-weight="bold" fill="#701a75">o</text><line x1="560" y1="255" x2="560" y2="192" stroke="#475569" stroke-width="2" marker-end="url(#rnA)"/><text x="572" y="226.5" text-anchor="start" font-size="13" font-weight="bold" fill="#475569">u</text><line x1="560" y1="148" x2="560" y2="92" stroke="#475569" stroke-width="2" marker-end="url(#rnA)"/><text x="572" y="124.0" text-anchor="start" font-size="13" font-weight="bold" fill="#475569">w</text><text x="560" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#c026d3">놀이공원에</text><text x="560" y="330" text-anchor="middle" font-size="13" font-weight="bold" fill="#15803d">주말에</text>
+      <text x="582" y="76" text-anchor="start" font-size="9" font-weight="normal" fill="#701a75">t</text>
+      <text x="587" y="176" text-anchor="start" font-size="9" font-weight="normal" fill="#1e3a8a">t</text>
+      <text x="582" y="280" text-anchor="start" font-size="9" font-weight="normal" fill="#1b4332">t</text>
+      <circle cx="740" cy="275" r="20" fill="#86c06c" stroke="#5a9440" stroke-width="2"/><text x="740" y="280" text-anchor="middle" font-size="13" font-weight="bold" fill="#1b4332">x</text><rect x="714" y="150" width="52" height="40" rx="8" fill="#93c5fd" stroke="#2563eb" stroke-width="2"/><text x="740" y="176" text-anchor="middle" font-size="15" font-weight="bold" fill="#1e3a8a">h</text><circle cx="740" cy="70" r="20" fill="#f0abfc" stroke="#c026d3" stroke-width="2"/><text x="740" y="75" text-anchor="middle" font-size="13" font-weight="bold" fill="#701a75">o</text><line x1="740" y1="255" x2="740" y2="192" stroke="#475569" stroke-width="2" marker-end="url(#rnA)"/><text x="752" y="226.5" text-anchor="start" font-size="13" font-weight="bold" fill="#475569">u</text><line x1="740" y1="148" x2="740" y2="92" stroke="#475569" stroke-width="2" marker-end="url(#rnA)"/><text x="752" y="124.0" text-anchor="start" font-size="13" font-weight="bold" fill="#475569">w</text><text x="740" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#c026d3">갔다</text><text x="740" y="330" text-anchor="middle" font-size="13" font-weight="bold" fill="#15803d">놀이공원에</text>
+      <text x="762" y="76" text-anchor="start" font-size="9" font-weight="normal" fill="#701a75">t+1</text>
+      <text x="767" y="176" text-anchor="start" font-size="9" font-weight="normal" fill="#1e3a8a">t+1</text>
+      <text x="762" y="280" text-anchor="start" font-size="9" font-weight="normal" fill="#1b4332">t+1</text>
+      <line x1="407" y1="170" x2="533" y2="170" stroke="#2563eb" stroke-width="2" marker-end="url(#rnBlue)"/>
+      <text x="470.0" y="160" text-anchor="middle" font-size="12" font-weight="bold" fill="#2563eb">v</text>
+      <line x1="587" y1="170" x2="713" y2="170" stroke="#2563eb" stroke-width="2" marker-end="url(#rnBlue)"/>
+      <text x="650.0" y="160" text-anchor="middle" font-size="12" font-weight="bold" fill="#2563eb">v</text>
+      <line x1="305" y1="170" x2="353" y2="170" stroke="#2563eb" stroke-width="2" stroke-dasharray="4 3"/>
+      <line x1="767" y1="170" x2="815" y2="170" stroke="#2563eb" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#rnBlue)"/>
+    </svg>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 text-center">
+                    <div class="bg-white rounded-xl border border-green-200 p-4"><span class="font-black text-green-700">x (입력)</span><p class="text-slate-600 text-base mt-1">각 시점에 들어오는 단어·신호</p></div>
+                    <div class="bg-white rounded-xl border border-blue-200 p-4"><span class="font-black text-blue-700">h (은닉 상태)</span><p class="text-slate-600 text-base mt-1">이전 정보를 기억해 다음으로 전달(가중치 v)</p></div>
+                    <div class="bg-white rounded-xl border border-fuchsia-200 p-4"><span class="font-black text-fuchsia-700">o (출력)</span><p class="text-slate-600 text-base mt-1">각 시점의 예측 결과</p></div>
+                </div>
+                <p class="text-center text-sm text-slate-500 mt-5"><i class="fa-solid fa-circle-up text-indigo-500 mr-1"></i><strong>[그림 II-62]</strong> 순환 신경망의 구조 — 하나의 셀을 시간순으로 펼친 모습</p>
+            </div>
+        </div>
+
+        <!-- 비교 -->
+        <div class="section-card space-y-6">
+            <h3 class="text-2xl font-black text-slate-800 flex items-center gap-3"><i class="fa-solid fa-scale-balanced text-indigo-500"></i>일반적인 딥러닝 vs 순환 신경망</h3>
+            <p class="text-lg text-slate-700 leading-relaxed">문장 <strong>"너는 노래를 못 부르지 않아"</strong>는 이중 부정이라 사실 <strong>긍정(칭찬)</strong>입니다. 단어를 따로따로 보는 일반 딥러닝은 '못', '않아' 때문에 <strong class="text-rose-600">부정</strong>으로 잘못 판단하지만, 은닉층을 연결해 앞 단어를 기억하는 RNN은 흐름을 이해해 <strong class="text-green-600">긍정</strong>으로 올바르게 판단합니다.</p>
+            <div class="bg-slate-50 rounded-3xl border border-slate-200 p-5 md:p-8">
+                <div class="overflow-x-auto pb-2">
+      <svg viewBox="0 0 1000 600" xmlns="http://www.w3.org/2000/svg" class="w-full h-auto" style="min-width:800px">
+      <defs>
+        <marker id="cmpA" markerWidth="7" markerHeight="7" refX="5" refY="3.5" orient="auto"><path d="M0,0 L6,3.5 L0,7 Z" fill="#94a3b8"/></marker>
+        <marker id="cmpB" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0,0 L7,4 L0,8 Z" fill="#6366f1"/></marker>
+      </defs>
+      <rect x="20" y="20" width="170" height="30" rx="10" fill="#f97316"/><text x="105" y="40" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#fff">일반적인 딥러닝</text><text x="200" y="40" text-anchor="start" font-size="11" font-weight="bold" fill="#f97316">단어를 독립적으로 판단</text><text x="150" y="83" text-anchor="end" font-size="11" font-weight="bold" fill="#64748b">출력층</text><text x="150" y="179" text-anchor="end" font-size="11" font-weight="bold" fill="#64748b">은닉층</text><text x="150" y="239" text-anchor="end" font-size="11" font-weight="bold" fill="#64748b">입력층</text><line x1="210" y1="218" x2="210" y2="190" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="210" y1="158" x2="210" y2="92" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="350" y1="218" x2="350" y2="190" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="350" y1="158" x2="350" y2="92" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="490" y1="218" x2="490" y2="190" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="490" y1="158" x2="490" y2="92" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="630" y1="218" x2="630" y2="190" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="630" y1="158" x2="630" y2="92" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="770" y1="218" x2="770" y2="190" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="770" y1="158" x2="770" y2="92" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><rect x="186" y="63" width="48" height="28" rx="7" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/><text x="210" y="82" text-anchor="middle" font-size="12" font-weight="bold" fill="#64748b">중립</text><rect x="193" y="159" width="34" height="30" rx="7" fill="#cbd5e1" stroke="#94a3b8"/><rect x="193" y="219" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="210" y="272" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">너는</text><rect x="326" y="63" width="48" height="28" rx="7" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/><text x="350" y="82" text-anchor="middle" font-size="12" font-weight="bold" fill="#64748b">중립</text><rect x="333" y="159" width="34" height="30" rx="7" fill="#cbd5e1" stroke="#94a3b8"/><rect x="333" y="219" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="350" y="272" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">노래를</text><rect x="466" y="63" width="48" height="28" rx="7" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/><text x="490" y="82" text-anchor="middle" font-size="12" font-weight="bold" fill="#dc2626">부정</text><rect x="473" y="159" width="34" height="30" rx="7" fill="#cbd5e1" stroke="#94a3b8"/><rect x="473" y="219" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="490" y="272" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">못</text><rect x="606" y="63" width="48" height="28" rx="7" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/><text x="630" y="82" text-anchor="middle" font-size="12" font-weight="bold" fill="#64748b">중립</text><rect x="613" y="159" width="34" height="30" rx="7" fill="#cbd5e1" stroke="#94a3b8"/><rect x="613" y="219" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="630" y="272" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">부르지</text><rect x="746" y="63" width="48" height="28" rx="7" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/><text x="770" y="82" text-anchor="middle" font-size="12" font-weight="bold" fill="#dc2626">부정</text><rect x="753" y="159" width="34" height="30" rx="7" fill="#cbd5e1" stroke="#94a3b8"/><rect x="753" y="219" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="770" y="272" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">않아</text><line x1="794" y1="78" x2="816" y2="78" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><rect x="822" y="57" width="96" height="42" rx="12" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/><text x="870" y="75" text-anchor="middle" font-size="10" font-weight="bold" fill="#dc2626">결과</text><text x="870" y="94" text-anchor="middle" font-size="16" font-weight="bold" fill="#dc2626">부정</text>
+      <rect x="20" y="330" width="170" height="30" rx="10" fill="#6366f1"/><text x="105" y="350" text-anchor="middle" font-size="13.5" font-weight="bold" fill="#fff">순환 신경망</text><text x="200" y="350" text-anchor="start" font-size="11" font-weight="bold" fill="#6366f1">앞 단어들을 기억하며 판단</text><text x="150" y="393" text-anchor="end" font-size="11" font-weight="bold" fill="#64748b">출력층</text><text x="150" y="489" text-anchor="end" font-size="11" font-weight="bold" fill="#64748b">은닉층</text><text x="150" y="549" text-anchor="end" font-size="11" font-weight="bold" fill="#64748b">입력층</text><line x1="210" y1="528" x2="210" y2="500" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="210" y1="468" x2="210" y2="402" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="350" y1="528" x2="350" y2="500" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="350" y1="468" x2="350" y2="402" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="490" y1="528" x2="490" y2="500" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="490" y1="468" x2="490" y2="402" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="630" y1="528" x2="630" y2="500" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="630" y1="468" x2="630" y2="402" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="770" y1="528" x2="770" y2="500" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="770" y1="468" x2="770" y2="402" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><line x1="228" y1="484" x2="332" y2="484" stroke="#6366f1" stroke-width="2.2" marker-end="url(#cmpB)"/><rect x="262.0" y="445" width="36" height="23" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="280.0" y="457" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">너는</text><line x1="368" y1="484" x2="472" y2="484" stroke="#6366f1" stroke-width="2.2" marker-end="url(#cmpB)"/><rect x="396.5" y="430" width="47" height="38" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="420.0" y="442" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">너는</text><text x="420.0" y="457" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">노래를</text><line x1="508" y1="484" x2="612" y2="484" stroke="#6366f1" stroke-width="2.2" marker-end="url(#cmpB)"/><rect x="536.5" y="415" width="47" height="53" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="560.0" y="427" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">너는</text><text x="560.0" y="442" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">노래를</text><text x="560.0" y="457" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">못</text><line x1="648" y1="484" x2="752" y2="484" stroke="#6366f1" stroke-width="2.2" marker-end="url(#cmpB)"/><rect x="676.5" y="400" width="47" height="68" rx="8" fill="#eef2ff" stroke="#c7d2fe"/><text x="700.0" y="412" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">너는</text><text x="700.0" y="427" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">노래를</text><text x="700.0" y="442" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">못</text><text x="700.0" y="457" text-anchor="middle" font-size="10.5" font-weight="bold" fill="#4f46e5">부르지</text><rect x="186" y="373" width="48" height="28" rx="7" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/><text x="210" y="392" text-anchor="middle" font-size="12" font-weight="bold" fill="#64748b">중립</text><rect x="193" y="469" width="34" height="30" rx="7" fill="#c7d2fe" stroke="#94a3b8"/><rect x="193" y="529" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="210" y="582" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">너는</text><rect x="326" y="373" width="48" height="28" rx="7" fill="#f1f5f9" stroke="#cbd5e1" stroke-width="1.5"/><text x="350" y="392" text-anchor="middle" font-size="12" font-weight="bold" fill="#64748b">중립</text><rect x="333" y="469" width="34" height="30" rx="7" fill="#c7d2fe" stroke="#94a3b8"/><rect x="333" y="529" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="350" y="582" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">노래를</text><rect x="466" y="373" width="48" height="28" rx="7" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/><text x="490" y="392" text-anchor="middle" font-size="12" font-weight="bold" fill="#dc2626">부정</text><rect x="473" y="469" width="34" height="30" rx="7" fill="#c7d2fe" stroke="#94a3b8"/><rect x="473" y="529" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="490" y="582" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">못</text><rect x="606" y="373" width="48" height="28" rx="7" fill="#fee2e2" stroke="#fca5a5" stroke-width="1.5"/><text x="630" y="392" text-anchor="middle" font-size="12" font-weight="bold" fill="#dc2626">부정</text><rect x="613" y="469" width="34" height="30" rx="7" fill="#c7d2fe" stroke="#94a3b8"/><rect x="613" y="529" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="630" y="582" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">부르지</text><rect x="746" y="373" width="48" height="28" rx="7" fill="#dcfce7" stroke="#86efac" stroke-width="1.5"/><text x="770" y="392" text-anchor="middle" font-size="12" font-weight="bold" fill="#16a34a">긍정</text><rect x="753" y="469" width="34" height="30" rx="7" fill="#c7d2fe" stroke="#94a3b8"/><rect x="753" y="529" width="34" height="30" rx="7" fill="#bfdbfe" stroke="#94a3b8"/><text x="770" y="582" text-anchor="middle" font-size="12.5" font-weight="bold" fill="#334155">않아</text><line x1="794" y1="388" x2="816" y2="388" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#cmpA)"/><rect x="822" y="367" width="96" height="42" rx="12" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/><text x="870" y="385" text-anchor="middle" font-size="10" font-weight="bold" fill="#16a34a">결과</text><text x="870" y="404" text-anchor="middle" font-size="16" font-weight="bold" fill="#16a34a">긍정</text>
+      <line x1="20" y1="300" x2="980" y2="300" stroke="#e2e8f0" stroke-width="1.5" stroke-dasharray="5 4"/>
+    </svg>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="bg-orange-50 border border-orange-200 rounded-2xl p-5"><h4 class="font-black text-orange-700 mb-2"><i class="fa-solid fa-xmark-circle mr-2"></i>일반적인 딥러닝</h4><p class="text-slate-700 text-base leading-relaxed">단어를 독립적으로 처리해 앞뒤 맥락을 잇지 못합니다. 그래서 이중 부정을 놓치고 <strong>'부정'</strong>으로 판단합니다.</p></div>
+                <div class="bg-indigo-50 border border-indigo-200 rounded-2xl p-5"><h4 class="font-black text-indigo-700 mb-2"><i class="fa-solid fa-check-circle mr-2"></i>순환 신경망</h4><p class="text-slate-700 text-base leading-relaxed">은닉층을 연결해 이전의 입력값을 기억하므로 문장 흐름을 이해해 <strong>'긍정'</strong>으로 판단합니다.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <section class="scroll-mt-24 space-y-12" id="quiz">
+        <div class="text-center">
+            <span class="inline-block bg-teal-100 text-teal-700 px-4 py-1.5 rounded-full font-bold tracking-wider mb-4">CHECK-UP</span>
+            <h2 class="text-3xl font-black">스스로 점검하기</h2>
+            <p class="text-slate-500 mt-2">CNN과 RNN의 개념을 머릿속에 정리해 봅시다!</p>
+        </div>
+        <div class="space-y-8">
+            <div class="bg-slate-100 rounded-2xl p-6 md:p-8 border border-slate-300">
+                <h3 class="font-bold text-xl mb-6 text-slate-800 leading-relaxed"><span class="text-emerald-600 mr-2 bg-emerald-100 px-3 py-1 rounded-lg">Q1</span> CNN에서 커널(필터)을 이용해 이미지의 특징을 추출하며 새롭게 만들어지는 계층은 무엇인가요?</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button class="quiz-btn" onclick="checkAnswer(this,true,'정답! 커널로 특징을 추출하는 계층이 합성곱 계층입니다.')">1. 합성곱 계층</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this,false,'풀링 층은 레이어의 크기를 줄여 주는 역할입니다.')">2. 풀링 층</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this,false,'완전 연결층은 마지막에 특징을 모아 분류하는 곳입니다.')">3. 완전 연결층</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this,false,'순환 층은 RNN에서 과거 정보를 기억하는 구조입니다.')">4. 순환 층</button>
+                </div>
+            </div>
+            <div class="bg-slate-100 rounded-2xl p-6 md:p-8 border border-slate-300">
+                <h3 class="font-bold text-xl mb-6 text-slate-800 leading-relaxed"><span class="text-emerald-600 mr-2 bg-emerald-100 px-3 py-1 rounded-lg">Q2</span> 정해진 구역 안에서 최댓값이나 평균값을 뽑아 레이어의 크기를 줄여 주는 과정은 무엇인가요?</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button class="quiz-btn" onclick="checkAnswer(this,false,'합성곱은 커널로 특징을 추출하는 과정입니다.')">1. 합성곱</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this,true,'정답! 최대 풀링·평균 풀링으로 크기를 줄입니다.')">2. 풀링</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this,false,'활성화 함수는 출력 여부를 결정하는 함수입니다.')">3. 활성화</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this,false,'역전파는 오차를 거꾸로 전달하는 학습 기법입니다.')">4. 역전파</button>
+                </div>
+            </div>
+            <div class="bg-slate-100 rounded-2xl p-6 md:p-8 border border-slate-300">
+                <h3 class="font-bold text-xl mb-6 text-slate-800 leading-relaxed"><span class="text-indigo-600 mr-2 bg-indigo-100 px-3 py-1 rounded-lg">Q3</span> 순환 구조를 이용해 과거의 정보를 기억하고 현재 학습에 반영하여, 순차적 데이터 처리에 특화된 신경망은 무엇인가요?</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <button class="quiz-btn" onclick="checkAnswer(this,false,'CNN은 이미지 특징 추출에 특화된 신경망입니다.')">1. 합성곱 신경망(CNN)</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this,true,'정답! 순환 구조로 과거 정보를 기억하는 것은 RNN입니다.')">2. 순환 신경망(RNN)</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this,false,'단층 퍼셉트론은 가장 단순한 초기 모델입니다.')">3. 단층 퍼셉트론</button>
+                    <button class="quiz-btn" onclick="checkAnswer(this,false,'풀링 층은 CNN에서 크기를 줄이는 과정입니다.')">4. 풀링 층</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+</main>
+
+<footer class="bg-slate-900 py-12 px-6 text-center mt-20">
+    <p class="text-white font-black text-2xl mb-2">인공지능 기초</p>
+    <p class="text-slate-400">합성곱 신경망(CNN)과 순환 신경망(RNN)</p>
+</footer>
+
+<script>
+function checkAnswer(btn, isCorrect, message) {
+    const container = btn.parentElement;
+    const buttons = container.querySelectorAll('.quiz-btn');
+    buttons.forEach(b => { if (!b.dataset.label) b.dataset.label = b.textContent; b.classList.remove('correct','wrong'); b.classList.add('disabled'); });
+    if (isCorrect) { btn.classList.add('correct'); btn.innerHTML = '<i class="fa-solid fa-circle-check mr-2"></i>'+btn.dataset.label; }
+    else { btn.classList.add('wrong'); btn.innerHTML = '<i class="fa-solid fa-circle-xmark mr-2"></i>'+btn.dataset.label; }
+    showToast(message, isCorrect ? 'success' : 'error');
+    setTimeout(() => { buttons.forEach(b => { b.classList.remove('correct','wrong','disabled'); b.innerHTML = b.dataset.label; }); }, 3000);
+}
+function showToast(message, type) {
+    document.querySelectorAll('.toast-message').forEach(t => t.remove());
+    const toast = document.createElement('div');
+    const icon = type === 'success' ? '<i class="fa-solid fa-circle-check mr-2 text-xl"></i>' : '<i class="fa-solid fa-circle-xmark mr-2 text-xl"></i>';
+    toast.className = 'toast-message fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl text-white font-bold shadow-2xl transition-all transform translate-y-20 opacity-0 z-[1000] flex items-center ' + (type === 'success' ? 'bg-indigo-600' : 'bg-rose-600');
+    toast.innerHTML = icon + '<span>' + message + '</span>';
+    document.body.appendChild(toast);
+    setTimeout(() => { toast.classList.remove('translate-y-20','opacity-0'); toast.classList.add('translate-y-0','opacity-100'); }, 10);
+    setTimeout(() => { toast.classList.remove('translate-y-0','opacity-100'); toast.classList.add('translate-y-20','opacity-0'); setTimeout(() => toast.remove(), 300); }, 4000);
+}
+</script>
+</body>
+</html>
