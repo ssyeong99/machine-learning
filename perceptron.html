@@ -1,12 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>퍼셉트론부터 딥러닝까지: 공간을 접다</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Perceptron</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+<style>
         @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
         body {
             font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto;
@@ -25,21 +25,459 @@
         .quiz-btn.wrong { background:#f43f5e; color:white; border-color:#f43f5e; } 
         .quiz-btn.disabled { opacity:.5; pointer-events:none; }
     </style>
+<style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+        body { font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Noto Sans KR", sans-serif; background:#f8fafc; }
+        .hero-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+        .sticky-nav { position:sticky; top:0; z-index:100; backdrop-filter:blur(12px); background:rgba(255,255,255,.9); border-bottom:1px solid rgba(226,232,240,.8); box-shadow:0 4px 6px -1px rgba(0,0,0,.05); }
+        .section-card { background:white; padding:2.5rem; border-radius:2rem; box-shadow:0 4px 6px -1px rgb(0 0 0/.05); border:1px solid #f1f5f9; }
+        .quiz-btn { width:100%; padding:1.25rem; text-align:left; border-radius:1rem; border:2px solid #e2e8f0; background:#f8fafc; font-weight:500; color:#374151; transition:all .25s ease; cursor:pointer; }
+        .quiz-btn:hover { background:#eef2ff; border-color:#a5b4fc; }
+        .quiz-btn.correct { background:#4f46e5; color:white; border-color:#4f46e5; }
+        .quiz-btn.wrong { background:#f43f5e; color:white; border-color:#f43f5e; }
+        .quiz-btn.disabled { opacity:.5; pointer-events:none; }
+        ::-webkit-scrollbar { width:8px; } ::-webkit-scrollbar-track { background:#f1f5f9; border-radius:10px; } ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:10px; }
+    </style>
 </head>
-<body class="bg-slate-50 text-slate-800">
+<body class="text-slate-900">
 
-<header class="hero-gradient text-white py-16 px-6 shadow-lg">
-    <div class="max-w-6xl mx-auto">
-        <h1 class="text-4xl md:text-5xl font-black mb-4">
-            <i class="fa-solid fa-project-diagram mr-3"></i>단층 퍼셉트론에서 다층 퍼셉트론으로
-        </h1>
-        <p class="text-xl opacity-90">인공신경망이 어떻게 발전해왔는지 개념을 학습하고 직접 선을 그어 체험해봅시다.</p>
+
+<!-- 히어로 -->
+<header class="hero-gradient text-white py-32 px-6 relative overflow-hidden" id="intro">
+    <div class="absolute top-0 left-0 w-full h-full opacity-10 pointer-events-none">
+        <svg class="absolute top-10 left-10 w-32 h-32" fill="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>
+        <svg class="absolute bottom-10 right-10 w-48 h-48" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L2 22h20L12 2z"/></svg>
+    </div>
+    <div class="max-w-6xl mx-auto text-center relative z-10">
+        <span class="inline-block px-4 py-1.5 bg-white/20 rounded-full font-bold mb-6 backdrop-blur-sm border border-white/30 text-base">Chapter 02 · 인공신경망과 딥러닝</span>
+        <h1 class="text-4xl md:text-6xl font-black mb-6 leading-tight">인공신경망의 시작: 퍼셉트론</h1>
+        <p class="text-lg md:text-xl opacity-90 font-medium max-w-2xl mx-auto leading-relaxed">
+            뇌의 신경세포(뉴런)를 수학적으로 모방한 가장 기초적인 인공지능 모델,<br>
+            <strong>'퍼셉트론'</strong>의 구조와 작동 원리를 배워봅시다!
+        </p>
     </div>
 </header>
 
-<main class="max-w-6xl mx-auto px-6 py-12 space-y-20">
+<!-- 학습 목표 -->
+<div class="bg-white border-b border-slate-200 px-6 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fa-solid fa-bullseye text-indigo-600"></i>
+            </div>
+            <div>
+                <p class="font-bold text-slate-700 mb-3 text-base">학습 목표</p>
+                <ol class="space-y-1.5 text-slate-600 text-base">
+                    <li>① 퍼셉트론의 개념과 구조를 설명할 수 있다.</li>
+                    <li>② 가중치, 편향, 활성화 함수의 역할을 이해한다.</li>
+                    <li>③ 퍼셉트론의 작동 원리를 수식과 예제로 설명할 수 있다.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
 
-    <section class="bg-white rounded-3xl shadow-lg p-8 lg:p-12 border border-slate-200">
+<!-- 네비게이션 -->
+<nav class="sticky-nav px-6 py-4">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-indigo-600 rounded-xl flex items-center justify-center text-white shadow-md"><i class="fa-solid fa-brain text-lg"></i></div>
+            <span class="font-black text-xl tracking-tight text-slate-800">퍼셉트론</span>
+        </div>
+        <div class="hidden md:flex space-x-5 text-base font-bold text-slate-500">
+            <a class="hover:text-indigo-600 transition" href="#concept">개념</a>
+            <a class="hover:text-indigo-600 transition" href="#structure">구조</a>
+            <a class="hover:text-indigo-600 transition" href="#example">작동 원리</a>
+            <a class="hover:text-indigo-600 transition" href="#simulator">시뮬레이터</a>
+            <a class="hover:text-indigo-600 transition" href="#quiz">확인질문</a>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-6xl mx-auto px-6 py-20 space-y-24">
+
+<!-- ===== 1. 퍼셉트론 개념 ===== -->
+<section class="scroll-mt-24 space-y-12" id="concept">
+    <div class="text-center space-y-4">
+        <h2 class="text-3xl font-black text-slate-900">퍼셉트론(Perceptron)이란?</h2>
+        <div class="w-20 h-1.5 bg-indigo-500 mx-auto rounded-full"></div>
+    </div>
+    <div class="section-card space-y-6 text-lg text-slate-700 leading-relaxed">
+        <p>
+            <strong>퍼셉트론(Perceptron)</strong>이란 인간의 뉴런을 본뜬 여러 개의 구조적 모델을 말합니다.
+            1957년에 프랑크 로젠블랫이 고안한 인공신경망을 이루는 기본 단위로, 인간의 뉴런을 수학적으로 구현한 모델입니다.
+        </p>
+        <p>
+            <strong>인공신경망(ANN, Artificial Neural Network)</strong>은 인간의 두뇌 신경 세포인 뉴런들이 서로 연결된 신경망을 모방하여 수학적으로 모델링한 것입니다.
+            그러므로 인공신경망을 이해하기 위해서는 먼저 인간의 신경망에 대한 이해가 필요합니다.
+        </p>
+
+        <!-- 뉴런 vs 퍼셉트론 비교 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+            <div class="bg-blue-50 p-6 rounded-2xl border border-blue-200">
+                <h4 class="font-black text-blue-800 mb-4 flex items-center gap-2"><span class="text-2xl">🧠</span> 생물학적 뉴런</h4>
+                <ul class="space-y-3 text-blue-800">
+                    <li class="flex items-start"><strong class="text-rose-500 min-w-[70px]">수상돌기:</strong> <span>다른 뉴런들로부터 신호를 받아들임</span></li>
+                    <li class="flex items-start"><strong class="text-amber-500 min-w-[70px]">시냅스:</strong> <span>신호의 연결 강도(중요도)를 결정함</span></li>
+                    <li class="flex items-start"><strong class="text-indigo-500 min-w-[70px]">세포체:</strong> <span>들어온 신호들을 모아 판단함</span></li>
+                    <li class="flex items-start"><strong class="text-emerald-500 min-w-[70px]">축삭돌기:</strong> <span>다음 뉴런으로 신호를 전달함</span></li>
+                </ul>
+            </div>
+            <div class="bg-green-50 p-6 rounded-2xl border border-green-200">
+                <h4 class="font-black text-green-800 mb-4 flex items-center gap-2"><span class="text-2xl">💻</span> 인공 퍼셉트론</h4>
+                <ul class="space-y-3 text-green-800">
+                    <li class="flex items-start"><strong class="text-rose-500 min-w-[70px]">입력값:</strong> <span>외부 데이터나 이전 층의 값을 받아들임</span></li>
+                    <li class="flex items-start"><strong class="text-amber-500 min-w-[70px]">가중치:</strong> <span>각 데이터의 중요도를 곱함</span></li>
+                    <li class="flex items-start"><strong class="text-indigo-500 min-w-[70px]">활성화:</strong> <span>값을 모두 더하고 출력 여부를 결정함</span></li>
+                    <li class="flex items-start"><strong class="text-emerald-500 min-w-[70px]">출력값:</strong> <span>다음 퍼셉트론으로 결과를 전달함</span></li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 2. 퍼셉트론의 구조 (교과서 그림 II-51 재현) ===== -->
+<section class="scroll-mt-24 space-y-12" id="structure">
+    <div class="text-center space-y-4">
+        <h2 class="text-3xl font-black text-slate-900">퍼셉트론의 작동 원리</h2>
+        <div class="w-20 h-1.5 bg-indigo-500 mx-auto rounded-full"></div>
+    </div>
+
+    <div class="section-card space-y-10">
+        <!-- 그림 II-51: 퍼셉트론의 작동 원리 -->
+        <div class="bg-slate-50 p-6 md:p-10 rounded-3xl border border-slate-300">
+            <h3 class="text-center font-black text-xl text-slate-800 mb-10">
+                <i class="fa-solid fa-circle-nodes text-indigo-500 mr-2"></i> [그림 II-51] 퍼셉트론의 작동 원리
+            </h3>
+
+            <!-- SVG 다이어그램 -->
+            <div class="max-w-3xl mx-auto">
+                <svg viewBox="0 0 720 320" xmlns="http://www.w3.org/2000/svg" class="w-full">
+                    <!-- 입력 노드들 -->
+                    <circle cx="60" cy="50" r="22" fill="#a78bfa" stroke="#7c3aed" stroke-width="2"/>
+                    <text x="60" y="55" font-size="16" font-weight="bold" text-anchor="middle" fill="white">x₁</text>
+
+                    <circle cx="60" cy="130" r="22" fill="#a78bfa" stroke="#7c3aed" stroke-width="2"/>
+                    <text x="60" y="135" font-size="16" font-weight="bold" text-anchor="middle" fill="white">x₂</text>
+
+                    <text x="60" y="190" font-size="24" text-anchor="middle" fill="#94a3b8">⋮</text>
+
+                    <circle cx="60" cy="240" r="22" fill="#a78bfa" stroke="#7c3aed" stroke-width="2"/>
+                    <text x="60" y="245" font-size="16" font-weight="bold" text-anchor="middle" fill="white">xₙ</text>
+
+                    <!-- 레이블: 입력 -->
+                    <text x="60" y="15" font-size="13" font-weight="bold" text-anchor="middle" fill="#64748b">입력</text>
+
+                    <!-- 가중치 연결선 + 라벨 -->
+                    <line x1="82" y1="50" x2="280" y2="130" stroke="#f97316" stroke-width="2"/>
+                    <text x="165" y="78" font-size="13" font-weight="bold" fill="#ea580c">w₁</text>
+
+                    <line x1="82" y1="130" x2="280" y2="140" stroke="#f97316" stroke-width="2"/>
+                    <text x="175" y="128" font-size="13" font-weight="bold" fill="#ea580c">w₂</text>
+
+                    <line x1="82" y1="240" x2="280" y2="160" stroke="#f97316" stroke-width="2"/>
+                    <text x="175" y="215" font-size="13" font-weight="bold" fill="#ea580c">wₙ</text>
+
+                    <!-- 편향 b -->
+                    <text x="310" y="70" font-size="15" font-weight="bold" fill="#0ea5e9">b</text>
+                    <line x1="310" y1="78" x2="310" y2="110" stroke="#0ea5e9" stroke-width="2" stroke-dasharray="4,3"/>
+
+                    <!-- 합산 노드 (Σ) -->
+                    <circle cx="310" cy="145" r="42" fill="#fef3c7" stroke="#f59e0b" stroke-width="3"/>
+                    <text x="310" y="155" font-size="30" font-weight="bold" text-anchor="middle" fill="#92400e">Σ</text>
+
+                    <!-- 활성화 함수 박스 -->
+                    <rect x="440" y="110" width="90" height="70" fill="#e0e7ff" stroke="#6366f1" stroke-width="3" rx="12"/>
+                    <!-- 계단 함수 아이콘 -->
+                    <polyline points="460,165 460,145 480,145 480,130 500,130 500,125 510,125" fill="none" stroke="#4f46e5" stroke-width="3" stroke-linecap="round"/>
+                    <text x="485" y="108" font-size="11" font-weight="bold" text-anchor="middle" fill="#4338ca">활성화 함수</text>
+
+                    <!-- 연결선: Σ → 활성화 -->
+                    <line x1="352" y1="145" x2="440" y2="145" stroke="#94a3b8" stroke-width="3"/>
+                    <polygon points="437,139 447,145 437,151" fill="#94a3b8"/>
+
+                    <!-- 출력 노드 -->
+                    <circle cx="630" cy="145" r="28" fill="#10b981" stroke="#059669" stroke-width="3"/>
+                    <text x="630" y="152" font-size="16" font-weight="bold" text-anchor="middle" fill="white">출력</text>
+
+                    <!-- 연결선: 활성화 → 출력 -->
+                    <line x1="530" y1="145" x2="602" y2="145" stroke="#94a3b8" stroke-width="3"/>
+                    <polygon points="599,139 609,145 599,151" fill="#94a3b8"/>
+
+                    <!-- 하단 수식 -->
+                    <rect x="40" y="280" width="640" height="35" fill="#fef3c7" stroke="#fbbf24" stroke-width="2" rx="8"/>
+                    <text x="360" y="303" font-size="15" font-weight="bold" text-anchor="middle" fill="#78350f">
+                        가중치 = w₁×x₁ + w₂×x₂ + ··· wₙ×xₙ + b ➜ 활성화 함수 ➜ 출력
+                    </text>
+
+                    <!-- 레이블: 노드 -->
+                    <text x="310" y="205" font-size="12" font-weight="bold" text-anchor="middle" fill="#92400e">노드</text>
+                </svg>
+            </div>
+        </div>
+
+        <!-- 그림 II-52: 퍼셉트론 작동 원리의 예 -->
+        <div class="bg-indigo-50 p-6 md:p-10 rounded-3xl border border-indigo-300">
+            <h3 class="text-center font-black text-xl text-indigo-900 mb-10">
+                <i class="fa-solid fa-calculator text-indigo-500 mr-2"></i> [그림 II-52] 퍼셉트론 작동 원리의 예
+            </h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                <!-- 좌측: 진실표 + 수식 -->
+                <div class="space-y-6">
+                    <!-- 입력 테이블 -->
+                    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                        <table class="w-full text-center border-collapse">
+                            <thead>
+                                <tr class="bg-gradient-to-r from-indigo-100 to-purple-100">
+                                    <th class="border border-slate-300 px-4 py-2 font-bold text-indigo-900">구분</th>
+                                    <th class="border border-slate-300 px-4 py-2 font-bold text-indigo-900">값</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-slate-700 font-medium">
+                                <tr><td class="border border-slate-200 px-4 py-2 text-left font-bold">입력값 1</td><td class="border border-slate-200 px-4 py-2">4</td></tr>
+                                <tr><td class="border border-slate-200 px-4 py-2 text-left font-bold">입력값 2</td><td class="border border-slate-200 px-4 py-2">3</td></tr>
+                                <tr><td class="border border-slate-200 px-4 py-2 text-left font-bold">가중치 1</td><td class="border border-slate-200 px-4 py-2">2</td></tr>
+                                <tr><td class="border border-slate-200 px-4 py-2 text-left font-bold">가중치 2</td><td class="border border-slate-200 px-4 py-2">3</td></tr>
+                                <tr><td class="border border-slate-200 px-4 py-2 text-left font-bold">편향값</td><td class="border border-slate-200 px-4 py-2">-15</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- 계산 과정 -->
+                    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm space-y-3">
+                        <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-300">
+                            <p class="font-mono text-lg text-slate-800">
+                                <span class="text-indigo-600 font-black">p(x, y)</span> =
+                                <span class="text-rose-500 font-bold">2</span>x +
+                                <span class="text-rose-500 font-bold">3</span>y
+                                <span class="text-blue-500 font-bold">− 15</span>
+                            </p>
+                            <div class="mt-1 text-xs text-slate-500 flex gap-6">
+                                <span>↑ 입력값</span>
+                                <span class="text-rose-500">↑ 가중치</span>
+                                <span class="text-blue-500">↑ 편향값</span>
+                            </div>
+                        </div>
+                        <div class="bg-slate-50 p-4 rounded-lg border border-slate-200 font-mono text-slate-700 space-y-1">
+                            <p>p(4, 3) = 2×4 + 3×3 − 15</p>
+                            <p class="pl-16">= 8 + 9 − 15</p>
+                            <p class="pl-16 font-black text-indigo-600">= 2</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 우측: 활성화 함수 판정 -->
+                <div class="space-y-6">
+                    <div class="bg-white rounded-xl p-6 border border-slate-200 shadow-sm">
+                        <h4 class="font-black text-indigo-900 mb-4 text-lg text-center">활성화 함수</h4>
+                        <div class="bg-emerald-50 p-5 rounded-lg border border-emerald-300 text-center mb-4">
+                            <p class="font-mono text-xl text-emerald-800 font-bold">p(4, 3) = 2 &gt; 0</p>
+                        </div>
+                        <div class="flex items-center justify-center gap-4">
+                            <div class="bg-emerald-500 text-white px-8 py-4 rounded-xl text-center shadow-lg">
+                                <p class="text-3xl font-black">1 (True)</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-white rounded-xl p-5 border border-slate-200 shadow-sm">
+                        <h4 class="font-bold text-slate-800 mb-3">활성화 함수 판정 규칙</h4>
+                        <div class="space-y-2 font-mono">
+                            <div class="flex gap-3 items-center bg-emerald-50 p-3 rounded-lg border border-emerald-200">
+                                <span class="text-emerald-600 font-bold">p(x,y) &gt; 0</span>
+                                <span class="text-slate-500">➜</span>
+                                <span class="text-emerald-700 font-black">True (1)</span>
+                            </div>
+                            <div class="flex gap-3 items-center bg-rose-50 p-3 rounded-lg border border-rose-200">
+                                <span class="text-rose-600 font-bold">p(x,y) &lt;= 0</span>
+                                <span class="text-slate-500">➜</span>
+                                <span class="text-rose-700 font-black">False (0)</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ===== 3. 고양이 판단 시뮬레이터 ===== -->
+<section class="scroll-mt-24 space-y-12" id="simulator">
+    <div class="text-center space-y-4">
+        <h2 class="text-3xl font-black text-slate-900">🐱 고양이 판단 시뮬레이터</h2>
+        <div class="w-20 h-1.5 bg-indigo-500 mx-auto rounded-full"></div>
+        <p class="text-slate-500 mt-2 font-medium text-lg">퍼셉트론이 고양이를 판단하는 과정을 직접 실험해 봅시다!</p>
+    </div>
+
+    <div class="section-card">
+        <!-- 안내 박스 -->
+        <div class="bg-blue-50 p-5 rounded-2xl border border-blue-300 mb-8">
+            <h4 class="font-bold text-blue-800 mb-2"><i class="fa-solid fa-flask mr-2"></i>실험 방법</h4>
+            <ul class="text-blue-900 space-y-1 list-disc list-inside">
+                <li>슬라이더로 <strong>입력값</strong>(특징 점수)을 조절하고, <strong>가중치</strong>와 <strong>편향</strong>을 직접 입력합니다.</li>
+                <li><strong>임계값</strong>을 설정하여 고양이 판정 기준을 직접 정해 보세요.</li>
+                <li>퀵 프리셋으로 다양한 상황을 빠르게 실험할 수 있습니다.</li>
+            </ul>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- ===== 좌측: 입력·가중치·임계값 패널 ===== -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- 입력값 -->
+                <div class="bg-gradient-to-br from-slate-50 to-slate-100 rounded-2xl p-6 border border-slate-200">
+                    <h4 class="font-black text-slate-800 mb-5 text-lg"><i class="fa-solid fa-paw mr-2 text-amber-500"></i>입력값 (특징 점수)</h4>
+                    <div class="space-y-5">
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-sm font-bold text-slate-700">x₁ 귀의 뾰족함</label>
+                                <span id="x1Disp" class="text-lg font-black text-indigo-600">8</span>
+                            </div>
+                            <input type="range" id="x1" min="0" max="10" step="1" value="8" class="w-full accent-indigo-500" oninput="calc()">
+                            <div class="text-[11px] text-slate-400 flex justify-between"><span>0 둔함</span><span>10 뾰족함</span></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-sm font-bold text-slate-700">x₂ 수염의 길이</label>
+                                <span id="x2Disp" class="text-lg font-black text-indigo-600">6</span>
+                            </div>
+                            <input type="range" id="x2" min="0" max="10" step="1" value="6" class="w-full accent-indigo-500" oninput="calc()">
+                            <div class="text-[11px] text-slate-400 flex justify-between"><span>0 짧음</span><span>10 긺</span></div>
+                        </div>
+                        <div>
+                            <div class="flex justify-between mb-1">
+                                <label class="text-sm font-bold text-slate-700">x₃ 눈의 예리함</label>
+                                <span id="x3Disp" class="text-lg font-black text-indigo-600">7</span>
+                            </div>
+                            <input type="range" id="x3" min="0" max="10" step="1" value="7" class="w-full accent-indigo-500" oninput="calc()">
+                            <div class="text-[11px] text-slate-400 flex justify-between"><span>0 둔함</span><span>10 예리함</span></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 가중치·편향·임계값 -->
+                <div class="bg-gradient-to-br from-amber-50 to-orange-50 rounded-2xl p-6 border border-orange-200">
+                    <h4 class="font-black text-orange-800 mb-5 text-lg"><i class="fa-solid fa-sliders mr-2 text-orange-500"></i>가중치·편향·임계값</h4>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-3 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">w₁ (귀)</label>
+                                <input type="number" id="w1" step="0.1" value="0.6" class="w-full px-2 py-2 border border-slate-300 rounded-lg text-center font-bold" oninput="calc()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">w₂ (수염)</label>
+                                <input type="number" id="w2" step="0.1" value="0.3" class="w-full px-2 py-2 border border-slate-300 rounded-lg text-center font-bold" oninput="calc()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">w₃ (눈)</label>
+                                <input type="number" id="w3" step="0.1" value="0.1" class="w-full px-2 py-2 border border-slate-300 rounded-lg text-center font-bold" oninput="calc()">
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-600 mb-1">편향 (b)</label>
+                                <input type="number" id="bias" step="0.1" value="-3" class="w-full px-2 py-2 border border-blue-300 rounded-lg text-center font-bold bg-blue-50" oninput="calc()">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-rose-600 mb-1">임계값 (θ)</label>
+                                <input type="number" id="threshold" step="0.5" value="0" class="w-full px-2 py-2 border border-rose-300 rounded-lg text-center font-bold bg-rose-50" oninput="calc()">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 퀵 프리셋 -->
+                <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
+                    <p class="text-sm font-bold text-slate-700 mb-3"><i class="fa-solid fa-wand-magic-sparkles mr-1 text-purple-500"></i> 퀵 프리셋</p>
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="preset('cat')" class="py-2.5 px-3 bg-blue-100 hover:bg-blue-200 text-blue-800 font-bold rounded-xl transition text-sm">🐱 고양이</button>
+                        <button onclick="preset('dog')" class="py-2.5 px-3 bg-orange-100 hover:bg-orange-200 text-orange-800 font-bold rounded-xl transition text-sm">🐶 강아지</button>
+                        <button onclick="preset('random')" class="py-2.5 px-3 bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold rounded-xl transition text-sm">🎲 무작위</button>
+                        <button onclick="preset('reset')" class="py-2.5 px-3 bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold rounded-xl transition text-sm">↻ 초기화</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ===== 우측: 계산 과정 + 결과 ===== -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- 계산 과정 (교과서 스타일) -->
+                <div class="bg-slate-900 text-white rounded-2xl p-6 md:p-8 shadow-xl">
+                    <h4 class="font-black text-yellow-300 mb-5 text-lg"><i class="fa-solid fa-square-root-variable mr-2"></i>계산 과정</h4>
+
+                    <div class="space-y-4">
+                        <!-- Step 1: 수식 -->
+                        <div class="bg-slate-800 rounded-xl p-4">
+                            <p class="text-emerald-400 font-bold text-sm mb-2">Step 1 — 가중합 수식</p>
+                            <p class="font-mono text-lg">
+                                z = <span class="text-amber-400">w₁</span>·<span class="text-purple-300">x₁</span>
+                                + <span class="text-amber-400">w₂</span>·<span class="text-purple-300">x₂</span>
+                                + <span class="text-amber-400">w₃</span>·<span class="text-purple-300">x₃</span>
+                                + <span class="text-blue-400">b</span>
+                            </p>
+                        </div>
+
+                        <!-- Step 2: 대입 -->
+                        <div class="bg-slate-800 rounded-xl p-4">
+                            <p class="text-emerald-400 font-bold text-sm mb-2">Step 2 — 값 대입</p>
+                            <p id="stepSubst" class="font-mono text-lg text-white"></p>
+                        </div>
+
+                        <!-- Step 3: 곱셈 -->
+                        <div class="bg-slate-800 rounded-xl p-4">
+                            <p class="text-emerald-400 font-bold text-sm mb-2">Step 3 — 곱셈 결과</p>
+                            <p id="stepMul" class="font-mono text-lg text-white"></p>
+                        </div>
+
+                        <!-- Step 4: 합산 결과 -->
+                        <div class="bg-slate-800 rounded-xl p-4">
+                            <p class="text-emerald-400 font-bold text-sm mb-2">Step 4 — 최종 합산 (z)</p>
+                            <p id="stepSum" class="font-mono text-2xl font-black text-yellow-300"></p>
+                        </div>
+
+                        <!-- Step 5: 임계값 비교 -->
+                        <div class="bg-slate-800 rounded-xl p-4">
+                            <p class="text-emerald-400 font-bold text-sm mb-2">Step 5 — 활성화 함수 (임계값 판정)</p>
+                            <p id="stepThreshold" class="font-mono text-lg"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 결과 박스 -->
+                <div id="resultBox" class="rounded-2xl p-8 text-center shadow-xl border-4 transition-all duration-300">
+                    <span id="resultEmoji" class="text-8xl block mb-4"></span>
+                    <p id="resultTitle" class="text-4xl font-black mb-2"></p>
+                    <p id="resultSub" class="text-lg mb-6"></p>
+
+                    <div class="bg-white/60 rounded-xl p-4 inline-block text-left space-y-2 min-w-[260px]">
+                        <div class="flex justify-between text-base">
+                            <span class="font-bold text-slate-700">계산값 (z)</span>
+                            <span id="dispZ" class="font-mono font-black text-indigo-600"></span>
+                        </div>
+                        <div class="flex justify-between text-base">
+                            <span class="font-bold text-slate-700">임계값 (θ)</span>
+                            <span id="dispTheta" class="font-mono font-black text-slate-600"></span>
+                        </div>
+                        <div class="flex justify-between text-base pt-2 border-t border-slate-300">
+                            <span class="font-bold text-slate-700">판정</span>
+                            <span id="dispJudge" class="font-mono font-black"></span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="scroll-mt-24 space-y-4 text-center">
+    <h2 class="text-3xl font-black text-slate-900"><i class="fa-solid fa-project-diagram mr-3 text-blue-500"></i>단층 퍼셉트론에서 다층 퍼셉트론으로</h2>
+    <div class="w-20 h-1.5 bg-blue-500 mx-auto rounded-full"></div>
+    <p class="text-slate-500 mt-2 font-medium text-lg">인공신경망이 어떻게 발전해왔는지 개념을 학습하고 직접 선을 그어 체험해봅시다.</p>
+</section>
+
+<section class="bg-white rounded-3xl shadow-lg p-8 lg:p-12 border border-slate-200">
         <h2 class="text-3xl font-black text-slate-900 mb-6">
             <i class="fa-solid fa-calculator mr-3 text-blue-500"></i>1. 퍼셉트론과 선형 분류
         </h2>
@@ -340,17 +778,43 @@
         </div>
     </section>
 
-    <section class="scroll-mt-24 space-y-12" id="quiz">
-        <div class="text-center">
-            <span class="inline-block bg-teal-100 text-teal-700 px-4 py-1.5 rounded-full font-bold tracking-wider mb-4">CHECK-UP</span>
-            <h2 class="text-3xl font-black">스스로 점검하기</h2>
-            <p class="text-slate-500 mt-2">오늘 배운 퍼셉트론과 공간 왜곡의 개념을 정리해 봅시다!</p>
+<section class="scroll-mt-24 space-y-12" id="quiz">
+    <div class="text-center">
+        <span class="inline-block bg-teal-100 text-teal-700 px-4 py-1.5 rounded-full font-bold tracking-wider mb-4">CHECK-UP</span>
+        <h2 class="text-3xl font-black">스스로 점검하기</h2>
+        <p class="text-slate-500 mt-2">퍼셉트론과 다층 퍼셉트론의 개념을 한 번에 정리해 봅시다!</p>
+    </div>
+    <div class="space-y-8">
+        <!-- Q1 -->
+        <div class="bg-slate-100 rounded-2xl p-6 md:p-8 border border-slate-300">
+            <h3 class="font-bold text-xl mb-6 text-slate-800 leading-relaxed">
+                <span class="text-indigo-600 mr-2 bg-indigo-100 px-3 py-1 rounded-lg">Q1</span>
+                퍼셉트론에서 각 입력값에 곱해져 그 입력이 얼마나 중요한지를 나타내는 값을 무엇이라 하는가?
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button class="quiz-btn" onclick="checkAnswer(this,false,'편향은 가중합에 더해지는 기준점 조절 값입니다.')">1. 편향(Bias)</button>
+                <button class="quiz-btn" onclick="checkAnswer(this,true,'정답! 가중치는 각 입력값의 중요도를 결정합니다.')">2. 가중치(Weight)</button>
+                <button class="quiz-btn" onclick="checkAnswer(this,false,'활성화 함수는 출력 여부를 결정하는 함수입니다.')">3. 활성화 함수</button>
+                <button class="quiz-btn" onclick="checkAnswer(this,false,'임계값은 출력을 결정하는 기준점입니다.')">4. 임계값(Threshold)</button>
+            </div>
         </div>
-        
-        <div class="space-y-8">
+        <!-- Q2 -->
+        <div class="bg-slate-100 rounded-2xl p-6 md:p-8 border border-slate-300">
+            <h3 class="font-bold text-xl mb-6 text-slate-800 leading-relaxed">
+                <span class="text-indigo-600 mr-2 bg-indigo-100 px-3 py-1 rounded-lg">Q2</span>
+                p(x,y) = 2x + 3y − 15 일 때, p(4, 3)의 결과와 활성화 함수 출력은?
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button class="quiz-btn" onclick="checkAnswer(this,false,'2×4+3×3−15 = 8+9−15 = 2 이고, 2>0 이므로 True입니다.')">1. z=−2, False(0)</button>
+                <button class="quiz-btn" onclick="checkAnswer(this,true,'정답! z=2×4+3×3−15=2 이고, 2>0 이므로 1(True)입니다.')">2. z=2, True(1)</button>
+                <button class="quiz-btn" onclick="checkAnswer(this,false,'계산을 다시 해보세요. 2×4=8, 3×3=9, 8+9−15=2 입니다.')">3. z=0, False(0)</button>
+                <button class="quiz-btn" onclick="checkAnswer(this,false,'z=17이 되려면 편향이 다른 값이어야 합니다.')">4. z=17, True(1)</button>
+            </div>
+        </div>
+    
             <div class="bg-slate-100 rounded-2xl p-6 md:p-8 border border-slate-300">
                 <h3 class="font-bold text-xl mb-6 text-slate-800 leading-relaxed">
-                    <span class="text-indigo-600 mr-2 bg-indigo-100 px-3 py-1 rounded-lg">Q1</span>
+                    <span class="text-indigo-600 mr-2 bg-indigo-100 px-3 py-1 rounded-lg">Q3</span>
                     단층 퍼셉트론(직선 하나)으로는 점들을 완벽하게 분리할 수 <strong class="text-rose-600 underline">없는</strong> 논리 게이트는 무엇인가요?
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -363,7 +827,7 @@
             
             <div class="bg-slate-100 rounded-2xl p-6 md:p-8 border border-slate-300">
                 <h3 class="font-bold text-xl mb-6 text-slate-800 leading-relaxed">
-                    <span class="text-indigo-600 mr-2 bg-indigo-100 px-3 py-1 rounded-lg">Q2</span>
+                    <span class="text-indigo-600 mr-2 bg-indigo-100 px-3 py-1 rounded-lg">Q4</span>
                     인공신경망이 위 문제(XOR 한계)를 극복하기 위해 입력층과 출력층 사이에 새롭게 추가한 구조는 무엇인가요?
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -376,7 +840,7 @@
             
             <div class="bg-slate-100 rounded-2xl p-6 md:p-8 border border-slate-300">
                 <h3 class="font-bold text-xl mb-6 text-slate-800 leading-relaxed">
-                    <span class="text-indigo-600 mr-2 bg-indigo-100 px-3 py-1 rounded-lg">Q3</span>
+                    <span class="text-indigo-600 mr-2 bg-indigo-100 px-3 py-1 rounded-lg">Q5</span>
                     다층 퍼셉트론이 XOR 문제를 해결하는 기하학적 원리(공간 왜곡)로 가장 알맞은 설명은 무엇인가요?
                 </h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -387,14 +851,166 @@
                 </div>
             </div>
         </div>
-    </section>
+</section>
+
+<div class="flex justify-center mt-8">
+    <a href="ann_dnn.html" class="text-center bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 text-white font-bold px-8 py-4 rounded-xl transition-all shadow-lg flex items-center justify-center gap-2">
+        다음 단계: 인공신경망과 심층신경망 <i class="fa-solid fa-arrow-right"></i>
+    </a>
+</div>
 
 </main>
 
 <footer class="bg-slate-900 py-12 px-6 text-center mt-20">
     <p class="text-white font-black text-2xl mb-2">인공지능 기초</p>
-    <p class="text-slate-400">능동고등학교 수업자료 · 퍼셉트론과 공간 왜곡</p>
+    <p class="text-slate-400">인공신경망의 시작 · 퍼셉트론</p>
 </footer>
+
+<script>
+/* ========== 고양이 판단 시뮬레이터 ========== */
+
+function v(id){ return parseFloat(document.getElementById(id).value); }
+
+function calc(){
+    const x1=v('x1'), x2=v('x2'), x3=v('x3');
+    const w1=v('w1'), w2=v('w2'), w3=v('w3');
+    const b=v('bias'), th=v('threshold');
+
+    // 슬라이더 표시 갱신
+    document.getElementById('x1Disp').textContent = x1;
+    document.getElementById('x2Disp').textContent = x2;
+    document.getElementById('x3Disp').textContent = x3;
+
+    // 개별 곱
+    const m1=w1*x1, m2=w2*x2, m3=w3*x3;
+    const z = m1 + m2 + m3 + b;
+    const isCat = z >= th;
+
+    // Step 2 – 대입
+    document.getElementById('stepSubst').innerHTML =
+        `z = <span class="text-amber-400">${w1}</span>×<span class="text-purple-300">${x1}</span>`+
+        ` + <span class="text-amber-400">${w2}</span>×<span class="text-purple-300">${x2}</span>`+
+        ` + <span class="text-amber-400">${w3}</span>×<span class="text-purple-300">${x3}</span>`+
+        ` + <span class="text-blue-400">(${b})</span>`;
+
+    // Step 3 – 곱셈
+    document.getElementById('stepMul').innerHTML =
+        `= <span class="text-amber-300">${m1.toFixed(1)}</span>`+
+        ` + <span class="text-amber-300">${m2.toFixed(1)}</span>`+
+        ` + <span class="text-amber-300">${m3.toFixed(1)}</span>`+
+        ` + <span class="text-blue-400">(${b})</span>`;
+
+    // Step 4 – 합산
+    document.getElementById('stepSum').textContent = `z = ${z.toFixed(2)}`;
+
+    // Step 5 – 임계값 비교
+    const cmp = isCat ? '≥' : '<';
+    const clr = isCat ? 'text-emerald-400' : 'text-rose-400';
+    const lbl = isCat ? '→ 1 (True) — 고양이!' : '→ 0 (False) — 고양이 아님';
+    document.getElementById('stepThreshold').innerHTML =
+        `z = ${z.toFixed(2)} <span class="${clr} font-bold">${cmp}</span> θ = ${th} `+
+        `<span class="${clr} font-black ml-3">${lbl}</span>`;
+
+    // 하단 수치 표시
+    document.getElementById('dispZ').textContent = z.toFixed(2);
+    document.getElementById('dispTheta').textContent = th;
+
+    // 결과 박스
+    const box = document.getElementById('resultBox');
+    const emoji = document.getElementById('resultEmoji');
+    const title = document.getElementById('resultTitle');
+    const sub = document.getElementById('resultSub');
+    const judge = document.getElementById('dispJudge');
+
+    if(isCat){
+        box.className='rounded-2xl p-8 text-center shadow-xl border-4 transition-all duration-300 border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-100';
+        emoji.textContent='🐱';
+        title.textContent='고양이입니다!';
+        title.className='text-4xl font-black mb-2 text-emerald-700';
+        sub.textContent='퍼셉트론이 이 동물을 고양이로 판단했습니다.';
+        sub.className='text-lg mb-6 text-emerald-600';
+        judge.innerHTML='<span class="text-emerald-600">✓ 1 (True)</span>';
+    }else{
+        box.className='rounded-2xl p-8 text-center shadow-xl border-4 transition-all duration-300 border-rose-400 bg-gradient-to-br from-rose-50 to-orange-100';
+        emoji.textContent='❌';
+        title.textContent='고양이가 아닙니다!';
+        title.className='text-4xl font-black mb-2 text-rose-700';
+        sub.textContent='퍼셉트론이 이 동물을 고양이가 아닌 것으로 판단했습니다.';
+        sub.className='text-lg mb-6 text-rose-600';
+        judge.innerHTML='<span class="text-rose-600">✗ 0 (False)</span>';
+    }
+}
+
+function preset(type){
+    const s=(id,val)=>{ document.getElementById(id).value=val; };
+    switch(type){
+        case 'cat':
+            s('x1',9); s('x2',8); s('x3',9);
+            s('w1',0.6); s('w2',0.3); s('w3',0.1);
+            s('bias',-3); s('threshold',0);
+            break;
+        case 'dog':
+            s('x1',3); s('x2',2); s('x3',4);
+            s('w1',0.6); s('w2',0.3); s('w3',0.1);
+            s('bias',-3); s('threshold',0);
+            break;
+        case 'random':
+            s('x1',Math.floor(Math.random()*11));
+            s('x2',Math.floor(Math.random()*11));
+            s('x3',Math.floor(Math.random()*11));
+            s('w1',(Math.random()*2).toFixed(1));
+            s('w2',(Math.random()*2).toFixed(1));
+            s('w3',(Math.random()*1).toFixed(1));
+            s('bias',((Math.random()-0.5)*10).toFixed(1));
+            s('threshold',(Math.random()*4-1).toFixed(1));
+            break;
+        case 'reset':
+            s('x1',8); s('x2',6); s('x3',7);
+            s('w1',0.6); s('w2',0.3); s('w3',0.1);
+            s('bias',-3); s('threshold',0);
+            break;
+    }
+    calc();
+}
+
+/* ========== 퀴즈 ========== */
+function checkAnswer(btn, isCorrect, message){
+    const container=btn.parentElement;
+    const buttons=container.querySelectorAll('.quiz-btn');
+    buttons.forEach(b=>{
+        if(!b.dataset.label) b.dataset.label=b.textContent;
+        b.classList.remove('correct','wrong');
+        b.classList.add('disabled');
+    });
+    if(isCorrect){
+        btn.classList.add('correct');
+        btn.innerHTML=`<i class="fa-solid fa-circle-check mr-2"></i>${btn.dataset.label}`;
+    }else{
+        btn.classList.add('wrong');
+        btn.innerHTML=`<i class="fa-solid fa-circle-xmark mr-2"></i>${btn.dataset.label}`;
+    }
+    showToast(message, isCorrect?'success':'error');
+    setTimeout(()=>{
+        buttons.forEach(b=>{
+            b.classList.remove('correct','wrong','disabled');
+            b.innerHTML=b.dataset.label;
+        });
+    },3000);
+}
+
+function showToast(message,type){
+    document.querySelectorAll('.toast-msg').forEach(t=>t.remove());
+    const toast=document.createElement('div');
+    const icon=type==='success'?'<i class="fa-solid fa-circle-check mr-2 text-xl"></i>':'<i class="fa-solid fa-circle-xmark mr-2 text-xl"></i>';
+    toast.className=`toast-msg fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl text-white font-bold shadow-2xl transition-all transform translate-y-20 opacity-0 z-[1000] flex items-center ${type==='success'?'bg-indigo-600':'bg-rose-600'}`;
+    toast.innerHTML=`${icon}<span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(()=>{toast.classList.remove('translate-y-20','opacity-0');toast.classList.add('translate-y-0','opacity-100');},10);
+    setTimeout(()=>{toast.classList.remove('translate-y-0','opacity-100');toast.classList.add('translate-y-20','opacity-0');setTimeout(()=>toast.remove(),300);},4000);
+}
+
+window.addEventListener('load', calc);
+</script>
 
 <script>
 const rulesData = {
@@ -926,5 +1542,6 @@ function showToast(message, type){
     }, 4000);
 }
 </script>
+
 </body>
 </html>
