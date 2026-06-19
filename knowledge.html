@@ -1,0 +1,1252 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta content="width=device-width, initial-scale=1.0" name="viewport">
+    <title>지식의 표현과 추론</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']]
+            },
+            chtml: {scale: 1, linebreaks: {automatic: true}},
+            options: {skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']}
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+    <style>
+        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css");
+        @import url('https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&display=swap');
+
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, "Apple SD Gothic Neo", "Noto Sans KR", sans-serif;
+            background-color: #f7f6fb;
+        }
+        .serif { font-family: "Gowun Batang", "Pretendard Variable", serif; }
+
+        .sticky-nav {
+            position: sticky; top: 0; z-index: 100;
+            backdrop-filter: blur(12px);
+            background-color: rgba(255, 255, 255, 0.9);
+            border-bottom: 1px solid rgba(226, 232, 240, 0.8);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+        }
+        .section-card {
+            background: white; border-radius: 1.5rem; padding: 2rem;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06); border: 1px solid #f1f5f9;
+        }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* simulator card chips */
+        .chip {
+            cursor: pointer; user-select: none; transition: all .15s ease;
+        }
+        .chip:active { transform: scale(.97); }
+        .pill-cond { background:#fff; border:2px solid #fca5a5; color:#9f1239; }
+        .pill-cond.sel { background:#fee2e2; border-color:#ef4444; box-shadow:0 2px 8px rgba(239,68,68,.25); }
+        .pill-act  { background:#fff; border:2px solid #c4b5fd; color:#5b21b6; }
+        .pill-act.sel  { background:#ede9fe; border-color:#7c3aed; box-shadow:0 2px 8px rgba(124,58,237,.25); }
+        .pill-fact { background:#fff; border:2px solid #cbd5e1; color:#334155; }
+        .pill-fact.on { background:#dcfce7; border-color:#22c55e; color:#166534; box-shadow:0 2px 8px rgba(34,197,94,.2); }
+        .fade-in { animation: fadeIn .4s ease; }
+        @keyframes fadeIn { from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);} }
+
+        /* sub-section pill label */
+        .sub-label {
+            display:inline-flex; align-items:center; gap:.5rem;
+            background:#ede9fe; color:#5b21b6;
+            font-weight:800; font-size:.82rem; letter-spacing:.06em;
+            padding:.3rem .9rem; border-radius:9999px; margin-bottom:.6rem;
+        }
+        /* wumpus link button */
+        .wumpus-btn {
+            background: linear-gradient(135deg,#e11d48 0%,#ec4899 45%,#a855f7 100%);
+            color:#fff; font-weight:900; border-radius:1rem;
+            padding:.85rem 2rem; display:inline-flex; align-items:center; gap:.6rem;
+            font-size:1rem; box-shadow:0 4px 16px rgba(168,85,247,.35);
+            transition:all .25s; text-decoration:none;
+        }
+        .wumpus-btn:hover { transform:translateY(-2px); box-shadow:0 8px 28px rgba(168,85,247,.45); }
+    </style>
+</head>
+<body class="text-slate-900">
+
+<!-- Hero -->
+<header class="text-white py-28 px-6 relative overflow-hidden"
+        style="background: linear-gradient(135deg, #5b21b6 0%, #7c3aed 55%, #9333ea 100%);">
+    <div class="max-w-6xl mx-auto relative z-10 text-center">
+        <span class="inline-block py-1 px-4 rounded-full bg-white/20 font-bold tracking-wider mb-6 border border-white/30 text-base backdrop-blur-sm">Chapter 02 · 탐색과 추론</span>
+        <h1 class="serif text-4xl md:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+            지식의 표현과 추론
+        </h1>
+        <p class="text-lg md:text-xl text-violet-100 max-w-2xl mx-auto font-medium leading-relaxed">
+            인공지능이 인간의 지식을 컴퓨터 안에 표현하는 방법(규칙·논리·의미망)과,<br class="hidden md:block"/>
+            이미 아는 사실로부터 새로운 사실을 이끌어내는 <b>추론</b> 과정을 알아봅니다.
+        </p>
+    </div>
+    <div class="absolute top-10 left-10 opacity-10 pointer-events-none"><i class="fa-solid fa-brain text-[200px] text-white"></i></div>
+    <div class="absolute bottom-6 right-10 opacity-10 pointer-events-none"><i class="fa-solid fa-diagram-project text-[150px] text-white"></i></div>
+</header>
+
+<!-- 학습 목표 -->
+<div class="bg-white border-b border-slate-200 px-6 py-8">
+    <div class="max-w-4xl mx-auto">
+        <div class="flex items-start gap-4">
+            <div class="w-10 h-10 bg-violet-100 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5">
+                <i class="fa-solid fa-bullseye text-violet-600"></i>
+            </div>
+            <div>
+                <p class="font-bold text-slate-700 mb-3 text-base">학습 목표</p>
+                <ol class="space-y-1.5 text-slate-600 text-base">
+                    <li>① 인공지능이 지식을 표현하는 방법(규칙·논리·의미망·프레임)을 설명할 수 있다.</li>
+                    <li>② IF-THEN 규칙과 AND·OR 연산을 이용해 지식을 규칙으로 표현할 수 있다.</li>
+                    <li>③ 명제 논리와 술어 논리의 차이를 이해하고 기호로 표현할 수 있다.</li>
+                    <li>④ 이미 알려진 사실과 규칙을 결합하여 새로운 사실을 추론할 수 있다.</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Sticky Nav -->
+<nav class="sticky-nav px-6 py-4">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-violet-600 rounded-xl flex items-center justify-center text-white shadow-md">
+                <i class="fa-solid fa-brain text-lg"></i>
+            </div>
+            <span class="font-black text-lg tracking-tight text-slate-800 hidden sm:block">지식의 표현과 추론</span>
+        </div>
+        <div class="hidden md:flex space-x-4 text-[15px] font-bold text-slate-500">
+            <a class="hover:text-violet-600 transition" href="#rep">지식의 표현</a>
+            <a class="hover:text-violet-600 transition" href="#rule">① IF-THEN</a>
+            <a class="hover:text-violet-600 transition" href="#sim">시뮬레이터</a>
+            <a class="hover:text-violet-600 transition" href="#logic">② 논리</a>
+            <a class="hover:text-violet-600 transition" href="#net">③ 의미망·프레임</a>
+            <a class="hover:text-violet-600 transition" href="#reason">추론</a>
+            <a class="hover:text-violet-600 transition" href="#quiz">퀴즈</a>
+            <a class="hover:text-pink-500 transition text-pink-400 font-black" href="wumpus-world.html" target="_blank"><i class="fa-solid fa-dragon mr-1"></i>Wumpus</a>
+        </div>
+    </div>
+</nav>
+
+<main class="max-w-6xl mx-auto px-6 py-16 space-y-24">
+
+    <!-- 1. 지식의 표현 개요 -->
+    <section class="scroll-mt-24 space-y-8" id="rep">
+        <div class="text-center space-y-4">
+            <h2 class="serif text-3xl font-bold text-slate-900">1. 지식의 표현</h2>
+            <div class="w-20 h-1.5 bg-violet-500 mx-auto rounded-full"></div>
+            <p class="text-slate-500 text-base max-w-2xl mx-auto">인간은 지식을 주로 문자와 언어로 표현하지만, 인공지능은 지식을 <b>명제·술어·규칙 같은 기호</b>로 바꾸어 컴퓨터가 처리할 수 있는 형태로 나타냅니다.</p>
+        </div>
+
+        <!-- 교과서 개념도 (그림 II-61) -->
+        <div class="section-card overflow-x-auto">
+            <p class="text-xs text-slate-400 text-center mb-4">▲ 그림 II-61  컴퓨터의 지식 표현 방법</p>
+            <svg viewBox="0 0 780 160" xmlns="http://www.w3.org/2000/svg" class="w-full max-w-3xl mx-auto block" style="min-width:600px; font-family:'Pretendard Variable',Pretendard,sans-serif">
+                <line x1="390" y1="48" x2="100" y2="113" stroke="#d1d5db" stroke-width="1.5"/>
+                <line x1="390" y1="48" x2="233" y2="113" stroke="#d1d5db" stroke-width="1.5"/>
+                <line x1="390" y1="48" x2="390" y2="113" stroke="#d1d5db" stroke-width="1.5"/>
+                <line x1="390" y1="48" x2="547" y2="113" stroke="#d1d5db" stroke-width="1.5"/>
+                <line x1="390" y1="48" x2="680" y2="113" stroke="#d1d5db" stroke-width="1.5"/>
+                <rect x="300" y="6" width="180" height="40" rx="20" fill="#7c3aed"/>
+                <text x="390" y="31" text-anchor="middle" fill="white" font-size="15" font-weight="800">지식의 표현</text>
+                <rect x="28" y="108" width="144" height="38" rx="12" fill="white" stroke="#fb7185" stroke-width="2"/>
+                <text x="100" y="124" text-anchor="middle" fill="#9f1239" font-size="12" font-weight="700">규칙 기반</text>
+                <text x="100" y="140" text-anchor="middle" fill="#9f1239" font-size="12" font-weight="700">전문가 시스템</text>
+                <rect x="161" y="108" width="144" height="38" rx="12" fill="white" stroke="#fb923c" stroke-width="2"/>
+                <text x="233" y="131" text-anchor="middle" fill="#9a3412" font-size="13" font-weight="700">의미망</text>
+                <rect x="318" y="108" width="144" height="38" rx="12" fill="white" stroke="#facc15" stroke-width="2"/>
+                <text x="390" y="131" text-anchor="middle" fill="#713f12" font-size="13" font-weight="700">프레임</text>
+                <rect x="475" y="108" width="144" height="38" rx="12" fill="white" stroke="#4ade80" stroke-width="2"/>
+                <text x="547" y="131" text-anchor="middle" fill="#14532d" font-size="13" font-weight="700">명제 논리</text>
+                <rect x="608" y="108" width="144" height="38" rx="12" fill="white" stroke="#86efac" stroke-width="2"/>
+                <text x="680" y="131" text-anchor="middle" fill="#14532d" font-size="13" font-weight="700">술어 논리</text>
+            </svg>
+        </div>
+
+        <!-- ── 1. 규칙 ── -->
+        <div class="section-card border-t-4 border-rose-400 space-y-4">
+            <p class="sub-label"><i class="fa-solid fa-list-check mr-1"></i> 규칙 (Rule)</p>
+            <h3 class="font-bold text-xl text-slate-800">규칙 기반 시스템 (Rule-Based System)</h3>
+            <p class="text-slate-600 text-base leading-relaxed">
+                <b class="text-rose-600">'만약(IF) ~이면 ~이다(THEN)'</b> 형태의 <b>조건적 지식</b>을 표현하는 방법입니다.
+                전문가 지식을 IF-THEN 규칙으로 저장하고 추론 엔진이 사용자 질의에 맞는 규칙을 찾아 문제를 자동으로 해결합니다.
+                특정 분야의 전문가 지식을 활용하는 시스템을 <b>전문가 시스템(Expert System)</b>이라 하며,
+                백혈병 진단·자동 번역·항공기 이착륙 관리 등에 응용됩니다.
+            </p>
+            <div class="bg-rose-50/50 rounded-2xl p-5 border border-rose-100 overflow-x-auto">
+                <div class="flex items-center justify-center gap-3 md:gap-4 min-w-[640px] md:min-w-0">
+                    <div class="text-center"><div class="w-20 h-20 bg-white rounded-2xl border-2 border-rose-200 flex flex-col items-center justify-center shadow-sm"><i class="fa-solid fa-user-doctor text-2xl text-rose-400"></i></div><p class="text-sm font-bold text-slate-700 mt-2">전문가 지식</p></div>
+                    <i class="fa-solid fa-arrow-right-long text-rose-300 text-xl"></i>
+                    <div class="text-center"><div class="px-4 py-3 bg-white rounded-2xl border-2 border-rose-200 shadow-sm"><p class="font-bold text-rose-700 text-sm mb-1">지식 베이스 / 규칙 베이스</p><div class="text-xs font-mono text-slate-600 text-left leading-relaxed">If A, then B<br>If B, then F<br>If C, then K</div></div><p class="text-sm font-bold text-slate-700 mt-2">규칙 저장</p></div>
+                    <i class="fa-solid fa-arrows-left-right text-rose-300 text-xl"></i>
+                    <div class="text-center"><div class="w-24 h-20 bg-white rounded-2xl border-2 border-amber-200 flex flex-col items-center justify-center shadow-sm"><i class="fa-solid fa-microchip text-2xl text-amber-500"></i><span class="text-xs font-bold text-slate-700 mt-1">추론 엔진</span></div><p class="text-sm font-bold text-slate-700 mt-2">비교·추론</p></div>
+                    <i class="fa-solid fa-arrows-left-right text-rose-300 text-xl"></i>
+                    <div class="text-center"><div class="w-24 h-20 bg-white rounded-2xl border-2 border-slate-200 flex flex-col items-center justify-center shadow-sm"><i class="fa-solid fa-window-maximize text-2xl text-slate-400"></i><span class="text-xs font-bold text-slate-700 mt-1">인터페이스</span></div><p class="text-sm font-bold text-slate-700 mt-2">입력·출력</p></div>
+                    <i class="fa-solid fa-arrow-right-long text-rose-300 text-xl"></i>
+                    <div class="text-center"><div class="w-20 h-20 bg-white rounded-2xl border-2 border-emerald-200 flex flex-col items-center justify-center shadow-sm"><i class="fa-solid fa-user text-2xl text-emerald-500"></i></div><p class="text-sm font-bold text-slate-700 mt-2">사용자</p></div>
+                </div>
+            </div>
+            <p class="text-center text-sm text-slate-400">▲ [그림] 규칙 기반 시스템 구조 — 사용자의 질의를 받아 지식 베이스의 규칙과 비교·추론하여 자동으로 답을 출력한다.</p>
+        </div>
+
+        <!-- ── 2. 논리 ── -->
+        <div class="section-card border-t-4 border-amber-400 space-y-4">
+            <p class="sub-label"><i class="fa-solid fa-square-root-variable mr-1"></i> 논리 (Logic)</p>
+            <h3 class="font-bold text-xl text-slate-800">명제 논리 · 술어 논리</h3>
+            <p class="text-slate-600 text-base leading-relaxed">
+                기호를 사용하여 문장(지식)의 <b class="text-amber-700">참과 거짓</b>을 표현하는 방법입니다.
+                인간의 언어를 수학적 기호($\lnot,\land,\lor,\rightarrow$)와 논리식으로 바꾸면 컴퓨터가 모순 없이 참·거짓을 계산할 수 있습니다.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div class="bg-amber-50 rounded-xl p-4 border border-amber-100"><p class="font-bold text-amber-700 mb-1">명제 논리 (Propositional Logic)</p><p class="text-slate-600">참·거짓을 판별할 수 있는 문장(명제)을 기호로 결합하여 표현합니다.</p><p class="font-mono text-slate-700 mt-2">예) $p \rightarrow q$</p></div>
+                <div class="bg-amber-50 rounded-xl p-4 border border-amber-100"><p class="font-bold text-amber-700 mb-1">술어 논리 (Predicate Logic)</p><p class="text-slate-600">객체·속성·관계를 분리하고 한정자($\forall,\exists$)를 사용하여 표현합니다.</p><p class="font-mono text-slate-700 mt-2">예) $\forall x(person(x)\rightarrow mortal(x))$</p></div>
+            </div>
+        </div>
+
+        <!-- ── 3. 의미망·프레임 ── -->
+        <div class="section-card border-t-4 border-violet-400 space-y-4">
+            <p class="sub-label"><i class="fa-solid fa-diagram-project mr-1"></i> 의미망 · 프레임</p>
+            <h3 class="font-bold text-xl text-slate-800">의미망 (Semantic Network) · 프레임 (Frame)</h3>
+            <p class="text-slate-600 text-base leading-relaxed">
+                <b class="text-violet-600">의미망</b>은 개념을 <b>노드(원)</b>로, 개념 사이의 관계를 <b>간선(호)</b>의 그래프 구조로 표현합니다.
+                간선에는 'is-a(부분 집합)', 'has-part(구성 관계)' 등의 관계 유형을 표시합니다.
+                <b class="text-violet-600">프레임</b>은 노드 대신 <b>슬롯(slot)</b>을 사용하고 각 슬롯에 저장된 <b>값(value)</b>의 집합으로 지식을 체계적으로 표현합니다.
+            </p>
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
+                <div class="bg-violet-50 rounded-xl p-4 border border-violet-100"><p class="font-bold text-violet-700 mb-1">장점</p><p class="text-slate-600">의미망: 개념 관계를 직관적으로 표현 / 프레임: 일반적·체계적 표현 가능</p></div>
+                <div class="bg-violet-50 rounded-xl p-4 border border-violet-100"><p class="font-bold text-violet-700 mb-1">단점</p><p class="text-slate-600">의미망: 노드 증가 시 탐색이 느려짐 / 프레임: 작성이 어렵고 복잡</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 1. 지식의 표현 하위 섹션들 -->
+    <section class="scroll-mt-24 space-y-16" id="rep-detail">
+
+        <!-- ① IF-THEN 규칙으로 지식 표현하기 -->
+        <div class="space-y-8" id="rule">
+        <div class="flex items-center gap-4">
+            <span class="text-3xl font-black text-violet-600 leading-none">①</span>
+            <div>
+                <h2 class="serif text-2xl font-bold text-slate-900">IF-THEN 규칙으로 지식 표현하기</h2>
+                <div class="w-16 h-1 bg-violet-400 mt-2 rounded-full"></div>
+            </div>
+        </div>
+            <p class="text-slate-500 text-base max-w-2xl">인공지능에서는 일반적으로 <b>IF-THEN</b> 형식의 규칙으로 지식을 표현합니다.
+                지식을 규칙으로 표현하면 직관적이고 이해하기 쉽습니다.</p>
+
+        <!-- IF / THEN 정의 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="section-card border-l-4 border-rose-400 space-y-3">
+                <div class="flex items-center gap-3">
+                    <span class="bg-rose-500 text-white font-black px-4 py-1.5 rounded-lg text-base">IF</span>
+                    <h3 class="font-bold text-lg text-slate-800">조건부</h3>
+                </div>
+                <p class="text-slate-600 text-base">주어진 정보나 사실에 대응할 <b>조건</b>을 적습니다.
+                    “신호등이 적색이다”처럼 현재 확인된 상황이 들어갑니다.</p>
+            </div>
+            <div class="section-card border-l-4 border-violet-400 space-y-3">
+                <div class="flex items-center gap-3">
+                    <span class="bg-violet-600 text-white font-black px-4 py-1.5 rounded-lg text-base">THEN</span>
+                    <h3 class="font-bold text-lg text-slate-800">결론부</h3>
+                </div>
+                <p class="text-slate-600 text-base">조건부가 만족될 때 수행할 <b>판단이나 행동</b>을 적습니다.
+                    “정지하여 기다린다”처럼 결과가 들어갑니다.</p>
+            </div>
+        </div>
+
+        <!-- 교과서 예시: 횡단보도 -->
+        <div class="section-card space-y-5">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
+                <i class="fa-solid fa-traffic-light text-violet-500"></i> 교과서 예시 · 횡단보도 신호등 규칙
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex flex-col sm:flex-row items-center gap-3">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded">IF</span>
+                        <span class="font-bold text-slate-700">신호등이 <span class="text-rose-600">적색</span>이다</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right text-slate-400 hidden sm:block"></i>
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="bg-violet-600 text-white text-xs font-bold px-2 py-1 rounded">THEN</span>
+                        <span class="font-bold text-slate-700">정지하여 기다린다</span>
+                    </div>
+                </div>
+                <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200 flex flex-col sm:flex-row items-center gap-3">
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded">IF</span>
+                        <span class="font-bold text-slate-700">신호등이 <span class="text-emerald-600">녹색</span>이다</span>
+                    </div>
+                    <i class="fa-solid fa-arrow-right text-slate-400 hidden sm:block"></i>
+                    <div class="flex items-center gap-2 flex-1">
+                        <span class="bg-violet-600 text-white text-xs font-bold px-2 py-1 rounded">THEN</span>
+                        <span class="font-bold text-slate-700">안전 확인 후 출발한다</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-amber-50 border-l-4 border-amber-400 rounded-r-xl p-4 text-slate-700 text-base">
+                <i class="fa-solid fa-lightbulb text-amber-500 mr-1"></i>
+                컴퓨팅 시스템에 위 규칙이 적용되어 있을 때 ‘현재 신호등이 녹색이다’라는 조건을 주면,
+                시스템은 규칙에 따라 ‘<b>출발한다</b>’라고 <b>추론</b>합니다. 이처럼 규칙을 통해 이미 알고 있는 지식으로부터 논리적인 결론을 이끌어냅니다.
+            </div>
+        </div>
+
+        <!-- ── AND·OR 하위 항목 (규칙 확장하기) ── -->
+        <div id="andor" class="scroll-mt-24 space-y-6 pt-4 border-t-2 border-dashed border-violet-100">
+            <div class="space-y-2">
+                <p class="sub-label"><i class="fa-solid fa-code-branch mr-1"></i> AND·OR로 규칙 확장하기</p>
+                <h3 class="text-2xl font-bold text-slate-900">AND · OR 연산</h3>
+                <div class="w-16 h-1 bg-violet-400 rounded-full"></div>
+                <p class="text-slate-500 text-base max-w-2xl">규칙은 두 개 이상의 조건이나 결론을 결합하여 구성할 수 있습니다.
+                    논리 연산 기호 <b>AND(그리고)</b>·<b>OR(또는)</b>를 활용하여 여러 조건과 판단·행동을 포함합니다.</p>
+            </div>
+
+        <!-- AND vs OR 개념 -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div class="section-card border-t-4 border-blue-400 space-y-2">
+                <h3 class="font-bold text-lg text-blue-700"><i class="fa-solid fa-link mr-2"></i>AND (그리고)</h3>
+                <p class="text-slate-600 text-base">연결된 <b>여러 조건을 모두 만족</b>할 때만 참으로 처리하는 연산입니다.</p>
+            </div>
+            <div class="section-card border-t-4 border-emerald-400 space-y-2">
+                <h3 class="font-bold text-lg text-emerald-700"><i class="fa-solid fa-code-branch mr-2"></i>OR (또는)</h3>
+                <p class="text-slate-600 text-base">연결된 <b>여러 조건 중 하나만 참</b>이어도 결과가 참인 연산입니다.</p>
+            </div>
+        </div>
+
+        <!-- 세 가지 패턴 -->
+        <div class="space-y-5">
+            <!-- 패턴1 AND 조건 -->
+            <div class="section-card border-l-4 border-amber-400 space-y-4">
+                <div class="flex flex-wrap items-center gap-2 text-base">
+                    <span class="bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded">IF</span><span class="font-bold">조건 1</span>
+                    <span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">AND</span><span class="font-bold">조건 2</span>
+                    <span class="bg-violet-600 text-white text-xs font-bold px-2 py-1 rounded">THEN</span><span class="font-bold">결론</span>
+                    <span class="text-slate-400 text-sm ml-1">~이고, ~이면, ~한다</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-center">
+                    <div class="bg-amber-50 rounded-xl p-4 border border-amber-200"><span class="block text-xs text-amber-600 font-bold mb-1">조건 1</span>신호등이 녹색이다</div>
+                    <div class="bg-amber-50 rounded-xl p-4 border border-amber-200"><span class="block text-xs text-amber-600 font-bold mb-1">조건 2 (AND)</span>횡단보도를 지나는 사람이 없다</div>
+                    <div class="bg-violet-50 rounded-xl p-4 border border-violet-200"><span class="block text-xs text-violet-600 font-bold mb-1">결론</span>자동차를 앞으로 움직인다</div>
+                </div>
+            </div>
+            <!-- 패턴2 OR 조건 -->
+            <div class="section-card border-l-4 border-emerald-400 space-y-4">
+                <div class="flex flex-wrap items-center gap-2 text-base">
+                    <span class="bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded">IF</span><span class="font-bold">조건 1</span>
+                    <span class="bg-emerald-500 text-white text-xs font-bold px-2 py-1 rounded">OR</span><span class="font-bold">조건 2</span>
+                    <span class="bg-violet-600 text-white text-xs font-bold px-2 py-1 rounded">THEN</span><span class="font-bold">결론</span>
+                    <span class="text-slate-400 text-sm ml-1">~(이)거나, ~이면, ~한다</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-center">
+                    <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-200"><span class="block text-xs text-emerald-600 font-bold mb-1">조건 1</span>전방에 장애물이 있다</div>
+                    <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-200"><span class="block text-xs text-emerald-600 font-bold mb-1">조건 2 (OR)</span>횡단보도를 지나는 사람이 있다</div>
+                    <div class="bg-violet-50 rounded-xl p-4 border border-violet-200"><span class="block text-xs text-violet-600 font-bold mb-1">결론</span>자동차를 멈춘다</div>
+                </div>
+            </div>
+            <!-- 패턴3 결론 AND -->
+            <div class="section-card border-l-4 border-violet-400 space-y-4">
+                <div class="flex flex-wrap items-center gap-2 text-base">
+                    <span class="bg-rose-500 text-white text-xs font-bold px-2 py-1 rounded">IF</span><span class="font-bold">조건 1</span>
+                    <span class="bg-violet-600 text-white text-xs font-bold px-2 py-1 rounded">THEN</span><span class="font-bold">결론 1</span>
+                    <span class="bg-blue-500 text-white text-xs font-bold px-2 py-1 rounded">AND</span><span class="font-bold">결론 2</span>
+                    <span class="text-slate-400 text-sm ml-1">~(이)면, ~하고, ~한다</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-center">
+                    <div class="bg-amber-50 rounded-xl p-4 border border-amber-200"><span class="block text-xs text-amber-600 font-bold mb-1">조건 1</span>비가 내린다</div>
+                    <div class="bg-violet-50 rounded-xl p-4 border border-violet-200"><span class="block text-xs text-violet-600 font-bold mb-1">결론 1</span>와이퍼를 작동한다</div>
+                    <div class="bg-violet-50 rounded-xl p-4 border border-violet-200"><span class="block text-xs text-violet-600 font-bold mb-1">결론 2 (AND)</span>속도를 줄인다</div>
+                </div>
+            </div>
+        </div>
+        <p class="text-center text-sm text-slate-400">▲ 규칙 기반 시스템은 다양한 분야의 지식을 규칙으로 정의한 집합이며, 주어진 상황에 규칙을 적용하여 문제의 답을 찾습니다.</p>
+        </div><!-- /andor subsection -->
+    </section><!-- /rule section -->
+
+    <!-- ❹ 규칙 적용 시뮬레이터 -->
+    <section class="scroll-mt-24 space-y-8" id="sim">
+        <div class="text-center space-y-4">
+            <span class="inline-block bg-violet-100 text-violet-700 px-4 py-1.5 rounded-full font-bold tracking-wider text-base">
+                <i class="fa-solid fa-flask mr-1"></i> INTERACTIVE
+            </span>
+            <h2 class="serif text-3xl font-bold text-slate-900">규칙 기반 시스템 시뮬레이터</h2>
+            <div class="w-20 h-1.5 bg-violet-500 mx-auto rounded-full"></div>
+            <p class="text-slate-600 text-base max-w-2xl mx-auto">
+                자동차의 운행 규칙을 직접 만들어 봅시다. <b>조건 카드</b>와 <b>행동 카드</b>를 연결해
+                <code class="bg-slate-100 px-1 rounded">IF … THEN …</code> 규칙을 만든 뒤, 상황을 입력하고 <b>추론 실행</b>을 누르면
+                시스템이 규칙을 적용해 결과를 출력합니다.
+            </p>
+        </div>
+
+        <div class="section-card space-y-8">
+            <!-- STEP 1 : 조건 선택 -->
+            <div>
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center font-black text-sm">1</span>
+                    <h3 class="font-bold text-lg text-slate-800">조건(IF) 카드 선택</h3>
+                </div>
+                <p class="text-slate-500 text-sm mb-3">규칙의 조건이 될 카드를 클릭하세요. 2개 이상 선택하면 연결 방식(AND/OR)을 고를 수 있습니다.</p>
+                <div class="flex flex-wrap gap-2" id="condCards"></div>
+                <div class="mt-3 flex items-center gap-3" id="connectorBox" style="display:none">
+                    <span class="text-sm font-bold text-slate-600">조건 연결:</span>
+                    <button class="chip px-4 py-1.5 rounded-lg text-sm font-bold border-2 border-blue-400 text-blue-600 bg-white" data-conn="AND" onclick="setConnector('AND')">AND (모두 만족)</button>
+                    <button class="chip px-4 py-1.5 rounded-lg text-sm font-bold border-2 border-emerald-400 text-emerald-600 bg-white" data-conn="OR" onclick="setConnector('OR')">OR (하나만 만족)</button>
+                </div>
+            </div>
+
+            <!-- STEP 2 : 행동 선택 -->
+            <div>
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-7 h-7 bg-violet-600 text-white rounded-full flex items-center justify-center font-black text-sm">2</span>
+                    <h3 class="font-bold text-lg text-slate-800">행동(THEN) 카드 선택</h3>
+                </div>
+                <p class="text-slate-500 text-sm mb-3">조건이 만족될 때 수행할 행동 카드를 클릭하세요. 여러 개 선택하면 AND로 결합됩니다.</p>
+                <div class="flex flex-wrap gap-2" id="actCards"></div>
+            </div>
+
+            <!-- 규칙 미리보기 + 추가 -->
+            <div class="bg-slate-50 rounded-2xl p-5 border border-slate-200">
+                <p class="text-sm font-bold text-slate-500 mb-2">만들고 있는 규칙</p>
+                <p class="text-slate-800 font-medium text-base min-h-[1.5rem]" id="rulePreview">조건과 행동 카드를 선택하세요.</p>
+                <div class="flex gap-3 mt-4">
+                    <button class="px-5 py-2.5 bg-violet-600 text-white font-bold rounded-xl hover:bg-violet-700 transition text-sm" onclick="addRule()">
+                        <i class="fa-solid fa-plus mr-1"></i> 규칙 추가
+                    </button>
+                    <button class="px-5 py-2.5 bg-slate-200 text-slate-600 font-bold rounded-xl hover:bg-slate-300 transition text-sm" onclick="resetBuilder()">
+                        <i class="fa-solid fa-eraser mr-1"></i> 선택 초기화
+                    </button>
+                    <button class="px-5 py-2.5 bg-amber-100 text-amber-700 font-bold rounded-xl hover:bg-amber-200 transition text-sm" onclick="loadExamples()">
+                        <i class="fa-solid fa-wand-magic-sparkles mr-1"></i> 예시 규칙 불러오기
+                    </button>
+                </div>
+            </div>
+
+            <!-- 규칙 목록 -->
+            <div>
+                <div class="flex items-center justify-between mb-3">
+                    <h3 class="font-bold text-lg text-slate-800"><i class="fa-solid fa-database text-violet-500 mr-1"></i> 규칙 베이스(지식 베이스)</h3>
+                    <button class="text-sm text-slate-400 hover:text-rose-500 transition" onclick="clearRules()">전체 삭제</button>
+                </div>
+                <div class="space-y-2" id="ruleList"><p class="text-slate-400 text-sm">아직 추가된 규칙이 없습니다.</p></div>
+            </div>
+
+            <hr class="border-slate-100">
+
+            <!-- STEP 3 : 상황 입력 + 추론 -->
+            <div>
+                <div class="flex items-center gap-2 mb-3">
+                    <span class="w-7 h-7 bg-emerald-500 text-white rounded-full flex items-center justify-center font-black text-sm">3</span>
+                    <h3 class="font-bold text-lg text-slate-800">현재 상황(사실) 입력 → 추론 엔진 실행</h3>
+                </div>
+                <p class="text-slate-500 text-sm mb-3">지금 ‘참(사실)’인 조건을 모두 클릭하세요. 초록색이 켜진 카드가 현재 상황입니다.</p>
+                <div class="flex flex-wrap gap-2 mb-4" id="factCards"></div>
+                <button class="w-full md:w-auto px-8 py-3 bg-gradient-to-r from-emerald-500 to-violet-600 text-white font-black rounded-xl hover:shadow-lg transition shadow-md text-base" onclick="runInference()">
+                    <i class="fa-solid fa-play mr-2"></i> 추론 실행 (규칙 적용)
+                </button>
+            </div>
+
+            <!-- 결과 출력 -->
+            <div class="bg-slate-900 rounded-2xl p-6 text-slate-100" id="resultBox">
+                <p class="text-slate-400 font-mono text-sm"><i class="fa-solid fa-terminal mr-2"></i> 추론 결과가 여기에 출력됩니다.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 활동: 전문가 시스템 COVID-19 -->
+    <section class="scroll-mt-24 space-y-6" id="activity">
+        <div class="text-center space-y-4">
+            <span class="inline-block bg-rose-100 text-rose-700 px-4 py-1.5 rounded-full font-bold tracking-wider text-base"><i class="fa-solid fa-stethoscope mr-1"></i> 스스로 해결하기</span>
+            <h2 class="serif text-3xl font-bold text-slate-900">전문가 시스템으로 COVID-19 진단받기</h2>
+            <div class="w-20 h-1.5 bg-rose-500 mx-auto rounded-full"></div>
+        </div>
+        <div class="section-card space-y-5">
+            <p class="text-slate-700 text-base leading-relaxed">
+                규칙 기반 전문가 시스템은 인간 전문가에게 얻은 지식을 IF-THEN 규칙으로 표현한 것입니다.
+                아래 웹 사이트의 데모는 의료 전문 지식을 규칙으로 담아 사용자의 답변에 따라 진단을 내립니다. 직접 체험해 봅시다.
+            </p>
+            <ol class="space-y-3 text-slate-700 text-base">
+                <li class="flex gap-3"><span class="w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">1</span>
+                    아래 버튼으로 사이트에 접속하여 <b>COVID-19 Demo</b>를 실행한다.</li>
+                <li class="flex gap-3"><span class="w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">2</span>
+                    질문(예: 심한 합병증 동반 여부, 65세 이상 여부, 폐 침범, 폐렴 등)에 <b>yes / no</b>로 답하며 진단 결과를 확인한다.</li>
+                <li class="flex gap-3"><span class="w-6 h-6 bg-rose-500 text-white rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0">3</span>
+                    답을 다르게 바꾸면 어떤 결론이 나오는지 비교하고, ‘어떤 규칙이 적용되었을지’ 친구와 토의한다.</li>
+            </ol>
+            <div class="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <p class="text-sm font-bold text-slate-600 mb-2">예시 질문 & 답변</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-1 text-sm text-slate-600">
+                    <span>• Severe Covid19 Complications — <b>yes</b></span>
+                    <span>• age ≥ 65 — <b>no</b></span>
+                    <span>• Viral invasion patient specific — <b>yes</b></span>
+                    <span>• Lung — <b>yes</b></span>
+                    <span>• chronic bronchitis/emphysema — <b>no</b></span>
+                    <span>• pneumonia — <b>yes</b></span>
+                </div>
+            </div>
+            <a href="https://www.visirule.co.uk/medical-demos" target="_blank" rel="noopener"
+               class="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-rose-500 to-violet-600 text-white font-bold rounded-xl hover:shadow-lg transition shadow-md">
+                <i class="fa-solid fa-up-right-from-square"></i> VisiRule 의료 데모 사이트 열기
+            </a>
+            <div class="bg-violet-50 border border-violet-100 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+                <span class="text-slate-700 font-bold text-base"><i class="fa-solid fa-clipboard-check text-violet-500 mr-1"></i> 성취도 평가 · 규칙 기반 전문가 시스템을 이용하여 지식을 검색할 수 있다.</span>
+                <span class="text-slate-500 text-sm">예 ☐ &nbsp;&nbsp; 아니요 ☐</span>
+            </div>
+        </div>
+    </section>
+
+
+
+    <!-- ② 논리 -->
+    <section class="scroll-mt-24 space-y-16" id="logic-detail">
+        <div class="space-y-8" id="logic">
+        <div class="flex items-center gap-4">
+            <span class="text-3xl font-black text-violet-600 leading-none">②</span>
+            <div>
+                <h2 class="serif text-2xl font-bold text-slate-900">논리 기반 표현</h2>
+                <div class="w-16 h-1 bg-violet-400 mt-2 rounded-full"></div>
+            </div>
+        </div>
+            <p class="text-slate-500 text-base max-w-2xl">논리는 말이나 글에서 사고와 추리를 이치에 맞게 이끌어 가는 과정이나 원리입니다.
+                인간의 언어를 <b>수학적 기호와 논리식</b>으로 바꾸면 컴퓨터가 모순 없이 참·거짓을 계산할 수 있습니다.</p>
+
+        <!-- 명제 논리 -->
+        <div class="section-card space-y-5">
+            <h3 class="text-xl font-bold text-violet-900 flex items-center gap-3">
+                <i class="fa-solid fa-toggle-on text-violet-500"></i> (1) 명제 논리 (Propositional Logic)
+            </h3>
+            <p class="text-slate-700 leading-relaxed text-base">
+                <b>명제(proposition)</b>란 ‘참’인지 ‘거짓’인지 판별할 수 있는 문장으로, 뜻이 논리적으로 분명해야 합니다.
+                명제 논리는 명제를 기호($p, q$)로 두고 논리 연산자로 결합하여 표현합니다.
+            </p>
+            <div class="bg-violet-50 rounded-xl p-5 border border-violet-100">
+                <p class="font-bold text-slate-800 mb-2 text-base">다음 중 명제인 것은?</p>
+                <ul class="space-y-1.5 text-slate-700 text-base">
+                    <li><i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i>코로나19는 바이러스이다. <span class="text-emerald-600 font-bold text-sm">(명제 ⭕)</span></li>
+                    <li><i class="fa-solid fa-circle-check text-emerald-500 mr-2"></i>원격 수업일에는 등교하지 않는다. <span class="text-emerald-600 font-bold text-sm">(명제 ⭕)</span></li>
+                    <li><i class="fa-solid fa-circle-xmark text-rose-500 mr-2"></i>인공지능이 인간보다 똑똑할 수 있을까? <span class="text-rose-600 font-bold text-sm">(명제 ❌ — 참·거짓 판별 불가)</span></li>
+                </ul>
+            </div>
+
+            <!-- 기호 표 -->
+            <h4 class="font-bold text-slate-700 mt-4">명제 기호 읽는 방법</h4>
+            <div class="overflow-x-auto">
+                <table class="w-full text-base border-collapse">
+                    <thead><tr class="bg-violet-600 text-white">
+                        <th class="p-2.5">기호</th><th class="p-2.5">읽는 방법</th><th class="p-2.5">예제</th><th class="p-2.5">예제 읽는 방법</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-slate-100 text-center">
+                        <tr class="bg-white"><td class="p-2.5 font-bold text-violet-700">$\lnot$</td><td class="p-2.5">not (부정)</td><td class="p-2.5">$\lnot p$</td><td class="p-2.5">not $p$</td></tr>
+                        <tr class="bg-slate-50"><td class="p-2.5 font-bold text-violet-700">$\land$</td><td class="p-2.5">and (그리고)</td><td class="p-2.5">$p \land q$</td><td class="p-2.5">$p$ and $q$</td></tr>
+                        <tr class="bg-white"><td class="p-2.5 font-bold text-violet-700">$\lor$</td><td class="p-2.5">or (또는)</td><td class="p-2.5">$p \lor q$</td><td class="p-2.5">$p$ or $q$</td></tr>
+                        <tr class="bg-slate-50"><td class="p-2.5 font-bold text-violet-700">$\rightarrow$</td><td class="p-2.5">implies (이면)</td><td class="p-2.5">$p \rightarrow q$</td><td class="p-2.5">If $p$, then $q$</td></tr>
+                        <tr class="bg-white"><td class="p-2.5 font-bold text-violet-700">$\leftrightarrow$</td><td class="p-2.5">if and only if (동치)</td><td class="p-2.5">$p \leftrightarrow q$</td><td class="p-2.5">$p$ if and only if $q$</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- 진리표 -->
+            <h4 class="font-bold text-slate-700 mt-4">복합 명제의 진리표 (Truth Table)</h4>
+            <p class="text-slate-600 text-sm">명제의 참·거짓을 판단할 때 진리표를 사용합니다. (T=참, F=거짓)</p>
+            <div class="overflow-x-auto">
+                <table class="w-full text-base border-collapse text-center">
+                    <thead><tr class="bg-slate-700 text-white">
+                        <th class="p-2.5">$p$</th><th class="p-2.5">$q$</th><th class="p-2.5">$\lnot p$</th>
+                        <th class="p-2.5">$p \land q$</th><th class="p-2.5">$p \lor q$</th><th class="p-2.5">$p \rightarrow q$</th><th class="p-2.5">$p \leftrightarrow q$</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr class="bg-white"><td class="p-2.5 font-bold">T</td><td class="p-2.5 font-bold">T</td><td class="p-2.5 text-rose-500">F</td><td class="p-2.5 text-emerald-600 font-bold">T</td><td class="p-2.5 text-emerald-600 font-bold">T</td><td class="p-2.5 text-emerald-600 font-bold">T</td><td class="p-2.5 text-emerald-600 font-bold">T</td></tr>
+                        <tr class="bg-slate-50"><td class="p-2.5 font-bold">T</td><td class="p-2.5 font-bold">F</td><td class="p-2.5 text-rose-500">F</td><td class="p-2.5 text-rose-500">F</td><td class="p-2.5 text-emerald-600 font-bold">T</td><td class="p-2.5 text-rose-500">F</td><td class="p-2.5 text-rose-500">F</td></tr>
+                        <tr class="bg-white"><td class="p-2.5 font-bold">F</td><td class="p-2.5 font-bold">T</td><td class="p-2.5 text-emerald-600 font-bold">T</td><td class="p-2.5 text-rose-500">F</td><td class="p-2.5 text-emerald-600 font-bold">T</td><td class="p-2.5 text-emerald-600 font-bold">T</td><td class="p-2.5 text-rose-500">F</td></tr>
+                        <tr class="bg-slate-50"><td class="p-2.5 font-bold">F</td><td class="p-2.5 font-bold">F</td><td class="p-2.5 text-emerald-600 font-bold">T</td><td class="p-2.5 text-rose-500">F</td><td class="p-2.5 text-rose-500">F</td><td class="p-2.5 text-emerald-600 font-bold">T</td><td class="p-2.5 text-emerald-600 font-bold">T</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <ul class="text-slate-600 text-sm space-y-1 mt-2">
+                <li>• $p \land q$ : 둘 다 참이어야 참, 하나라도 거짓이면 거짓</li>
+                <li>• $p \lor q$ : 둘 중 적어도 하나가 참이면 참</li>
+                <li>• $p \leftrightarrow q$ (동치) : 둘 다 참이거나 둘 다 거짓일 때 참 — ‘같다’는 의미</li>
+            </ul>
+        </div>
+
+        <!-- 술어 논리 -->
+        <div class="section-card space-y-5">
+            <h3 class="text-xl font-bold text-violet-900 flex items-center gap-3">
+                <i class="fa-solid fa-magnifying-glass-plus text-violet-500"></i> (2) 술어 논리 (Predicate Logic)
+            </h3>
+            <p class="text-slate-700 leading-relaxed text-base">
+                명제 논리는 ‘모든’, ‘어떤’ 같은 <b>한정어(quantifier)</b>를 표현하지 못하고, 무엇이 주어이고 무엇이 술어인지 구분하기 어렵다는 한계가 있습니다.
+                술어 논리는 <b>객체(변수 $x$)</b>와 그 객체의 속성·관계(술어)를 나누고, 한정자를 사용해 문장의 문법적 구조와 의미를 포함하여 표현합니다.
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-violet-50 rounded-xl p-4 border border-violet-100 text-center">
+                    <span class="text-2xl font-bold text-violet-700">$\forall x$</span>
+                    <p class="text-slate-600 text-sm mt-1"><b>전칭 기호</b> · 모든 $x$에 대하여</p>
+                </div>
+                <div class="bg-violet-50 rounded-xl p-4 border border-violet-100 text-center">
+                    <span class="text-2xl font-bold text-violet-700">$\exists x$</span>
+                    <p class="text-slate-600 text-sm mt-1"><b>존재 기호</b> · ~인 $x$가 적어도 하나 존재한다</p>
+                </div>
+            </div>
+            <div class="bg-slate-50 rounded-xl p-5 border border-slate-200">
+                <p class="font-bold text-slate-700 mb-2">예시 · “모든 사람은 죽는다”를 술어 논리로</p>
+                <ul class="text-slate-700 text-base space-y-1 mb-3">
+                    <li><span class="font-mono text-violet-600">$person(x)$</span> : $x$는 사람이다</li>
+                    <li><span class="font-mono text-violet-600">$mortal(x)$</span> : $x$는 죽는다</li>
+                </ul>
+                <div class="bg-white p-3 rounded-lg text-center shadow-sm border border-violet-200">
+                    <span class="text-xl font-bold text-slate-800">$\forall x\,(person(x) \rightarrow mortal(x))$</span>
+                    <span class="block text-slate-600 text-sm mt-1">“모든 $x$에 대하여, $x$가 사람이면 $x$는 죽는다.”</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- 비교 표 -->
+        <div class="section-card">
+            <h3 class="text-lg font-bold text-slate-800 mb-4">명제 논리 vs 술어 논리</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-base border-collapse">
+                    <thead><tr class="bg-violet-600 text-white">
+                        <th class="p-3 text-left">구분</th><th class="p-3 text-center">명제 논리</th><th class="p-3 text-center">술어 논리</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-slate-100">
+                        <tr class="bg-white"><td class="p-3 font-semibold text-slate-700">기본 단위</td><td class="p-3 text-center text-slate-600">참·거짓 문장 전체</td><td class="p-3 text-center text-slate-600">객체 + 속성/관계(술어)</td></tr>
+                        <tr class="bg-slate-50"><td class="p-3 font-semibold text-slate-700">표현력</td><td class="p-3 text-center text-slate-600">단순·제한적</td><td class="p-3 text-center text-slate-600">복잡한 관계 표현 가능</td></tr>
+                        <tr class="bg-white"><td class="p-3 font-semibold text-slate-700">한정자</td><td class="p-3 text-center text-slate-600">없음</td><td class="p-3 text-center text-slate-600">$\forall$(모든), $\exists$(어떤)</td></tr>
+                        <tr class="bg-slate-50"><td class="p-3 font-semibold text-slate-700">예시</td><td class="p-3 text-center text-slate-600">$p \rightarrow q$</td><td class="p-3 text-center text-slate-600">$\forall x(person(x) \rightarrow mortal(x))$</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+        </div>
+    </section>
+
+    <!-- ③ 의미망 & 프레임 -->
+    <section class="scroll-mt-24 space-y-16" id="net-detail">
+        <div class="space-y-8" id="net">
+        <div class="flex items-center gap-4">
+            <span class="text-3xl font-black text-violet-600 leading-none">③</span>
+            <div>
+                <h2 class="serif text-2xl font-bold text-slate-900">의미망과 프레임</h2>
+                <div class="w-16 h-1 bg-violet-400 mt-2 rounded-full"></div>
+            </div>
+        </div>
+            <p class="text-slate-500 text-base max-w-2xl">지식을 그래프나 표 구조로 체계화하여 개념 사이의 관계를 직관적으로 표현하는 방법입니다.</p>
+
+        <!-- 의미망 -->
+        <div class="section-card space-y-5">
+            <h3 class="text-xl font-bold text-violet-900 flex items-center gap-3"><i class="fa-solid fa-diagram-project text-violet-500"></i> 의미망 (Semantic Network)</h3>
+            <p class="text-slate-700 leading-relaxed text-base">
+                지식을 <b>이항관계의 집합</b>으로 표현하는 방법으로, 개념을 표현하는 <b>노드(node)</b>와 노드 간의 관계를 표현하는 <b>호(arc)</b>를 이용합니다.
+                호의 종류로는 <b>is-a</b>(하나의 개념이 다른 개념의 부분 집합), <b>has-part</b>(한 객체를 구성하는 관계) 등이 있습니다.
+            </p>
+            <!-- SVG 의미망 (학교 예시) -->
+            <div class="bg-violet-50/60 rounded-2xl p-4 border border-violet-100 overflow-x-auto">
+                <svg class="mx-auto" viewBox="0 0 520 420" style="min-width:480px; max-width:560px; width:100%;">
+                    <defs>
+                        <marker id="ah" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto"><polygon points="0 0,9 3.5,0 7" fill="#f59e0b"/></marker>
+                    </defs>
+                    <!-- 학교 -> 학급 has-part -->
+                    <line x1="360" y1="55" x2="280" y2="55" stroke="#f59e0b" stroke-width="2" marker-end="url(#ah)"/>
+                    <text x="320" y="45" font-size="12" fill="#92400e" text-anchor="middle" font-weight="bold">has-part</text>
+                    <!-- 학급 -> 우리반 is-a (down) -->
+                    <line x1="245" y1="75" x2="245" y2="130" stroke="#f59e0b" stroke-width="2" marker-end="url(#ah)"/>
+                    <text x="262" y="108" font-size="12" fill="#92400e" font-weight="bold">is-a</text>
+                    <!-- 우리반 -> 선생님 has-part -->
+                    <line x1="215" y1="180" x2="140" y2="230" stroke="#f59e0b" stroke-width="2" marker-end="url(#ah)"/>
+                    <text x="150" y="200" font-size="12" fill="#92400e" font-weight="bold">has-part</text>
+                    <!-- 우리반 -> 학생 has-part -->
+                    <line x1="280" y1="180" x2="355" y2="230" stroke="#f59e0b" stroke-width="2" marker-end="url(#ah)"/>
+                    <text x="330" y="200" font-size="12" fill="#92400e" font-weight="bold">has-part</text>
+                    <!-- 선생님 children -->
+                    <line x1="95" y1="285" x2="70" y2="335" stroke="#f59e0b" stroke-width="2" marker-end="url(#ah)"/>
+                    <text x="58" y="312" font-size="11" fill="#92400e" font-weight="bold">is-a</text>
+                    <line x1="135" y1="285" x2="160" y2="335" stroke="#f59e0b" stroke-width="2" marker-end="url(#ah)"/>
+                    <text x="160" y="312" font-size="11" fill="#92400e" font-weight="bold">is-a</text>
+                    <!-- 학생 children -->
+                    <line x1="365" y1="285" x2="340" y2="335" stroke="#f59e0b" stroke-width="2" marker-end="url(#ah)"/>
+                    <text x="328" y="312" font-size="11" fill="#92400e" font-weight="bold">is-a</text>
+                    <line x1="405" y1="285" x2="430" y2="335" stroke="#f59e0b" stroke-width="2" marker-end="url(#ah)"/>
+                    <text x="432" y="312" font-size="11" fill="#92400e" font-weight="bold">is-a</text>
+                    <!-- nodes -->
+                    <g font-size="13" font-weight="bold" text-anchor="middle">
+                        <ellipse cx="410" cy="55" rx="42" ry="22" fill="#fff" stroke="#7c3aed" stroke-width="2"/><text x="410" y="60" fill="#5b21b6">학교</text>
+                        <ellipse cx="245" cy="55" rx="42" ry="22" fill="#fff" stroke="#7c3aed" stroke-width="2"/><text x="245" y="60" fill="#5b21b6">학급</text>
+                        <ellipse cx="245" cy="155" rx="48" ry="24" fill="#ede9fe" stroke="#7c3aed" stroke-width="2"/><text x="245" y="153" fill="#5b21b6">우리반</text><text x="245" y="168" fill="#5b21b6" font-size="11">1-6</text>
+                        <ellipse cx="110" cy="258" rx="44" ry="22" fill="#dbeafe" stroke="#3b82f6" stroke-width="2"/><text x="110" y="263" fill="#1e40af">선생님</text>
+                        <ellipse cx="385" cy="258" rx="44" ry="22" fill="#dcfce7" stroke="#22c55e" stroke-width="2"/><text x="385" y="263" fill="#166534">학생</text>
+                        <ellipse cx="60" cy="358" rx="38" ry="20" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/><text x="60" y="363" fill="#475569" font-size="12">담임</text>
+                        <ellipse cx="160" cy="358" rx="38" ry="20" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/><text x="160" y="363" fill="#475569" font-size="12">부담임</text>
+                        <ellipse cx="335" cy="358" rx="38" ry="20" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/><text x="335" y="363" fill="#475569" font-size="12">나</text>
+                        <ellipse cx="435" cy="358" rx="38" ry="20" fill="#fff" stroke="#94a3b8" stroke-width="1.5"/><text x="435" y="363" fill="#475569" font-size="12">친구</text>
+                    </g>
+                </svg>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100"><p class="font-bold text-emerald-700 mb-1">장점</p><p class="text-slate-600 text-sm">지식 사이의 관계를 나타낼 수 있어 규칙 기반 시스템의 단점을 보완하며, 복잡한 개념·인과 관계 표현에 용이하다.</p></div>
+                <div class="bg-rose-50 rounded-xl p-4 border border-rose-100"><p class="font-bold text-rose-700 mb-1">단점</p><p class="text-slate-600 text-sm">지식량이 커지면 노드 수가 늘어나 복잡해지고 검색 시간이 길어진다.</p></div>
+            </div>
+        </div>
+
+        <!-- 프레임 -->
+        <div class="section-card space-y-5">
+            <h3 class="text-xl font-bold text-violet-900 flex items-center gap-3"><i class="fa-solid fa-table-list text-violet-500"></i> 프레임 (Frame)</h3>
+            <p class="text-slate-700 leading-relaxed text-base">
+                의미망의 한 종류로서, 서로 관계 있는 지식끼리 분류하고 상하관계에 따라 구성하여 노드의 구조를 체계화한 것입니다.
+                노드 대신 <b>슬롯(slot)</b>을 사용하고, 슬롯에 저장된 <b>값(value)</b>의 집합으로 나타내며, 단일 프레임들이 모여 계층적 구조를 표현합니다.
+                (현대 프로그래밍의 객체지향 개념과 유사하게 속성과 속성값을 쌍으로 갖습니다.)
+            </p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-violet-600 text-white font-bold py-2.5 text-center text-base">프레임 · 나</div>
+                    <div class="divide-y divide-slate-100 text-base">
+                        <div class="flex"><div class="w-1/3 bg-slate-100 p-2.5 font-semibold text-slate-600 text-center">학교</div><div class="w-2/3 p-2.5 text-center">△△고등학교</div></div>
+                        <div class="flex"><div class="w-1/3 bg-slate-50 p-2.5 text-slate-600 text-center">학급</div><div class="w-2/3 p-2.5 text-center">1-6</div></div>
+                        <div class="flex"><div class="w-1/3 bg-slate-50 p-2.5 text-slate-600 text-center">이름</div><div class="w-2/3 p-2.5 text-center">이여름</div></div>
+                        <div class="flex"><div class="w-1/3 bg-slate-50 p-2.5 text-slate-600 text-center">성별</div><div class="w-2/3 p-2.5 text-center">여</div></div>
+                    </div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-emerald-600 text-white font-bold py-2.5 text-center text-base">프레임 · 친구</div>
+                    <div class="divide-y divide-slate-100 text-base">
+                        <div class="flex"><div class="w-1/3 bg-slate-100 p-2.5 font-semibold text-slate-600 text-center">학교</div><div class="w-2/3 p-2.5 text-center">△△고등학교</div></div>
+                        <div class="flex"><div class="w-1/3 bg-slate-50 p-2.5 text-slate-600 text-center">학급</div><div class="w-2/3 p-2.5 text-center">1-6</div></div>
+                        <div class="flex"><div class="w-1/3 bg-slate-50 p-2.5 text-slate-600 text-center">이름</div><div class="w-2/3 p-2.5 text-center">이겨울</div></div>
+                        <div class="flex"><div class="w-1/3 bg-slate-50 p-2.5 text-slate-600 text-center">성별</div><div class="w-2/3 p-2.5 text-center">남</div></div>
+                    </div>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-emerald-50 rounded-xl p-4 border border-emerald-100"><p class="font-bold text-emerald-700 mb-1">장점</p><p class="text-slate-600 text-sm">지식 표현이 일반적이고 체계적이다.</p></div>
+                <div class="bg-rose-50 rounded-xl p-4 border border-rose-100"><p class="font-bold text-rose-700 mb-1">단점</p><p class="text-slate-600 text-sm">복잡성 때문에 지식 작성이 어려울 수 있다.</p></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. 새로운 지식의 생성 -->
+    <section class="scroll-mt-24 space-y-8" id="reason">
+        <div class="text-center space-y-4">
+            <h2 class="serif text-3xl font-bold text-slate-900">2. 새로운 지식의 생성 · 논리 추론</h2>
+            <div class="w-20 h-1.5 bg-violet-500 mx-auto rounded-full"></div>
+            <p class="text-slate-500 text-base max-w-2xl mx-auto">추론이란 이미 알려진 사실(전제)을 바탕으로 <b>새로운 참인 사실(결론)</b>을 이끌어내는 과정입니다.
+                규칙 기반 시스템은 정해진 규칙들을 사용해 새로운 사실을 추론합니다.</p>
+        </div>
+
+        <!-- 연역 / 귀납 추론 개요 -->
+        <div class="section-card space-y-4">
+            <h3 class="text-xl font-bold text-violet-900 flex items-center gap-3">
+                <i class="fa-solid fa-rotate text-violet-500"></i> 추론의 종류
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="bg-blue-50 rounded-xl p-5 border border-blue-100">
+                    <p class="font-bold text-blue-700 mb-2 text-base"><i class="fa-solid fa-arrow-down-wide-short mr-1"></i> 연역적 추론 (Deductive Reasoning)</p>
+                    <p class="text-slate-600 text-sm leading-relaxed">전제에 이미 포함된 결론을 도출해내는 추론 방식. 규칙(일반)으로부터 특수한 사례를 이끌어냅니다.</p>
+                    <div class="mt-3 bg-white rounded-lg p-3 border border-blue-100 text-sm font-mono text-slate-700">
+                        <div><span class="text-blue-600 font-bold">규칙</span> $p \rightarrow q$</div>
+                        <div><span class="text-blue-600 font-bold">사실</span> $p$</div>
+                        <div class="border-t border-slate-200 mt-1 pt-1"><span class="text-emerald-600 font-bold">결론</span> $q$</div>
+                    </div>
+                </div>
+                <div class="bg-amber-50 rounded-xl p-5 border border-amber-100">
+                    <p class="font-bold text-amber-700 mb-2 text-base"><i class="fa-solid fa-arrow-up-wide-short mr-1"></i> 귀납적 추론 (Inductive Reasoning)</p>
+                    <p class="text-slate-600 text-sm leading-relaxed">개별적인 특별한 사실이나 현상에서 그러한 사례까지 포함된 일반적 결론으로 이끌어내는 방식.</p>
+                    <div class="mt-3 bg-white rounded-lg p-3 border border-amber-100 text-sm text-slate-600">
+                        <div>사례 1: 영진이는 AI를 좋아한다.</div>
+                        <div>사례 2: 지우도 AI를 좋아한다.</div>
+                        <div class="border-t border-slate-200 mt-1 pt-1 text-emerald-700 font-medium">결론: 학생들은 AI를 좋아한다.</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- (1) 명제의 연역적 추론 -->
+        <div class="section-card space-y-5">
+            <h3 class="text-xl font-bold text-violet-900 flex items-center gap-3">
+                <i class="fa-solid fa-1 text-violet-500 border-2 border-violet-400 rounded-full w-7 h-7 flex items-center justify-center text-sm"></i>
+                (1) 명제의 연역적 추론
+            </h3>
+            <p class="text-slate-600 text-base">두 가지 이상 존재하는 참인 명제를 동치와 추론 규칙을 활용하여 새로운 명제를 만들어냅니다.</p>
+
+            <!-- 긍정 논법 -->
+            <div>
+                <p class="font-bold text-slate-700 mb-3 flex items-center gap-2"><span class="w-2 h-2 bg-violet-500 rounded-full inline-block"></span> 긍정 논법 추론 규칙과 예제</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-base border-collapse">
+                        <thead><tr class="bg-violet-600 text-white">
+                            <th class="p-3 text-center w-1/3">긍정 논법 추론 규칙</th>
+                            <th class="p-3 text-center">예제</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-slate-100 text-center">
+                            <tr class="bg-white">
+                                <td class="p-3"><span class="text-slate-500 font-semibold mr-2">규칙</span><span class="font-mono font-bold text-violet-700">$p \rightarrow q$</span></td>
+                                <td class="p-3 text-slate-700">영진이가 웃고 있다면 인공지능을 공부하고 있는 것이다.</td>
+                            </tr>
+                            <tr class="bg-slate-50">
+                                <td class="p-3"><span class="text-slate-500 font-semibold mr-2">사실</span><span class="font-mono font-bold text-blue-600">$p$</span></td>
+                                <td class="p-3 text-slate-700">영진이가 웃고 있다.</td>
+                            </tr>
+                            <tr class="bg-emerald-50">
+                                <td class="p-3 font-bold text-emerald-700"><span class="font-semibold mr-2">결론</span><span class="font-mono">$q$</span></td>
+                                <td class="p-3 text-emerald-800 font-semibold">영진이는 인공지능을 공부하고 있다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 삼단 논법 -->
+            <div class="mt-2">
+                <p class="font-bold text-slate-700 mb-3 flex items-center gap-2"><span class="w-2 h-2 bg-rose-400 rounded-full inline-block"></span> 삼단 논법 추론 규칙과 예제</p>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-base border-collapse">
+                        <thead><tr class="bg-slate-700 text-white">
+                            <th class="p-3 text-center w-1/3">삼단 논법 추론 규칙</th>
+                            <th class="p-3 text-center">예제</th>
+                        </tr></thead>
+                        <tbody class="divide-y divide-slate-100 text-center">
+                            <tr class="bg-white">
+                                <td class="p-3"><span class="text-slate-500 font-semibold mr-2">규칙</span><span class="font-mono font-bold text-violet-700">$p \rightarrow q$</span></td>
+                                <td class="p-3 text-slate-700">인공지능을 잘하면 프로그래밍을 잘한다.</td>
+                            </tr>
+                            <tr class="bg-slate-50">
+                                <td class="p-3"><span class="text-slate-500 font-semibold mr-2">사실</span><span class="font-mono font-bold text-blue-600">$q \rightarrow r$</span></td>
+                                <td class="p-3 text-slate-700">프로그래밍을 잘하면 수학을 잘한다.</td>
+                            </tr>
+                            <tr class="bg-emerald-50">
+                                <td class="p-3 font-bold text-emerald-700"><span class="font-semibold mr-2">결론</span><span class="font-mono">$p \rightarrow r$</span></td>
+                                <td class="p-3 text-emerald-800 font-semibold">인공지능을 잘하면 수학을 잘한다.</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- (2) 술어 논리 추론 -->
+        <div class="section-card space-y-5">
+            <h3 class="text-xl font-bold text-violet-900 flex items-center gap-3">
+                <i class="fa-solid fa-magnifying-glass text-violet-500"></i> (2) 술어 논리 추론
+            </h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-base border-collapse">
+                    <thead><tr class="bg-violet-600 text-white">
+                        <th class="p-3 text-center w-1/4">기호 표현</th>
+                        <th class="p-3 text-center">예제</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-slate-100 text-center">
+                        <tr class="bg-white">
+                            <td class="p-3"><span class="text-slate-500 font-semibold mr-2">규칙</span><span class="font-mono text-violet-700 font-bold">$\forall x\, p(x) \rightarrow q(x)$</span></td>
+                            <td class="p-3 text-slate-700">인공지능을 잘하는 모든 학생은 수학을 잘한다.</td>
+                        </tr>
+                        <tr class="bg-slate-50">
+                            <td class="p-3"><span class="text-slate-500 font-semibold mr-2">사실</span><span class="font-mono text-blue-600 font-bold">$p(a)$</span></td>
+                            <td class="p-3 text-slate-700">영진이는 인공지능을 잘한다.</td>
+                        </tr>
+                        <tr class="bg-emerald-50">
+                            <td class="p-3 font-bold text-emerald-700"><span class="font-semibold mr-2">결론</span><span class="font-mono">$q(a)$</span></td>
+                            <td class="p-3 text-emerald-800 font-semibold">영진이는 수학을 잘한다.</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- (3) 추론의 방향 -->
+        <div class="section-card space-y-5">
+            <h3 class="text-xl font-bold text-violet-900 flex items-center gap-3">
+                <i class="fa-solid fa-arrows-left-right text-violet-500"></i> (3) 추론의 방향: 전방향 추론과 후방향 추론
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 전방향 추론 -->
+                <div class="bg-sky-50 rounded-2xl p-5 border border-sky-100 space-y-3">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-8 h-8 bg-sky-500 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-right text-white text-sm"></i>
+                        </div>
+                        <p class="font-bold text-sky-800 text-base">전방향 추론 (Forward Chaining)</p>
+                    </div>
+                    <p class="text-xs font-semibold text-sky-600 tracking-wide">/ 데이터 주도 방식</p>
+                    <p class="text-slate-600 text-sm leading-relaxed">현재 알고 있는 <b>'사실(Data)'</b>에서 출발하여 규칙을 적용해 새로운 <b>'결론'</b>을 이끌어내는 방식</p>
+                    <div class="bg-white rounded-xl p-4 border border-sky-100 text-sm">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="bg-sky-100 text-sky-700 font-bold px-2 py-1 rounded">사실</span>
+                            <span class="text-slate-600">환자가 열이 나고 기침을 한다</span>
+                        </div>
+                        <div class="flex justify-center my-2 text-sky-400"><i class="fa-solid fa-arrow-down"></i></div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="bg-violet-100 text-violet-700 font-bold px-2 py-1 rounded">규칙 적용</span>
+                            <span class="text-slate-600">열 + 기침 → 감기 의심</span>
+                        </div>
+                        <div class="flex justify-center my-2 text-sky-400"><i class="fa-solid fa-arrow-down"></i></div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="bg-emerald-100 text-emerald-700 font-bold px-2 py-1 rounded">결론</span>
+                            <span class="text-slate-600 font-semibold">감기구나!</span>
+                        </div>
+                    </div>
+                </div>
+                <!-- 후방향 추론 -->
+                <div class="bg-rose-50 rounded-2xl p-5 border border-rose-100 space-y-3">
+                    <div class="flex items-center gap-2 mb-1">
+                        <div class="w-8 h-8 bg-rose-500 rounded-lg flex items-center justify-center">
+                            <i class="fa-solid fa-arrow-left text-white text-sm"></i>
+                        </div>
+                        <p class="font-bold text-rose-800 text-base">후방향 추론 (Backward Chaining)</p>
+                    </div>
+                    <p class="text-xs font-semibold text-rose-600 tracking-wide">/ 목표 주도 방식</p>
+                    <p class="text-slate-600 text-sm leading-relaxed">증명하고 싶은 <b>'목표(결론)'</b>에서 출발하여, 그 목표가 참이 되기 위해 필요한 <b>'조건(사실)'</b>들을 거슬러 올라가며 확인하는 방식</p>
+                    <div class="bg-white rounded-xl p-4 border border-rose-100 text-sm">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="bg-rose-100 text-rose-700 font-bold px-2 py-1 rounded">목표</span>
+                            <span class="text-slate-600">이 환자는 감기일까?</span>
+                        </div>
+                        <div class="flex justify-center my-2 text-rose-400"><i class="fa-solid fa-arrow-up"></i></div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="bg-violet-100 text-violet-700 font-bold px-2 py-1 rounded">조건 확인</span>
+                            <span class="text-slate-600">감기라면 열과 기침이 나야 하는데, 증상이 있는지 확인해보자</span>
+                        </div>
+                        <div class="flex justify-center my-2 text-rose-400"><i class="fa-solid fa-arrow-up"></i></div>
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="bg-amber-100 text-amber-700 font-bold px-2 py-1 rounded">사실 탐색</span>
+                            <span class="text-slate-600 font-semibold">조건 확인 → 감기 진단 가능!</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- 비교 표 -->
+            <div class="overflow-x-auto mt-2">
+                <table class="w-full text-base border-collapse">
+                    <thead><tr class="bg-slate-700 text-white">
+                        <th class="p-3 text-left">구분</th>
+                        <th class="p-3 text-center">전방향 추론</th>
+                        <th class="p-3 text-center">후방향 추론</th>
+                    </tr></thead>
+                    <tbody class="divide-y divide-slate-100 text-center">
+                        <tr class="bg-white"><td class="p-3 font-semibold text-slate-700 text-left">시작점</td><td class="p-3 text-slate-600">사실(Data)</td><td class="p-3 text-slate-600">목표(Goal)</td></tr>
+                        <tr class="bg-slate-50"><td class="p-3 font-semibold text-slate-700 text-left">진행 방향</td><td class="p-3 text-slate-600">사실 → 결론</td><td class="p-3 text-slate-600">목표 → 조건 거슬러 올라감</td></tr>
+                        <tr class="bg-white"><td class="p-3 font-semibold text-slate-700 text-left">별칭</td><td class="p-3 text-slate-600">데이터 주도 방식</td><td class="p-3 text-slate-600">목표 주도 방식</td></tr>
+                        <tr class="bg-slate-50"><td class="p-3 font-semibold text-slate-700 text-left">적합한 상황</td><td class="p-3 text-slate-600">결론이 불명확할 때</td><td class="p-3 text-slate-600">목표가 명확할 때</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+
+                <!-- 비가 온다 연쇄 추론 -->
+        <div class="section-card space-y-6">
+            <h3 class="text-xl font-bold text-violet-900 flex items-center gap-2"><i class="fa-solid fa-cloud-rain text-violet-500"></i> 교과서 예시 · 연쇄 추론</h3>
+            <p class="text-slate-700 text-base">다음과 같은 사실과 규칙이 있다고 가정해 봅시다. 하나의 결론이 다음 규칙의 조건이 되어 추론이 <b>연쇄적</b>으로 이어집니다.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- 전제 -->
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 bg-sky-50 rounded-xl p-4 border border-sky-100">
+                        <span class="bg-sky-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5 whitespace-nowrap">사실 1</span>
+                        <span class="text-slate-700">비가 온다.</span>
+                    </div>
+                    <div class="flex items-start gap-3 bg-sky-50 rounded-xl p-4 border border-sky-100">
+                        <span class="bg-sky-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5 whitespace-nowrap">규칙 1</span>
+                        <span class="text-slate-700">만약 비가 온다면 땅이 젖는다.</span>
+                    </div>
+                    <div class="flex items-start gap-3 bg-sky-50 rounded-xl p-4 border border-sky-100">
+                        <span class="bg-sky-500 text-white text-xs font-bold px-2 py-1 rounded mt-0.5 whitespace-nowrap">규칙 2</span>
+                        <span class="text-slate-700">만약 땅이 젖는다면 제동 거리가 길어져 속도를 낮추어야 한다.</span>
+                    </div>
+                </div>
+                <!-- 결론 -->
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3 bg-violet-50 rounded-xl p-4 border border-violet-200">
+                        <span class="bg-violet-600 text-white text-xs font-bold px-2 py-1 rounded mt-0.5 whitespace-nowrap">결론 1</span>
+                        <div><span class="text-slate-800 font-medium">땅이 젖는다.</span><span class="block text-violet-500 text-sm">사실 1 + 규칙 1 결합</span></div>
+                    </div>
+                    <div class="flex justify-center text-violet-400"><i class="fa-solid fa-arrow-down"></i></div>
+                    <div class="flex items-start gap-3 bg-violet-100 rounded-xl p-4 border border-violet-300">
+                        <span class="bg-violet-700 text-white text-xs font-bold px-2 py-1 rounded mt-0.5 whitespace-nowrap">결론 2</span>
+                        <div><span class="text-slate-800 font-medium">제동 거리가 길어져 속도를 낮추어야 한다.</span><span class="block text-violet-600 text-sm">규칙 2 + 결론 1 결합</span></div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-amber-50 border-l-4 border-amber-400 rounded-r-xl p-4 text-slate-700 text-base">
+                <i class="fa-solid fa-magnifying-glass text-amber-500 mr-1"></i>
+                <b>일상 속 추론</b> — 현관에서 치킨 냄새(사실)가 나고, 머릿속에 “냄새가 나면 주변에 치킨이 있다(규칙)”는 지식이 있으면,
+                거실을 보지 않고도 “식탁에 치킨이 있다(결론)”고 확신할 수 있습니다. 인공지능도 정확히 이 방식으로 새로운 사실을 만들어냅니다.
+            </div>
+        </div>
+
+        <!-- 한계 -->
+        <div class="section-card border-l-4 border-rose-400 space-y-3">
+            <h3 class="text-lg font-bold text-rose-700"><i class="fa-solid fa-triangle-exclamation mr-2"></i>규칙 기반 시스템의 한계</h3>
+            <ul class="text-slate-600 text-base space-y-1.5">
+                <li>• 규칙이 많아질수록 규칙들 간의 상호 관계가 모호하고 불명확해진다.</li>
+                <li>• 많은 규칙으로 이루어지면 실행 속도가 느려져 탐색이 비효율적이다.</li>
+                <li>• 스스로 지식을 학습할 수 없으므로, 예외 상황에 대하여 계속 시스템을 수정하고 유지해야 한다.</li>
+            </ul>
+        </div>
+    </section>
+
+    <!-- Wumpus World 바로가기 -->
+    <section class="scroll-mt-24" id="wumpus">
+        <div class="section-card" style="background:linear-gradient(135deg,#1e0b3a 0%,#3b0a6b 50%,#6d1a8a 100%); border:none; overflow:hidden; position:relative;">
+            <div style="position:absolute;top:-30px;right:-20px;opacity:.08;font-size:180px;pointer-events:none">🐉</div>
+            <div class="relative z-10 flex flex-col md:flex-row items-center gap-8 p-2">
+                <div class="flex-1 space-y-3 text-white">
+                    <p class="text-pink-300 font-black text-sm tracking-widest uppercase"><i class="fa-solid fa-flask mr-1"></i> 심화 실습 · 논리 추론</p>
+                    <h2 class="serif text-3xl font-bold leading-tight">Wumpus World<br><span class="text-pink-300">AI 추론 시뮬레이터</span></h2>
+                    <p class="text-violet-200 text-base leading-relaxed max-w-lg">
+                        지뢰·금·몬스터가 숨어 있는 격자 세계에서, AI가 <b class="text-white">논리 추론(¬, ∧, ∨)</b>만으로 안전한 경로를 탐색합니다.
+                        앞에서 배운 명제 논리와 술어 논리가 실제 AI에 어떻게 쓰이는지 직접 확인해 보세요.
+                    </p>
+                    <div class="pt-2">
+                        <a href="wumpus-world.html" target="_blank" class="wumpus-btn">
+                            <i class="fa-solid fa-dragon"></i> Wumpus World 시뮬레이터 열기
+                        </a>
+                    </div>
+                </div>
+                <div class="flex-shrink-0 hidden md:block">
+                    <div class="w-40 h-40 rounded-3xl flex items-center justify-center" style="background:rgba(255,255,255,.08)">
+                        <i class="fa-solid fa-dragon text-7xl text-pink-300 opacity-80"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. 확인 퀴즈 -->
+    <section class="scroll-mt-24" id="quiz">
+        <div class="text-center space-y-4 mb-10">
+            <h2 class="serif text-3xl font-bold text-slate-900">3. 확인 퀴즈</h2>
+            <div class="w-20 h-1.5 bg-violet-500 mx-auto rounded-full"></div>
+            <p class="text-slate-500 text-base">오늘 배운 내용을 퀴즈로 확인해 봅시다.</p>
+        </div>
+        <div class="space-y-6">
+            <div class="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm">
+                <p class="font-bold text-lg text-slate-800 mb-5"><span class="text-violet-600 mr-2 bg-violet-100 px-3 py-1 rounded-lg">Q1</span>
+                    노드(원)와 호(화살표)로 개념 사이의 관계를 그물망처럼 표현하는 지식 표현 방법은?</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,false,'IF-THEN 형태의 지식 표현은 규칙 기반 시스템입니다.')">① 규칙 기반 시스템</button>
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,true,'정답입니다! 의미망은 노드와 호로 관계를 표현합니다.')">② 의미망(Semantic Network)</button>
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,false,'프레임은 슬롯·값 쌍(표 형태)으로 표현합니다.')">③ 프레임(Frame)</button>
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,false,'술어 논리는 객체와 술어를 기호로 표현합니다.')">④ 술어 논리</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm">
+                <p class="font-bold text-lg text-slate-800 mb-5"><span class="text-violet-600 mr-2 bg-violet-100 px-3 py-1 rounded-lg">Q2</span>
+                    “비가 온다”와 “비가 오면 땅이 젖는다”로부터 “땅이 젖는다”를 이끌어내는 추론 규칙은?</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,true,'정답입니다! p→q이고 p가 참이면 q도 참 — 전건 긍정(Modus Ponens)입니다.')">① 전건 긍정(Modus Ponens)</button>
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,false,'후건 부정은 결론이 거짓임으로부터 추론합니다.')">② 후건 부정(Modus Tollens)</button>
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,false,'귀납은 개별 사례로부터 일반 규칙을 이끌어냅니다.')">③ 귀납 추론</button>
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,false,'동치는 두 명제의 참·거짓이 항상 같음을 뜻합니다.')">④ 동치 변환</button>
+                </div>
+            </div>
+            <div class="bg-white rounded-2xl p-6 md:p-8 border border-slate-200 shadow-sm">
+                <p class="font-bold text-lg text-slate-800 mb-5"><span class="text-violet-600 mr-2 bg-violet-100 px-3 py-1 rounded-lg">Q3</span>
+                    명제 논리에서 표현하지 못해 술어 논리가 필요한 것은?</p>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,false,'그리고/또는은 명제 논리의 ∧, ∨로 표현됩니다.')">① ‘그리고’, ‘또는’</button>
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,true,'정답입니다! ∀(모든)·∃(어떤) 같은 한정자와 주어·술어 구분은 술어 논리에서 가능합니다.')">② ‘모든’, ‘어떤’ 같은 한정자</button>
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,false,'부정은 명제 논리의 ¬로 표현됩니다.')">③ 명제의 부정</button>
+                    <button class="quiz-btn text-left px-5 py-4 rounded-xl font-medium text-base bg-white border-2 border-slate-200 text-slate-700 hover:border-violet-300 transition-colors" onclick="checkAnswer(this,false,'참·거짓 판별은 명제 논리의 핵심 기능입니다.')">④ 참·거짓 판별</button>
+                </div>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer class="bg-slate-900 py-12 px-6 text-center mt-20">
+    <div class="max-w-6xl mx-auto">
+        <p class="text-white font-black text-2xl mb-2">인공지능 기초</p>
+        <p class="text-slate-400 text-base mb-8">지식의 표현과 추론</p>
+        <nav class="flex flex-wrap justify-center gap-x-8 gap-y-2 text-slate-500 text-base">
+            <a href="2-2-1.탐색.html" class="hover:text-white transition">2-2-1 탐색</a>
+            <a href="2-2-2.트리-탐색-방법.html" class="hover:text-white transition">2-2-2 트리 탐색 방법</a>
+            <a href="2-2-3.지식의-표현과-논리-추론.html" class="hover:text-white transition">2-2-3 지식의 표현과 논리 추론</a>
+            <a href="2-3-1.기계학습의-개념과-활용.html" class="hover:text-white transition">2-3-1 기계학습의 개념과 활용</a>
+            <a href="wumpus-world.html" target="_blank" class="hover:text-pink-400 transition text-pink-500 font-bold"><i class="fa-solid fa-dragon mr-1"></i> Wumpus World</a>
+        </nav>
+    </div>
+</footer>
+
+<script>
+/* ===================== 규칙 시뮬레이터 ===================== */
+const CONDITIONS = [
+    "신호등이 녹색이다","신호등이 적색이다","신호등이 황색이다",
+    "전방에 장애물이 있다","전방에 장애물이 없다","어린이 보호 구역이다",
+    "전방의 장애물이 움직이지 않는다","전방의 장애물이 움직인다"
+];
+const ACTIONS = [
+    "앞으로 움직인다","멈춘다","전방의 장애물을 확인한다","출발한다",
+    "속도를 줄인다","속도를 30km/h 이하로 줄인다","기다린다"
+];
+
+let selConds = [];     // 선택된 조건
+let selActs = [];      // 선택된 행동
+let connector = "AND"; // 조건 연결자
+let rules = [];        // {conds:[], conn, acts:[]}
+let facts = new Set(); // 참인 조건들
+
+function buildCards() {
+    const cc = document.getElementById('condCards');
+    cc.innerHTML = CONDITIONS.map((c,i)=>
+        `<button class="chip pill-cond px-3 py-2 rounded-xl text-sm font-bold" data-i="${i}" onclick="toggleCond(${i})">${c}</button>`).join('');
+    const ac = document.getElementById('actCards');
+    ac.innerHTML = ACTIONS.map((a,i)=>
+        `<button class="chip pill-act px-3 py-2 rounded-xl text-sm font-bold" data-i="${i}" onclick="toggleAct(${i})">${a}</button>`).join('');
+    const fc = document.getElementById('factCards');
+    fc.innerHTML = CONDITIONS.map((c,i)=>
+        `<button class="chip pill-fact px-3 py-2 rounded-xl text-sm font-bold" id="fact${i}" onclick="toggleFact(${i})">${c}</button>`).join('');
+}
+
+function toggleCond(i){
+    const c = CONDITIONS[i];
+    const el = document.querySelector(`#condCards [data-i="${i}"]`);
+    if(selConds.includes(c)){ selConds = selConds.filter(x=>x!==c); el.classList.remove('sel'); }
+    else { selConds.push(c); el.classList.add('sel'); }
+    document.getElementById('connectorBox').style.display = selConds.length>=2 ? 'flex' : 'none';
+    updatePreview();
+}
+function toggleAct(i){
+    const a = ACTIONS[i];
+    const el = document.querySelector(`#actCards [data-i="${i}"]`);
+    if(selActs.includes(a)){ selActs = selActs.filter(x=>x!==a); el.classList.remove('sel'); }
+    else { selActs.push(a); el.classList.add('sel'); }
+    updatePreview();
+}
+function setConnector(conn){
+    connector = conn;
+    document.querySelectorAll('#connectorBox [data-conn]').forEach(b=>{
+        b.style.background = b.dataset.conn===conn ? (conn==='AND'?'#dbeafe':'#dcfce7') : '#fff';
+    });
+    updatePreview();
+}
+function toggleFact(i){
+    const c = CONDITIONS[i];
+    const el = document.getElementById('fact'+i);
+    if(facts.has(c)){ facts.delete(c); el.classList.remove('on'); }
+    else { facts.add(c); el.classList.add('on'); }
+}
+
+function condText(conds, conn){
+    const sep = conn==='AND' ? ' <b class="text-blue-500">그리고</b> ' : ' <b class="text-emerald-500">또는</b> ';
+    return conds.join(sep);
+}
+function updatePreview(){
+    const p = document.getElementById('rulePreview');
+    if(selConds.length===0 && selActs.length===0){ p.textContent='조건과 행동 카드를 선택하세요.'; return; }
+    const condPart = selConds.length ? condText(selConds, connector) : '<span class="text-slate-400">(조건 없음)</span>';
+    const actPart = selActs.length ? selActs.join(' <b class="text-blue-500">그리고</b> ') : '<span class="text-slate-400">(행동 없음)</span>';
+    p.innerHTML = `<span class="text-rose-500 font-bold">IF</span> ${condPart} <span class="text-violet-600 font-bold">THEN</span> ${actPart}`;
+}
+
+function addRule(){
+    if(selConds.length===0 || selActs.length===0){
+        alert('조건과 행동을 각각 하나 이상 선택하세요.'); return;
+    }
+    rules.push({conds:[...selConds], conn:connector, acts:[...selActs]});
+    renderRules();
+    resetBuilder();
+}
+function renderRules(){
+    const list = document.getElementById('ruleList');
+    if(rules.length===0){ list.innerHTML='<p class="text-slate-400 text-sm">아직 추가된 규칙이 없습니다.</p>'; return; }
+    list.innerHTML = rules.map((r,idx)=>{
+        return `<div class="fade-in flex items-start justify-between gap-3 bg-white border border-slate-200 rounded-xl px-4 py-3">
+            <div class="text-base text-slate-700"><span class="bg-violet-100 text-violet-700 font-bold text-xs px-2 py-0.5 rounded mr-2">규칙 ${idx+1}</span>
+            <span class="text-rose-500 font-bold">IF</span> ${condText(r.conds,r.conn)} <span class="text-violet-600 font-bold">THEN</span> ${r.acts.join(' <b class="text-blue-500">그리고</b> ')}</div>
+            <button class="text-slate-300 hover:text-rose-500 transition flex-shrink-0" onclick="delRule(${idx})"><i class="fa-solid fa-xmark"></i></button>
+        </div>`;
+    }).join('');
+}
+function delRule(i){ rules.splice(i,1); renderRules(); }
+function clearRules(){ rules=[]; renderRules(); }
+
+function resetBuilder(){
+    selConds=[]; selActs=[]; connector='AND';
+    document.querySelectorAll('#condCards .sel').forEach(e=>e.classList.remove('sel'));
+    document.querySelectorAll('#actCards .sel').forEach(e=>e.classList.remove('sel'));
+    document.getElementById('connectorBox').style.display='none';
+    document.querySelectorAll('#connectorBox [data-conn]').forEach(b=>b.style.background='#fff');
+    updatePreview();
+}
+
+function loadExamples(){
+    rules = [
+        {conds:["신호등이 녹색이다","전방에 장애물이 없다"], conn:"AND", acts:["앞으로 움직인다"]},
+        {conds:["신호등이 적색이다"], conn:"AND", acts:["멈춘다","기다린다"]},
+        {conds:["전방에 장애물이 있다","어린이 보호 구역이다"], conn:"OR", acts:["속도를 줄인다"]},
+        {conds:["전방의 장애물이 움직이지 않는다"], conn:"AND", acts:["전방의 장애물을 확인한다"]},
+        {conds:["신호등이 황색이다"], conn:"AND", acts:["속도를 줄인다"]},
+        {conds:["어린이 보호 구역이다"], conn:"AND", acts:["속도를 30km/h 이하로 줄인다"]}
+    ];
+    renderRules();
+}
+
+function ruleFires(r){
+    if(r.conn==='AND') return r.conds.every(c=>facts.has(c));
+    return r.conds.some(c=>facts.has(c)); // OR
+}
+function runInference(){
+    const box = document.getElementById('resultBox');
+    if(rules.length===0){
+        box.innerHTML = '<p class="text-amber-300 font-mono text-sm"><i class="fa-solid fa-triangle-exclamation mr-2"></i> 먼저 규칙을 1개 이상 추가하세요. (예시 규칙 불러오기 가능)</p>';
+        return;
+    }
+    if(facts.size===0){
+        box.innerHTML = '<p class="text-amber-300 font-mono text-sm"><i class="fa-solid fa-triangle-exclamation mr-2"></i> 현재 참(사실)인 조건을 1개 이상 선택하세요.</p>';
+        return;
+    }
+    const fired = [];
+    const resultActs = new Set();
+    rules.forEach((r,idx)=>{
+        if(ruleFires(r)){ fired.push({idx, r}); r.acts.forEach(a=>resultActs.add(a)); }
+    });
+    let html = `<p class="font-mono text-emerald-400 text-sm mb-3"><i class="fa-solid fa-terminal mr-2"></i> 입력 사실: ${[...facts].join(', ')}</p>`;
+    if(fired.length===0){
+        html += '<p class="font-mono text-rose-400 text-sm">적용되는 규칙이 없습니다. (조건을 만족하는 규칙 없음)</p>';
+    } else {
+        html += '<p class="text-violet-300 font-bold text-sm mb-2">▼ 발화(적용)된 규칙</p>';
+        html += fired.map(f=>{
+            const sep = f.r.conn==='AND'?' 그리고 ':' 또는 ';
+            return `<div class="font-mono text-sm text-slate-200 mb-1 fade-in">규칙 ${f.idx+1}: IF ${f.r.conds.join(sep)} → <span class="text-yellow-300">${f.r.acts.join(', ')}</span></div>`;
+        }).join('');
+        html += `<div class="mt-4 pt-4 border-t border-slate-700">
+            <p class="text-emerald-400 font-bold text-sm mb-2">✅ 최종 추론 결과 (실행할 행동)</p>
+            <div class="flex flex-wrap gap-2">${[...resultActs].map(a=>`<span class="bg-violet-600 text-white px-3 py-1.5 rounded-lg text-sm font-bold fade-in">${a}</span>`).join('')}</div>
+        </div>`;
+    }
+    box.innerHTML = html;
+}
+
+buildCards();
+updatePreview();
+
+/* ===================== 퀴즈 ===================== */
+function checkAnswer(btn, isCorrect, message) {
+    const buttons = btn.closest('div').querySelectorAll('.quiz-btn');
+    buttons.forEach(b => {
+        b.classList.remove('bg-green-100','border-green-400','text-green-800','bg-rose-100','border-rose-400','text-rose-800');
+        b.classList.add('bg-white','border-slate-200','text-slate-700'); b.disabled = true;
+    });
+    if (isCorrect) { btn.classList.replace('bg-white','bg-green-100'); btn.classList.replace('border-slate-200','border-green-400'); btn.classList.replace('text-slate-700','text-green-800'); }
+    else { btn.classList.replace('bg-white','bg-rose-100'); btn.classList.replace('border-slate-200','border-rose-400'); btn.classList.replace('text-slate-700','text-rose-800'); }
+    showToast(message, isCorrect);
+}
+function showToast(message, isCorrect) {
+    document.querySelectorAll('.toast-msg').forEach(t => t.remove());
+    const toast = document.createElement('div');
+    toast.className = `toast-msg fixed bottom-10 left-1/2 -translate-x-1/2 px-8 py-4 rounded-2xl text-white font-bold shadow-2xl transition-all transform translate-y-20 z-[1000] flex items-center gap-3 max-w-[90vw] ${isCorrect ? 'bg-violet-600' : 'bg-rose-600'}`;
+    const icon = isCorrect ? '<i class="fa-solid fa-circle-check text-xl"></i>' : '<i class="fa-solid fa-circle-xmark text-xl"></i>';
+    toast.innerHTML = `${icon} <span>${message}</span>`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.classList.remove('translate-y-20'), 10);
+    setTimeout(() => { toast.classList.add('translate-y-20','opacity-0'); setTimeout(() => toast.remove(), 300); }, 3500);
+}
+</script>
+</body>
+</html>
